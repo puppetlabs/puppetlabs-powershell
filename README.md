@@ -11,7 +11,7 @@ subcommand or the `puppet-module` Gem.  On your puppet master, execute
 the following command, optionally specifying your puppet master's
 `modulepath` in which to install the module:
 
-    $ puppet module install [--modulepath <path>] joshcooper/puppetlabs-powershell
+    $ puppet module install [--modulepath <path>] joshcooper/powershell
 
 See the section [Installing Modules](http://docs.puppetlabs.com/puppet/2.7/reference/modules_installing.html#installing-modules-1) for more information.
 
