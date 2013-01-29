@@ -1,4 +1,5 @@
 Microsoft Windows PowerShell module for Puppet
+==============================================
 
 This module adds an `exec` provider allowing Puppet to execute PowerShell commands.
 
