@@ -2,7 +2,17 @@ require 'puppet/provider/exec'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
-  commands :powershell => 'powershell.exe'
+
+  POWERSHELL =
+    if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
+      "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
+    elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
+      "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
+    else
+      "powershell.exe"
+    end
+
+  commands :powershell => POWERSHELL
 
   desc <<-EOT
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
