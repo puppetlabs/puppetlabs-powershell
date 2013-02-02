@@ -28,7 +28,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   EOT
 
   def run(command, check = false)
-    super(['powershell.exe', command], check)
+    super("\"#{POWERSHELL}\" #{command}", check)
   end
 
   def checkexe(command)
@@ -38,4 +38,3 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     true
   end
 end
-
