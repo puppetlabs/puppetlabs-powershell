@@ -12,6 +12,8 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       'powershell.exe'
     end
 
+  PS_ARGS = '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
+    
   commands :powershell => POWERSHELL
 
   desc <<-EOT
