@@ -9,9 +9,11 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
     else
-      "powershell.exe"
+      'powershell.exe'
     end
 
+  PS_ARGS = '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
+    
   commands :powershell => POWERSHELL
 
   desc <<-EOT
@@ -28,7 +30,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   EOT
 
   def run(command, check = false)
-    super("\"#{POWERSHELL}\" #{command}", check)
+    super("\"#{POWERSHELL}\" #{PS_ARGS} -Command \"#{command}\"", check)
   end
 
   def checkexe(command)
