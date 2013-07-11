@@ -6,7 +6,7 @@ describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.
   let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass' }
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell) }
   let(:provider) { described_class.new(resource) }
-  
+
   let(:powershell) {
       if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
