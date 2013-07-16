@@ -24,8 +24,8 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         # Rename the Guest account
         exec { 'rename-guest':
           command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
-          unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }'
-          provider  => powershell
+          unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
+          provider  => powershell,
         }
   EOT
 

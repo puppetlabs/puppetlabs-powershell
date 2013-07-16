@@ -33,8 +33,8 @@ To rename the `Guest` account:
 
     exec { 'rename-guest':
       command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
-      unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }'
-      provider  => powershell
+      unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
+      provider  => powershell,
     }
 
 Notice that the `command` parameter is single-quoted to prevent puppet
