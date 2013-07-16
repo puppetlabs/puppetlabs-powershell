@@ -3,7 +3,7 @@ require 'puppet/provider/exec'
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
 
-  POWERSHELL =
+  commands :powershell =>
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -11,10 +11,6 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     else
       'powershell.exe'
     end
-
-  PS_ARGS = '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
-
-  commands :powershell => POWERSHELL
 
   desc <<-EOT
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
@@ -39,7 +35,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       # we redirect powershell's stdin to read from the file. Current
       # versions of Windows use per-user temp directories with strong
       # permissions, but I'd rather not make (poor) assumptions.
-      super("cmd.exe /c \"\"#{native_path(POWERSHELL)}\" #{PS_ARGS} -Command - < \"#{native_path}\"\"", check)
+      super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{args} -Command - < \"#{native_path}\"\"", check)
     end
   end
 
@@ -61,5 +57,9 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def native_path(path)
     path.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+  end
+
+  def args
+    '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
   end
 end
