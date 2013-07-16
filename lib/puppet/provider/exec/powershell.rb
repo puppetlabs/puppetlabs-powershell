@@ -30,7 +30,17 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   EOT
 
   def run(command, check = false)
-    super("\"#{POWERSHELL}\" #{PS_ARGS} -Command \"#{command}\"", check)
+    write_script(command) do |native_path|
+      # Ideally, we could keep a handle open on the temp file in this
+      # process (to prevent TOCTOU attacks), and execute powershell
+      # with -File <path>. But powershell complains that it can't open
+      # the file for exclusive access. If we close the handle, then an
+      # attacker could modify the file before we invoke powershell. So
+      # we redirect powershell's stdin to read from the file. Current
+      # versions of Windows use per-user temp directories with strong
+      # permissions, but I'd rather not make (poor) assumptions.
+      super("cmd.exe /c \"\"#{native_path(POWERSHELL)}\" #{PS_ARGS} -Command - < \"#{native_path}\"\"", check)
+    end
   end
 
   def checkexe(command)
@@ -38,5 +48,18 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def validatecmd(command)
     true
+  end
+
+  private
+  def write_script(content, &block)
+    Tempfile.open(['puppet-powershell', '.ps1']) do |file|
+      file.write(content)
+      file.flush
+      yield native_path(file.path)
+    end
+  end
+
+  def native_path(path)
+    path.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
   end
 end
