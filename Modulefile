@@ -1,5 +1,5 @@
 name    'joshcooper-powershell'
-version '0.0.3'
+version '0.0.5'
 source 'git://github.com/joshcooper/puppetlabs-powershell.git'
 author 'Josh Cooper'
 license 'Apache License, Version 2.0'
