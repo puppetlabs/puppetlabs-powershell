@@ -33,8 +33,8 @@ To rename the `Guest` account:
 
     exec { 'rename-guest':
       command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
-      unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }'
-      provider  => powershell
+      unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
+      provider  => powershell,
     }
 
 Notice that the `command` parameter is single-quoted to prevent puppet
@@ -62,5 +62,4 @@ Known Issues
 ============
 
  * This module requires PowerShell to be installed and the `powershell.exe` to be available in the system `PATH`.
- * On 32-bit versions of Windows, puppet will always invoke the 32-bit version of `powershell.exe` due to file system redirection.
  * Be careful when using PowerShell variables, e.g. `$_`, as they must be escaped in puppet manifests either using backslashes or single quotes.
