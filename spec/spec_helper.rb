@@ -3,7 +3,7 @@ $LOAD_PATH.unshift File.join(dir, 'lib')
 
 require 'puppet'
 require 'rspec'
-#require 'spec/autorun'
+require 'rspec/expectations'
 require 'mocha/api'
 
 RSpec.configure do |config|
