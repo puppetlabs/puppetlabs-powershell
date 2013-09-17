@@ -13,3 +13,9 @@ tmtags
 ## VIM
 *.swp
 tags
+
+.rspec
+.*.sw[op]
+.bundle/
+Gemfile.lock
+Gemfile.local
