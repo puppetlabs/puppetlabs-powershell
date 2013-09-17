@@ -35,7 +35,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       # we redirect powershell's stdin to read from the file. Current
       # versions of Windows use per-user temp directories with strong
       # permissions, but I'd rather not make (poor) assumptions.
-      super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{args} -Command - < \"#{native_path}\"\"", check)
+      return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{args} -Command - < \"#{native_path}\"\"", check)
     end
   end
 
