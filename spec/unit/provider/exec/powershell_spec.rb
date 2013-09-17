@@ -2,7 +2,7 @@
 require 'spec_helper'
 
 describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.microsoft_windows? do
-  let(:command)  { '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'Administrator\'")' }
+  let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell) }
   let(:provider) { described_class.new(resource) }
@@ -39,6 +39,25 @@ describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.
         with(regexp_matches(/^cmd.exe \/c ".* #{args} < .*"/), anything)
 
       provider.run(command)
+    end
+
+    it "returns the output and status" do
+      output, status = provider.run(command)
+      expect(output).to match(/SID\s+:\s+S-1-5-18/)
+      expect(status).to be_kind_of(Process::Status)
+      expect(status.exitstatus).to eq(0)
+    end
+
+    it "returns true if the `onlyif` check command succeeds" do
+      resource[:onlyif] = command
+
+      resource.parameter(:onlyif).check(command).should be_true
+    end
+
+    it "returns false if the `unless` check command succeeds" do
+      resource[:unless] = command
+
+      resource.parameter(:unless).check(command).should be_false
     end
   end
 
