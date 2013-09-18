@@ -1,5 +1,6 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
+require 'puppet/util'
 
 describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.microsoft_windows? do
   let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
@@ -17,7 +18,7 @@ describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.
     end
   }
 
-  describe "#run" do
+  describe "#run", :if => Puppet::Util.which('powershell.exe') do
     it "should quote powershell.exe path" do
       Puppet::Util::Execution.expects(:execute).
         with(regexp_matches(/^cmd.exe \/c ""#{Regexp.escape(powershell)}" .*"/), anything)
