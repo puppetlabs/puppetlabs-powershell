@@ -19,3 +19,7 @@ tags
 .bundle/
 Gemfile.lock
 Gemfile.local
+
+## IntelliJ / Rubymine
+.idea
+*.iml
