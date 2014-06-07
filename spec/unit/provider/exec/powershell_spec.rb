@@ -52,25 +52,25 @@ describe Puppet::Type.type(:exec).provider(:powershell), :if => Puppet.features.
     it "returns true if the `onlyif` check command succeeds" do
       resource[:onlyif] = command
 
-      resource.parameter(:onlyif).check(command).should be_true
+      expect(resource.parameter(:onlyif).check(command)).to eq(true)
     end
 
     it "returns false if the `unless` check command succeeds" do
       resource[:unless] = command
 
-      resource.parameter(:unless).check(command).should be_false
+      expect(resource.parameter(:unless).check(command)).to eq(false)
     end
   end
 
   describe "#checkexe" do
     it "should skip checking the exe" do
-      provider.checkexe(command).should be_nil
+      expect(provider.checkexe(command)).to be_nil
     end
   end
 
   describe "#validatecmd" do
     it "should always successfully validate the command to execute" do
-      provider.validatecmd(command).should be_true
+      expect(provider.validatecmd(command)).to eq(true)
     end
   end
 end
