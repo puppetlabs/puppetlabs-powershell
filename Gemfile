@@ -15,9 +15,18 @@ gem "facter", *location_for(ENV['FACTER_LOCATION'] || '~> 1.6')
 gem "hiera", *location_for(ENV['HIERA_LOCATION'] || '~> 1.0')
 
 group :development, :test do
-  gem 'rspec', "~> 2.11.0"
-  gem 'mocha', "~> 0.10.5"
-  gem 'puppetlabs_spec_helper'
+  gem 'rspec'
+  gem 'mocha'
+  gem 'mime-types', '<2.0',      :require => false
+  gem 'rake',                    :require => false
+  gem 'rspec-puppet',            :require => false
+  gem 'puppetlabs_spec_helper',  :require => false
+  gem 'serverspec',              :require => false
+  gem 'puppet-lint',             :require => false
+  gem 'pry',                     :require => false
+  gem 'simplecov',               :require => false
+  gem 'beaker',                  :require => false
+  gem 'beaker-rspec',            :require => false
 end
 
 # see http://projects.puppetlabs.com/issues/21698
