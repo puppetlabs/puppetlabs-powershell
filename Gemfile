@@ -25,8 +25,7 @@ group :development, :test do
   gem 'puppet-lint',             :require => false
   gem 'pry',                     :require => false
   gem 'simplecov',               :require => false
-  gem 'beaker',                  :require => false
-  gem 'beaker-rspec',            :require => false
+  gem 'beaker-rspec',            :require => false, :platforms => :ruby
 end
 
 # see http://projects.puppetlabs.com/issues/21698
