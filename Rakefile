@@ -5,7 +5,7 @@ task :default => :unit
 
 desc "Unit tests"
 RSpec::Core::RakeTask.new(:unit) do |t,args|
-  t.pattern     = 'spec/unit','spec/fixtures'
+  t.pattern     = 'spec/unit'
   t.rspec_opts  = '--color'
   t.verbose     = true
 end
