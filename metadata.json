@@ -1,0 +1,16 @@
+{
+  "name": "puppetlabs-powershell",
+  "version": "0.0.6",
+  "source": "git://github.com/puppetlabs/puppetlabs-powershell.git",
+  "author": "Puppet Labs",
+  "license": "Apache License, Version 2.0",
+  "summary": "A PowerShell provider for puppet.",
+  "description": "A PowerShell provider for puppet.",
+  "project_page": "http://links.puppetlabs.com/powershell-module",
+  "dependencies": [
+
+  ],
+  "types": [
+
+  ],
+}
