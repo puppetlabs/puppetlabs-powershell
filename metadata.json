@@ -12,9 +12,13 @@
         }
     ],
     "requirements": [
-        {
-            "name": "puppet",
-            "version_requirement": ">=2.7"
+	{
+	 "name": 		"pe",
+	 "version_requirement": "3.2"
+	},
+	{
+         "name": 		"puppet",
+         "version_requirement": "3.x"
         }
     ]
 }
