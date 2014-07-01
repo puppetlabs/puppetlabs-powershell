@@ -1,7 +1,6 @@
 require 'spec_helper_acceptance'
 
 describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
-
   shared_context 'powershell plugin sync' do
     proj_root = File.expand_path(File.join(File.dirname(__FILE__), '../..'))
     copy_root_module_to(master, {:module_name => 'powershell', :source => proj_root})
@@ -48,7 +47,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
     MANIFEST
 
     describe file('c:/services.txt') do
-      it_should_behave_like 'apply success', p2
+      apply_manifest(p2, :catch_failures => true)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
@@ -67,8 +66,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
 
   describe 'should be able to execute a ps1 file provided' do
     include_context 'powershell plugin sync'
-    describe 'without paramaters' do
-      p2 = <<-MANIFEST
+    p2 = <<-MANIFEST
     file{'c:/services.ps1':
       content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
     }
@@ -77,17 +75,16 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
       provider  => powershell,
       require   => File['c:/services.ps1']
     }
-      MANIFEST
-      it_should_behave_like 'apply success'
-      apply_manifest(p2, :catch_failures => true)
-    end
+    MANIFEST
     describe file('c:/temp/services.csv') do
+      apply_manifest(p2, :catch_failures => true)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
   end
 
   describe 'passing parameters to the ps1 file' do
+    include_context 'powershell plugin sync'
     outfile     = 'C:/temp/svchostprocess.txt'
     processName = 'svchost'
     pp          = <<-MANIFEST
@@ -102,16 +99,15 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
       require  => File['c:/param_script.ps1'],
     }
     MANIFEST
-
-    it_should_behave_like 'apply success', pp
-
     describe file(outfile) do
+      apply_manifest(pp, :catch_failures => true)
       it { should be_file }
       its(:content) { should match /svchost/ }
     end
   end
 
   describe 'should execute using 64 bit powershell' do
+    include_context 'powershell plugin sync'
     p3 = <<-MANIFEST
      $maxArchNumber = $::architecture? {
       /(?i)(i386|i686|x86)$/	=> 4,
@@ -139,6 +135,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'test admin rights' do
+    include_context 'powershell plugin sync'
     ps1 = <<-PS1
       $id = [Security.Principal.WindowsIdentity]::GetCurrent()
       $pr = New-Object Security.Principal.WindowsPrincipal $id
@@ -148,6 +145,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'test import-module' do
+    include_context 'powershell plugin sync'
     pimport = <<-PS1
       $mods = Get-Module -ListAvailable | Sort
       if($mods.Length -lt 1) {
