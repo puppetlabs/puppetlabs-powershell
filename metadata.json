@@ -1,25 +1,26 @@
 {
-    "name": "puppetlabs-powershell",
-    "version": "1.0.0",
-    "summary": "A PowerShell provider for puppet.",
-    "source": "git@github.com/puppetlabs/puppetlabs-powershell.git",
-    "project_page": "http://github.com/puppetlabs/puppetlabs-powershell",
-    "author": "Puppet Labs",
-    "license": "Apache-2.0",
-    "operatingsystem_support": [
-        {
-         "operatingsystem": "Windows"
-        }
-    ],
-    "requirements": [
-	{
-	 "name": 		"pe",
-	 "version_requirement": ">= 3.2 < 3.4"
-	},
-	{
-         "name": 		"puppet",
-         "version_requirement": "3.x"
-        }
-    ],
-    "dependencies": [ ]
+  "name": "puppetlabs-powershell",
+  "version": "1.0.0",
+  "summary": "A PowerShell provider for puppet.",
+  "source": "git@github.com/puppetlabs/puppetlabs-powershell.git",
+  "project_page": "http://github.com/puppetlabs/puppetlabs-powershell",
+  "author": "Puppet Labs",
+  "license": "Apache-2.0",
+  "operatingsystem_support": [
+    {
+      "operatingsystem": "Windows"
+    }
+  ],
+  "requirements": [
+    {
+	  "name": 		"pe",
+      "version_requirement": "> 3.2"
+    },
+    {
+      "name": 		"puppet",
+      "version_requirement": "3.x"
+
+    }
+  ],
+  "dependencies": [ ]
 }
