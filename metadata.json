@@ -9,7 +9,17 @@
   "issues_url": "https://git@github.com/puppetlabs/puppetlabs-powershell/issues",
   "operatingsystem_support": [
     {
-      "operatingsystem": "Windows"
+      "operatingsystem": "Windows",
+      "operatingsystemrelease": [
+        "Server 2003",
+        "Server 2003 R2",
+        "Server 2008",
+        "Server 2008 R2",
+        "Server 2012",
+        "Server 2012 R2",
+        "7",
+        "8"
+      ]
     }
   ],
   "requirements": [
