@@ -100,6 +100,7 @@ Since the powershell module is a provider for `exec` it enables the same paramet
 ##Limitations
 
  * This module requires PowerShell to be installed and the `powershell.exe` to be available in the system PATH.
+ * Only supported on Windows Server 2003 and above, and Windows 7 and 8
 
 ##Development
 
