@@ -5,7 +5,8 @@ require 'beaker-rspec/helpers/serverspec'
 UNSUPPORTED_PLATFORMS = ['debian', 'ubuntu', 'Solaris']
 
 unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
-  if hosts.first.is_pe?
+  is_foss = (ENV['IS_PE'] == 'no' || ENV['IS_PE'] == 'false') ? true : false
+  if hosts.first.is_pe? && !is_foss
     install_pe
   else
     proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
@@ -22,12 +23,9 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
         on host, "mkdir -p #{host['distmoduledir']}/powershell"
         result = on host, "echo #{host['distmoduledir']}/powershell"
         target = result.raw_output.chomp
-      elsif host['platform'] !~ /windows/i
-        install_puppet_from_gem host, {}
-        on host, "mkdir -p #{host['distmoduledir']}/powershell"
-      end
-      %w(lib metadata.json).each do |file|
-        scp_to host, "#{proj_root}/#{file}", target
+        %w(lib metadata.json).each do |file|
+          scp_to host, "#{proj_root}/#{file}", target
+        end
       end
     end
   end
