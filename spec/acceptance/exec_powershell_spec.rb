@@ -1,12 +1,6 @@
 require 'spec_helper_acceptance'
 
-describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
-  shared_context 'powershell plugin sync' do
-    proj_root = File.expand_path(File.join(File.dirname(__FILE__), '../..'))
-    copy_root_module_to(master, {:module_name => 'powershell', :source => proj_root})
-    on agents, puppet("plugin download --server #{master}")
-  end
-
+describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
       expect { apply_manifest(manifest, :catch_failures => true) }.to raise_error(error_check)
@@ -20,7 +14,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'should run successfully' do
-    include_context 'powershell plugin sync'
+
     p1 = <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Get-Process > c:/process.txt',
@@ -38,7 +32,7 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'should be able to access the files after execution' do
-    include_context 'powershell plugin sync'
+
     p2 = <<-MANIFEST
       exec{"TestPowershell":
         command   => 'Get-Service *puppet* | Out-File -FilePath C:/services.txt -Encoding UTF8',
@@ -54,7 +48,6 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'should catch and rethrow exceptions up to puppet' do
-    include_context 'powershell plugin sync'
     pexception = <<-MANIFEST
       exec{'PowershellException':
         provider  => powershell,
@@ -65,7 +58,6 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'should be able to execute a ps1 file provided' do
-    include_context 'powershell plugin sync'
     p2 = <<-MANIFEST
     file{'c:/services.ps1':
       content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
@@ -84,10 +76,9 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'passing parameters to the ps1 file' do
-    include_context 'powershell plugin sync'
-    outfile     = 'C:/temp/svchostprocess.txt'
+    outfile = 'C:/temp/svchostprocess.txt'
     processName = 'svchost'
-    pp          = <<-MANIFEST
+    pp = <<-MANIFEST
       $process = '#{processName}'
       $outFile = '#{outfile}'
     file{'c:/param_script.ps1':
@@ -107,7 +98,6 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'should execute using 64 bit powershell' do
-    include_context 'powershell plugin sync'
     p3 = <<-MANIFEST
      $maxArchNumber = $::architecture? {
       /(?i)(i386|i686|x86)$/	=> 4,
@@ -135,7 +125,6 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'test admin rights' do
-    include_context 'powershell plugin sync'
     ps1 = <<-PS1
       $id = [Security.Principal.WindowsIdentity]::GetCurrent()
       $pr = New-Object Security.Principal.WindowsPrincipal $id
@@ -145,7 +134,6 @@ describe 'powershell provider:', :unless => UNSUPPORTED_PLATFORMS.include?(fact(
   end
 
   describe 'test import-module' do
-    include_context 'powershell plugin sync'
     pimport = <<-PS1
       $mods = Get-Module -ListAvailable | Sort
       if($mods.Length -lt 1) {
