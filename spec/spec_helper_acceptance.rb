@@ -19,15 +19,16 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
                                     :win_download_url => download_url,
                                     :version => version
                                 })
-        step "Install Powershell to host"
-        on host, "mkdir -p #{host['distmoduledir']}/powershell"
-        result = on host, "echo #{host['distmoduledir']}/powershell"
-        target = result.raw_output.chomp
-        %w(lib metadata.json).each do |file|
-          scp_to host, "#{proj_root}/#{file}", target
-        end
       end
     end
+  end
+
+  step "Install Powershell to host"
+  on host, "mkdir -p #{host['distmoduledir']}/powershell"
+  result = on host, "echo #{host['distmoduledir']}/powershell"
+  target = result.raw_output.chomp
+  %w(lib metadata.json).each do |file|
+    scp_to host, "#{proj_root}/#{file}", target
   end
 end
 
