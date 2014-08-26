@@ -24,8 +24,8 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
   end
 
   step "Install Powershell to default host"
-  on default, "mkdir -p #{host['distmoduledir']}/powershell"
-  result = on default, "echo #{host['distmoduledir']}/powershell"
+  on default, "mkdir -p #{default['distmoduledir']}/powershell"
+  result = on default, "echo #{default['distmoduledir']}/powershell"
   target = result.raw_output.chomp
   %w(lib metadata.json).each do |file|
     scp_to default, "#{proj_root}/#{file}", target
