@@ -9,7 +9,6 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
   if hosts.first.is_pe? && !is_foss
     install_pe
   else
-    proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
     version = ENV['PUPPET_VERSION'] || '3.6.2'
     download_url = ENV['WIN_DOWNLOAD_URL'] || 'http://downloads.puppetlabs.com/windows/'
     hosts.each do |host|
@@ -27,6 +26,7 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
   on default, "mkdir -p #{default['distmoduledir']}/powershell"
   result = on default, "echo #{default['distmoduledir']}/powershell"
   target = result.raw_output.chomp
+  proj_root = File.expand_path(File.join(File.dirname(__FILE__), '..'))
   %w(lib metadata.json).each do |file|
     scp_to default, "#{proj_root}/#{file}", target
   end
