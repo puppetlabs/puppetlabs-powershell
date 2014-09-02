@@ -1,3 +1,8 @@
+##2014-08-25 - Supported Release 1.0.3
+###Summary
+
+This release updates the tests to verify that powershell continues to function on x64-native ruby.
+
 ##2014-07-15 - Supported Release 1.0.2
 ###Summary
 
