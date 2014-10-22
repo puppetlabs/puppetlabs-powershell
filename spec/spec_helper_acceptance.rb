@@ -3,13 +3,14 @@ require 'beaker-rspec/helpers/serverspec'
 
 
 UNSUPPORTED_PLATFORMS = ['debian', 'ubuntu', 'Solaris']
+FUTURE_PARSER = ENV['FUTURE_PARSER'] == 'true' || false
 
 unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
   is_foss = (ENV['IS_PE'] == 'no' || ENV['IS_PE'] == 'false') ? true : false
   if hosts.first.is_pe? && !is_foss
     install_pe
   else
-    version = ENV['PUPPET_VERSION'] || '3.6.2'
+    version = ENV['PUPPET_VERSION'] || '3.7.1'
     download_url = ENV['WIN_DOWNLOAD_URL'] || 'http://downloads.puppetlabs.com/windows/'
     hosts.each do |host|
       if host['platform'] =~ /windows/i

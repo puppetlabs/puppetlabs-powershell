@@ -3,13 +3,13 @@ require 'spec_helper_acceptance'
 describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
-      expect { apply_manifest(manifest, :catch_failures => true) }.to raise_error(error_check)
+      expect { apply_manifest(manifest, :catch_failures => true, :future_parser => FUTURE_PARSER) }.to raise_error(error_check)
     end
   end
 
   shared_examples 'apply success' do |manifest|
     it 'should succeed' do
-      apply_manifest(manifest, :catch_failures => true)
+      apply_manifest(manifest, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
   end
 
@@ -24,10 +24,10 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     MANIFEST
     it 'should not error on first run' do
       # Run it twice and test for idempotency
-      apply_manifest(p1, :catch_failures => true)
+      apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
     it 'should be idempotent' do
-      expect(apply_manifest(p1, :catch_failures => true).exit_code).to be_zero
+      expect(apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER).exit_code).to be_zero
     end
   end
 
@@ -41,7 +41,7 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     MANIFEST
 
     describe file('c:/services.txt') do
-      apply_manifest(p2, :catch_failures => true)
+      apply_manifest(p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
@@ -69,7 +69,7 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     }
     MANIFEST
     describe file('c:/temp/services.csv') do
-      apply_manifest(p2, :catch_failures => true)
+      apply_manifest(p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
@@ -91,7 +91,7 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     }
     MANIFEST
     describe file(outfile) do
-      apply_manifest(pp, :catch_failures => true)
+      apply_manifest(pp, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /svchost/ }
     end
@@ -120,7 +120,7 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
       }
     MANIFEST
     it 'should not fail' do
-      apply_manifest(padmin, :catch_failures => true)
+      apply_manifest(padmin, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
   end
 
