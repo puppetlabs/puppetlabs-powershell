@@ -1,3 +1,9 @@
+##2014-11-04 - Supported Release 1.0.4
+###Summary
+
+Fix Issues URL
+Add Future Parser testing support
+
 ##2014-08-25 - Supported Release 1.0.3
 ###Summary
 
