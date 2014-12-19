@@ -2,7 +2,7 @@
   "name": "puppetlabs-powershell",
   "version": "1.0.4",
   "author": "Puppet Labs",
-  "summary": "A PowerShell provider for puppet.",
+  "summary": "Adds a new exec provider for executing PowerShell commands.",
   "license": "Apache-2.0",
   "source": "https://github.com/puppetlabs/puppetlabs-powershell",
   "project_page": "https://github.com/puppetlabs/puppetlabs-powershell",
