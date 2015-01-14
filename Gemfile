@@ -14,24 +14,16 @@ gem "puppet", *location_for(ENV['PUPPET_LOCATION'] || '~> 3.4.0')
 gem "facter", *location_for(ENV['FACTER_LOCATION'] || '~> 1.6')
 gem "hiera", *location_for(ENV['HIERA_LOCATION'] || '~> 1.0')
 
-beaker_version = ENV['BEAKER_VERSION']
+beaker_rspec_version = ENV['BEAKER_RSPEC_VERSION'] || '~> 4.0'
 group :development, :test do
   gem 'rspec'
   gem 'mocha'
   gem 'mime-types', '<2.0',      :require => false
   gem 'rake',                    :require => false
-  gem 'rspec-puppet',            :require => false
   gem 'puppetlabs_spec_helper',  :require => false
-  gem 'serverspec',              :require => false
   gem 'puppet-lint',             :require => false
-  gem 'pry',                     :require => false
   gem 'simplecov',               :require => false
-  if beaker_version
-    gem 'beaker', *location_for(beaker_version)
-  else
-    gem 'beaker',                :require => false, :platforms => :ruby
-  end
-  gem 'beaker-rspec',            :require => false, :platforms => :ruby
+  gem 'beaker-rspec', *location_for(beaker_rspec_version)
 end
 
 # see http://projects.puppetlabs.com/issues/21698
