@@ -14,6 +14,7 @@ gem "puppet", *location_for(ENV['PUPPET_LOCATION'] || '~> 3.4.0')
 gem "facter", *location_for(ENV['FACTER_LOCATION'] || '~> 1.6')
 gem "hiera", *location_for(ENV['HIERA_LOCATION'] || '~> 1.0')
 
+beaker_version = ENV['BEAKER_VERSION']
 beaker_rspec_version = ENV['BEAKER_RSPEC_VERSION'] || '~> 4.0'
 group :development, :test do
   gem 'rspec'
@@ -23,7 +24,14 @@ group :development, :test do
   gem 'puppetlabs_spec_helper',  :require => false
   gem 'puppet-lint',             :require => false
   gem 'simplecov',               :require => false
-  gem 'beaker-rspec', *location_for(beaker_rspec_version)
+  if beaker_version
+    gem 'beaker', *location_for(beaker_version)
+  end
+  if beaker_rspec_version
+    gem 'beaker-rspec', *location_for(beaker_rspec_version)
+  else
+    gem 'beaker-rspec',  :require => false
+  end
 end
 
 # see http://projects.puppetlabs.com/issues/21698
