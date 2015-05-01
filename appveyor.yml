@@ -1,6 +1,6 @@
 version: 1.0.x.{build}
-platform:
-- x64
+skip_commits:
+  message: /(^\(?doc\)?.*|.*[A|a]cceptance [T|t]est.*)/
 clone_depth: 10
 init:
 - SET
@@ -17,16 +17,25 @@ environment:
   - PUPPET_GEM_VERSION: 3.7.5
     RUBY_VER: 200-x64
   - PUPPET_GEM_VERSION: 4.0.0
-    RUBY_VER: 215
+    RUBY_VER: 21
   - PUPPET_GEM_VERSION: 4.0.0
-    RUBY_VER: 215-x64
+    RUBY_VER: 21-x64
+matrix:
+  fast_finish: true
 install:
 - SET PATH=C:\Ruby%RUBY_VER%\bin;%PATH%
 - gem install bundler --quiet --no-ri --no-rdoc
-- bundle install --without development test
+- bundle install --jobs 4 --retry 2 --without development
 - type Gemfile.lock
 build: off
 test_script:
 - bundle exec puppet -V
 - ruby -v
-- bundle exec rspec spec
+- bundle exec rspec spec/unit -fd -b
+notifications:
+- provider: Email
+  to:
+  - nobody@nowhere.com
+  on_build_success: false
+  on_build_failure: false
+  on_build_status_changed: false
