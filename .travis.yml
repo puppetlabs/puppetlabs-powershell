@@ -14,7 +14,7 @@ matrix:
     env: PUPPET_GEM_VERSION="~> 4.0"
   - rvm: 2.1.5
     env: PUPPET_GEM_VERSION="~> 3.0" FUTURE_PARSER="yes"
-  allow_falures:
+  allow_failures:
     - rvm: 2.1.5
       env: PUPPET_GEM_VERSION="~> 4.0"
 notifications:
