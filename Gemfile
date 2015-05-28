@@ -13,9 +13,7 @@ end
 group :development do
   gem 'rspec', '~>3.0',          :require => false
   gem 'puppetlabs_spec_helper',  :require => false
-  gem 'simplecov',               :require => false
   gem 'puppet_facts',            :require => false
-  gem 'json',                    :require => false
   gem 'mocha', '~>0.10.5',       :require => false
 end
 group :system_tests do
@@ -33,18 +31,14 @@ end
 
 
 platforms :mswin, :mingw, :x64_mingw do
-  gem "ffi", "~> 1.9.0", :require => false
-  gem "win32-api", "~> 1.4.8", :require => false
-  gem "win32-dir", "~> 0.3", :require => false
-  gem "win32-eventlog", "~> 0.5", :require => false
-  gem "win32-process", "~> 0.6", :require => false
-  gem "win32-security", "~> 0.1", :require => false
-  gem "win32-service", "~> 0.7", :require => false
-  gem "win32-taskscheduler", "~> 0.2", :require => false
+  gem "ffi", "~> 1.9", :require => false
   gem "win32console", "~> 1.3", :require => false
-  gem "windows-api", "~> 0.4", :require => false
-  gem "windows-pr", "~> 1.2", :require => false
-  gem "minitar", "~> 0.5.4", :require => false
+  gem "minitar", "~> 0.5", :require => false
+  gem "win32-dir", "~> 0.3", :require => false
+  gem "win32-eventlog", "~> 0.6", :require => false
+  gem "win32-process", "~> 0.6", :require => false
+  gem "win32-security", "~> 0.2", :require => false
+  gem "win32-service", "~> 0.8", :require => false
 end
 
 if facterversion = ENV['FACTER_GEM_VERSION']
