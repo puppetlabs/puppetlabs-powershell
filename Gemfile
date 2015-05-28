@@ -18,7 +18,6 @@ group :development do
   gem 'json',                    :require => false
   gem 'mocha', '~>0.10.5',       :require => false
 end
-
 group :system_tests do
   if beaker_version = ENV['BEAKER_VERSION']
     gem 'beaker', *location_for(beaker_version)
@@ -49,13 +48,13 @@ platforms :mswin, :mingw, :x64_mingw do
 end
 
 if facterversion = ENV['FACTER_GEM_VERSION']
-  gem 'facter', facterversion, :require => false
+  gem 'facter', *location_for(facterversion)
 else
   gem 'facter', :require => false
 end
 
 if puppetversion = ENV['PUPPET_GEM_VERSION']
-  gem 'puppet', puppetversion, :require => false
+  gem 'puppet', *location_for(puppetversion)
 else
   gem 'puppet', :require => false
 end
