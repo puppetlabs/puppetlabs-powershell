@@ -23,7 +23,6 @@ unless ENV['RS_PROVISION'] == 'no' or ENV['BEAKER_provision'] == 'no'
     end
   end
 
-  step "Install Powershell to default host"
   on default, "mkdir -p #{default['distmoduledir']}/powershell"
   result = on default, "echo #{default['distmoduledir']}/powershell"
   target = result.raw_output.chomp
