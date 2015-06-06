@@ -15,7 +15,7 @@ gem "facter", *location_for(ENV['FACTER_LOCATION'] || '~> 1.6')
 gem "hiera", *location_for(ENV['HIERA_LOCATION'] || '~> 1.0')
 
 beaker_version = ENV['BEAKER_VERSION']
-beaker_rspec_version = ENV['BEAKER_RSPEC_VERSION'] || '~> 4.0'
+beaker_rspec_version = ENV['BEAKER_RSPEC_VERSION'] || '~> 5.0'
 group :development, :test do
   gem 'rspec'
   gem 'mocha'
