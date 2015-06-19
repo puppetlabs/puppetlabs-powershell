@@ -32,6 +32,7 @@ group :development, :test do
   else
     gem 'beaker-rspec',  :require => false
   end
+  gem 'beaker-puppet_install_helper', :require => false
 end
 
 # see http://projects.puppetlabs.com/issues/21698
