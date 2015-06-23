@@ -3,6 +3,7 @@ require 'beaker-rspec/helpers/serverspec'
 require 'beaker/puppet_install_helper'
 
 UNSUPPORTED_PLATFORMS = ['debian', 'ubuntu', 'Solaris']
+FUTURE_PARSER = ENV['FUTURE_PARSER'] == 'true' || false
 
 run_puppet_install_helper
 
