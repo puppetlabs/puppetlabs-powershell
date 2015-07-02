@@ -8,13 +8,15 @@ matrix:
   include:
   - rvm: 1.9.3
     env: PUPPET_GEM_VERSION="~> 3.0"
-  - rvm: 2.1.5
+  - rvm: 2.0.0
     env: PUPPET_GEM_VERSION="~> 3.0"
   - rvm: 2.1.5
     env: PUPPET_GEM_VERSION="~> 4.0"
-  - rvm: 2.1.5
+  - rvm: 2.0.0
     env: PUPPET_GEM_VERSION="~> 3.0" FUTURE_PARSER="yes"
-  allow_falures:
+  - rvm: 1.9.3
+    env: PUPPET_GEM_VERSION="3.0.0"
+  allow_failures:
     - rvm: 2.1.5
       env: PUPPET_GEM_VERSION="~> 4.0"
 notifications:

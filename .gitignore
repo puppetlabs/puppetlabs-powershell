@@ -1,25 +1,17 @@
-## MAC OS
-.DS_Store
-
-## TEXTMATE
-*.tmproj
-tmtags
-
-## EMACS
-*~
-\#*
-.\#*
-
-## VIM
-*.swp
-tags
-
-.rspec
-.*.sw[op]
-.bundle/
+pkg/
 Gemfile.lock
 Gemfile.local
-
-## IntelliJ / Rubymine
-.idea
+vendor/
+spec/fixtures/
+log/
+junit/
+.vagrant/
+.bundle/
+coverage/
+.idea/
+.metadata
 *.iml
+.*.sw[op]
+.DS_Store
+.rspec
+

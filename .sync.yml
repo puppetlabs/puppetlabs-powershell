@@ -1,11 +1,31 @@
 ---
 .travis.yml:
   script: "\"bundle exec rake validate && bundle exec rake lint && bundle exec rake spec SPEC_OPTS='--color --format documentation'\""
-Rakefile:
-  unmanaged: true
+  extras:
+  - rvm: 1.9.3
+    env: PUPPET_GEM_VERSION="3.0.0"
 Gemfile:
+  supports_windows: true
+  required:
+    ':development':
+      - gem: rake
+      - gem: rspec
+        version: '~>2.14.0'
+      - gem: puppet-lint
+      - gem: puppetlabs_spec_helper
+      - gem: puppet_facts
+      - gem: mocha
+        version: '~>0.10.5'
+    ':system_tests':
+      - gem: beaker
+      - gem: beaker-puppet_install_helper
+Rakefile:
   unmanaged: true
 spec/spec_helper.rb:
   unmanaged: true
-.gitignore:
-  unmanaged: true
+appveyor.yml:
+  matrix_extras:
+    - PUPPET_GEM_VERSION: 3.0.0
+      RUBY_VER: 193
+  test_script:
+    - 'bundle exec rspec spec/unit -fd -b'
