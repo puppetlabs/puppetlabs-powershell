@@ -56,7 +56,11 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def native_path(path)
-    path.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+    if Puppet::Util::Platform.windows?
+      path.gsub(File::SEPARATOR, File::ALT_SEPARATOR)
+    else
+      path
+    end
   end
 
   def args
