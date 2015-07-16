@@ -36,6 +36,11 @@ end
 
 group :system_tests do
   gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.18')
+  if beaker_rspec_version = ENV['BEAKER_RSPEC_VERSION']
+    gem 'beaker-rspec', *location_for(beaker_rspec_version)
+  else
+    gem 'beaker-rspec',  :require => false
+  end
   gem 'beaker-puppet_install_helper',  :require => false
 end
 
@@ -93,6 +98,9 @@ if explicitly_require_windows_gems
   # Puppet 3.5.0+ will control the actual requirements.
   # These are listed in formats that work with all versions of
   # Puppet from 3.0.0 to 3.6.x. After that, these were no longer used.
+  # We do not want to allow newer versions than what came out after
+  # 3.6.x to be used as they constitute some risk in breaking older
+  # functionality. So we set these to exact versions.
   gem "sys-admin", "1.5.6",           :require => false
   gem "win32-api", "1.4.8",           :require => false
   gem "win32-taskscheduler", "0.2.2", :require => false
