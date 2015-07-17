@@ -27,7 +27,7 @@ end
 
 group :development do
   gem 'rake',                    :require => false
-  gem 'rspec', '~>2.14.0',       :require => false
+  gem 'rspec', '~>2.14.1',       :require => false
   gem 'puppet-lint',             :require => false
   gem 'puppetlabs_spec_helper',  :require => false
   gem 'puppet_facts',            :require => false
