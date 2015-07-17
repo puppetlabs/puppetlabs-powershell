@@ -10,7 +10,7 @@ Gemfile:
     ':development':
       - gem: rake
       - gem: rspec
-        version: '~>2.14.0'
+        version: '~>2.14.1'
       - gem: puppet-lint
       - gem: puppetlabs_spec_helper
       - gem: puppet_facts
@@ -18,6 +18,7 @@ Gemfile:
         version: '~>0.10.5'
     ':system_tests':
       - gem: beaker
+      - gem: beaker-rspec
       - gem: beaker-puppet_install_helper
 Rakefile:
   unmanaged: true
