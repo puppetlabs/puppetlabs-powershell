@@ -1,3 +1,12 @@
+##2015-07-28 - Supported Release 1.0.5
+###Summary
+
+Add metadata for Puppet 4 and PE 2015.2.0
+
+###Bug Fixes
+- Minor testing bug fixes
+- Readme cleanup
+
 ##2014-11-04 - Supported Release 1.0.4
 ###Summary
 
