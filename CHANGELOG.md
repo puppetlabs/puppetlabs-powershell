@@ -1,3 +1,8 @@
+##2015-12-08 - Supported Release 1.0.6
+###Summary
+
+Small release for support of newer PE versions.
+
 ##2015-07-28 - Supported Release 1.0.5
 ###Summary
 
@@ -24,7 +29,7 @@ This release updates the tests to verify that powershell continues to function o
 This release merely updates metadata.json so the module can be uninstalled and
 upgraded via the puppet module command.
 
-##2014-07-09 - Release 1.0.1 
+##2014-07-09 - Release 1.0.1
 ###Summary
 
 Fix issue with metadata and PE version requirement
