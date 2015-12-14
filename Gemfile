@@ -32,11 +32,15 @@ group :development do
   gem 'puppetlabs_spec_helper', '~>0.10.3',  :require => false
   gem 'puppet_facts',                        :require => false
   gem 'mocha', '~>0.10.5',                   :require => false
+  gem 'pry',                                 :require => false
+  gem 'pry-stack_explorer',                  :require => false
+  gem 'pry-byebug',                          :require => false if RUBY_VERSION >= '2.0'
+  gem 'pry-debugger',                        :require => false if RUBY_VERSION < '2.0'
 end
 
 group :system_tests do
-  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.20')
   gem 'beaker-rspec', *location_for(ENV['BEAKER_RSPEC_VERSION'] || '~> 5.1')
+  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.20')
   gem 'beaker-puppet_install_helper',  :require => false
 end
 
@@ -110,6 +114,11 @@ end
 
 if File.exists? "#{__FILE__}.local"
   eval(File.read("#{__FILE__}.local"), binding)
+end
+
+# Evaluate ~/.gemfile
+if File.exists?(File.join(Dir.home, '.gemfile'))
+  eval(File.read(File.join(Dir.home, '.gemfile')), binding)
 end
 
 # vim:ft=ruby
