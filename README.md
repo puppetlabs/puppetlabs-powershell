@@ -72,7 +72,7 @@ $obj = $(Get-WMIObject Win32_UserAccount -Filter "Name='Guest'")
 $obj.Rename("OtherGuest")
 ~~~
 
-This has the added benefit of not requiring escaping '$' in the PowerShell code.
+This has the added benefit of not requiring escaping '$' in the PowerShell code. Note that templates need to have DOS linefeeds or they will not work as expected. One tool for converting UNIX linefeeds to DOS linefeeds is [unix2dos](http://freecode.com/projects/dos2unix).
 
 ##Reference
 
