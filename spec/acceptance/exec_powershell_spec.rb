@@ -18,17 +18,131 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     p1 = <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Get-Process > c:/process.txt',
-        unless	=> 'if(!(test-path "c:/process.txt")){exit 1}',
+        unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
         provider  => powershell,
       }
     MANIFEST
+
     it 'should not error on first run' do
       # Run it twice and test for idempotency
       apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
+
     it 'should be idempotent' do
       expect(apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER).exit_code).to be_zero
     end
+
+  end
+
+  describe 'should run commands that exit session' do
+
+    exit_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'exit 0',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should not error on first run' do
+      apply_manifest(exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should run a second time' do
+      apply_manifest(exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
+  describe 'should run commands that break session' do
+
+    break_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'Break',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should not error on first run' do
+      apply_manifest(break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should run a second time' do
+      apply_manifest(break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
+  describe 'should run commands that return from session' do
+
+    return_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'return 0',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should not error on first run' do
+      apply_manifest(return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should run a second time' do
+      apply_manifest(return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
+  describe 'should not leak variables across calls to single session' do
+
+    var_leak_setup_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => '$special=1',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    var_leak_test_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should not see variable from previous run' do
+      # Setup the variable
+      apply_manifest(var_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+
+      # Test to see if subsequent call sees the variable
+      apply_manifest(var_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
+  describe 'should allow exit from unless' do
+
+    unless_not_triggered_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'exit 0',
+        unless    => 'exit 1',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    unless_triggered_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'exit 0',
+        unless    => 'exit 0',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should RUN command if unless is NOT triggered' do
+      apply_manifest(unless_not_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should NOT run command if unless IS triggered' do
+      apply_manifest(unless_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
   end
 
   describe 'should be able to access the files after execution' do
