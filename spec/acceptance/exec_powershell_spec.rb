@@ -145,6 +145,34 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
 
   end
 
+  describe 'should allow exit from onlyif' do
+
+    onlyif_not_triggered_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'exit 0',
+        onlyif    => 'exit 1',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    onlyif_triggered_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => 'exit 0',
+        onlyif    => 'exit 0',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should NOT run command if onlyif is NOT triggered' do
+      apply_manifest(onlyif_not_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should RUN command if onlyif IS triggered' do
+      apply_manifest(onlyif_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
   describe 'should be able to access the files after execution' do
 
     p2 = <<-MANIFEST
