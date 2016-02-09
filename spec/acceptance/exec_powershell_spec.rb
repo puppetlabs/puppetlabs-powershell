@@ -117,6 +117,54 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
 
   end
 
+  describe 'should not leak environment variables across calls to single session' do
+
+    envar_leak_setup_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => "\\$env:superspecial='1'",
+        provider  => powershell,
+      }
+    MANIFEST
+
+    envar_leak_test_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
+        provider  => powershell,
+      }
+    MANIFEST
+
+    envar_ext_test_pp = <<-MANIFEST
+      exec{'TestPowershell':
+        command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
+        provider  => powershell,
+      }
+    MANIFEST
+
+    after(:each) do
+      on(default, powershell("'Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'"))
+      on(default, powershell("'Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'"))
+    end
+
+    it 'should not see environment variable from previous run' do
+      # Setup the environment variable
+      apply_manifest(envar_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+
+      # Test to see if subsequent call sees the environment variable
+      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+    it 'should see environment variables set outside of session' do
+      # Setup the environment variable outside of Puppet
+      on(default, powershell("\\$env:outside='1'"))
+
+      # Test to see if initial run sees the environment variable
+      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+
+      # Test to see if subsequent call sees the environment variable and environment purge
+      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+  end
+
   describe 'should allow exit from unless' do
 
     unless_not_triggered_pp = <<-MANIFEST
@@ -227,8 +275,8 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
       content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script.ps1')).read()}'
     }
     exec{'run this with param':
-	    provider => powershell,
-	    command	 => "c:/param_script.ps1 -ProcessName '$process' -FileOut '$outFile'",
+      provider => powershell,
+      command	 => "c:/param_script.ps1 -ProcessName '$process' -FileOut '$outFile'",
       require  => File['c:/param_script.ps1'],
     }
     MANIFEST
@@ -247,8 +295,8 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
       default => 0
     }
     exec{'Test64bit':
-	    command => "if([IntPtr]::Size -eq $maxArchNumber) { exit 0 } else { Write-Error 'Architecture mismatch' }",
-	    provider => powershell
+      command => "if([IntPtr]::Size -eq $maxArchNumber) { exit 0 } else { Write-Error 'Architecture mismatch' }",
+      provider => powershell
     }
     MANIFEST
     it_should_behave_like 'apply success', p3
