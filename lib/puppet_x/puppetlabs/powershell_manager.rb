@@ -1,9 +1,11 @@
+require 'rexml/document'
 require 'securerandom'
 require 'open3'
+require 'base64'
 require 'ffi' if Puppet::Util::Platform.windows?
 
 module PuppetX
-  module Dsc
+  module PowerShell
     class PowerShellManager
       extend FFI::Library if Puppet::Util::Platform.windows?
 
@@ -25,7 +27,7 @@ module PuppetX
       end
 
       def initialize(cmd)
-        @stdin, @stdout, @ps_process = Open3.popen2(cmd)
+        @stdin, @stdout, @stderr, @ps_process = Open3.popen3(cmd)
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
@@ -37,9 +39,26 @@ module PuppetX
         output_ready_event = self.class.create_event(output_ready_event_name)
 
         code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms)
-        out = exec_read_result(code, output_ready_event)
 
-        { :stdout => out }
+        out, err = exec_read_result(code, output_ready_event)
+
+        # Powershell adds in newline characters as it tries to wrap output around the display (by default 80 chars).
+        # This behavior is expected and cannot be changed, however it corrupts the XML e.g. newlines in the middle of
+        # element names; So instead, part of the XML is Base64 encoded prior to being put on STDOUT and in ruby all
+        # newline characters are stripped. Then where required decoded from Base64 back into text
+        out = REXML::Document.new(out.gsub(/\n/,""))
+
+        # picks up exitcode, errormessage and stdout
+        props = REXML::XPath.each(out, '//Property').map do |prop|
+          name = prop.attributes['Name']
+          value = (name == 'exitcode') ?
+            prop.text.to_i :
+            (prop.text.nil? ? nil : Base64.decode64(prop.text))
+          [name.to_sym, value]
+        end
+        props << [:stderr, err]
+
+        Hash[ props ]
       ensure
         CloseHandle(output_ready_event) if output_ready_event
       end
@@ -49,6 +68,7 @@ module PuppetX
         @stdin.puts "\nexit\n"
         @stdin.close
         @stdout.close
+        @stderr.close
 
         exit_msg = "PowerShell process did not terminate in reasonable time"
         begin
@@ -152,11 +172,12 @@ module PuppetX
         raise Puppet::Util::Windows::Error.new(msg)
       end
 
-      def drain_stdout
+      def drain_pipe(pipe, iterations = 10)
         output = []
-        while self.class.is_readable?(@stdout, 0.1) do
-          l = @stdout.gets
-          Puppet.debug "#{Time.now} STDOUT> #{l}"
+        0.upto(iterations) do
+          break if !self.class.is_readable?(pipe, 0.1)
+          l = pipe.gets
+          Puppet.debug "#{Time.now} PIPE> #{l}"
           output << l
         end
         output
@@ -164,22 +185,32 @@ module PuppetX
 
       def read_stdout(output_ready_event, wait_interval_ms = 50)
         output = []
+        errors = []
         waited = 0
 
         # drain the pipe while waiting for the event signal
         while WAIT_TIMEOUT == self.class.wait_on(output_ready_event, wait_interval_ms)
-          output << drain_stdout
+          # TODO: While this does ensure that both pipes have been
+          # drained it can block on either longer than necessary or
+          # deadlock waiting for one or the other to finish. The correct
+          # way to deal with this is to drain each pipe from seperate threads
+          # but time ran on in this implementation and this will be addressed soon
+          output << drain_pipe(@stdout)
+          errors << drain_pipe(@stderr)
           waited += wait_interval_ms
         end
 
         Puppet.debug "Waited #{waited} total milliseconds."
 
         # once signaled, ensure everything has been drained
-        output << drain_stdout
+        output << drain_pipe(@stdout, 1000)
+        errors << drain_pipe(@stderr, 1000)
 
-        output.join('')
+        errors = errors.reject { |e| e.empty? }
+
+        return output.join(''), errors
       rescue => e
-        msg = "Error reading STDOUT: #{e}"
+        msg = "Error reading PIPE: #{e}"
         raise Puppet::Util::Windows::Error.new(msg)
       end
 

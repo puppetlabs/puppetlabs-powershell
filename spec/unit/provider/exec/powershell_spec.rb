@@ -1,6 +1,7 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
+require 'puppet_x/puppetlabs/powershell_manager'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 
@@ -30,6 +31,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   describe "#run" do
     context "stubbed calls" do
       before :each do
+        PuppetX::PowerShell::PowerShellManager.stubs(:supported?).returns(false)
         Puppet::Provider::Exec.any_instance.stubs(:run)
       end
 
