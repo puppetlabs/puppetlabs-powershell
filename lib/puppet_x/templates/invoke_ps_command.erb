@@ -1,0 +1,259 @@
+$hostSource = @"
+using System;
+using System.Globalization;
+using System.Management.Automation.Host;
+using System.Threading;
+
+public class PuppetPSHost : PSHost
+{
+    private Guid _hostId = Guid.NewGuid();
+    private bool shouldExit;
+    private int exitCode;
+
+    public PuppetPSHost () {}
+
+    public bool ShouldExit
+    {
+        get { return this.shouldExit; }
+    }
+
+    public int ExitCode
+    {
+        get { return this.exitCode; }
+    }
+
+    public void ResetExitStatus()
+    {
+      this.exitCode = 0;
+      this.shouldExit = false;
+    }
+
+    public override Guid InstanceId
+    {
+        get { return _hostId; }
+    }
+
+    public override string Name
+    {
+        get { return "PuppetPSHost"; }
+    }
+
+    public override Version Version
+    {
+        get { return new Version(1, 0); }
+    }
+
+    public override PSHostUserInterface UI
+    {
+        get { return null; }
+    }
+
+    public override CultureInfo CurrentCulture
+    {
+        get { return Thread.CurrentThread.CurrentCulture; }
+    }
+
+    public override CultureInfo CurrentUICulture
+    {
+        get { return Thread.CurrentThread.CurrentUICulture; }
+    }
+
+    public override void EnterNestedPrompt()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void ExitNestedPrompt()
+    {
+        throw new NotImplementedException();
+    }
+
+    public override void NotifyBeginApplication()
+    {
+        return;
+    }
+
+    public override void NotifyEndApplication()
+    {
+        return;
+    }
+
+    public override void SetShouldExit(int exitCode)
+    {
+      this.shouldExit = true;
+      this.exitCode = exitCode;
+    }
+}
+"@
+
+function New-XmlResult
+{
+  param(
+    [Parameter()]$exitcode,
+    [Parameter()]$output,
+    [Parameter()]$errormessage
+  )
+
+  # we make our own xml because ConvertTo-Xml makes hard to parse xml ruby side
+  # and we need to be sure
+  $xml = [xml]@"
+<ReturnResult>
+  <Property Name='exitcode'>$($exitcode)</Property>
+  <Property Name='errormessage'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$errormessage)))</Property>
+  <Property Name='stdout'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$output)))</Property>
+</ReturnResult>
+"@
+  $xml.OuterXml
+}
+
+#this is a string so we can import into our dynamic PS instance
+$ourFunctions = @'
+function Get-ProcessEnvironmentVariables
+{
+  $processVars = [Environment]::GetEnvironmentVariables('Process').Keys |
+    % -Begin { $h = @{} } -Process { $h.$_ = (Get-Item Env:\$_).Value } -End { $h }
+
+  # eliminate Machine / User vars so that we have only process vars
+  'Machine', 'User' |
+    % { [Environment]::GetEnvironmentVariables($_).GetEnumerator() } |
+    ? { $processVars.ContainsKey($_.Name) -and ($processVars[$_.Name] -eq $_.Value) } |
+    % { $processVars.Remove($_.Name) }
+
+  $processVars.GetEnumerator() | Sort-Object Name
+}
+
+function Reset-ProcessEnvironmentVariables
+{
+  param($processVars)
+
+  # query Machine vars from registry, ensuring expansion EXCEPT for PATH
+  $vars = [Environment]::GetEnvironmentVariables('Machine').GetEnumerator() |
+    % -Begin { $h = @{} } -Process { $v = if ($_.Name -eq 'Path') { $_.Value } else { [Environment]::GetEnvironmentVariable($_.Name, 'Machine') }; $h."$($_.Name)" = $v } -End { $h }
+
+  # query User vars from registry, ensuring expansion EXCEPT for PATH
+  [Environment]::GetEnvironmentVariables('User').GetEnumerator() | % {
+      if ($_.Name -eq 'Path') { $vars[$_.Name] += ';' + $_.Value }
+      else
+      {
+        $value = [Environment]::GetEnvironmentVariable($_.Name, 'User')
+        $vars[$_.Name] = $value
+      }
+    }
+
+  $processVars.GetEnumerator() | % { $vars[$_.Name] = $_.Value }
+
+  Remove-Item -Path Env:\* -ErrorAction SilentlyContinue -WarningAction SilentlyContinue -Recurse -Verbose
+
+  $vars.GetEnumerator() | % { Set-Item -Path "Env:\$($_.Name)" -Value $_.Value -Verbose }
+}
+
+function Reset-ProcessPowerShellVariables
+{
+  param($psVariables)
+  $psVariables | %{
+    $tempVar = $_
+    if(-not(Get-Variable -Name $_.Name -ErrorAction SilentlyContinue)){
+      New-Variable -Name $_.Name -Value $_.Value -Description $_.Description -Option $_.Options -Visibility $_.Visibility
+    }
+  }
+}
+'@
+
+Add-Type -TypeDefinition $hostSource -Language CSharp
+
+$event = [System.Threading.EventWaitHandle]::OpenExisting("<%= output_ready_event_name %>")
+
+if ($runspace -eq $null){
+  # CreateDefault2 requires PS3
+  if ([System.Management.Automation.Runspaces.InitialSessionState].GetMethod('CreateDefault2')){
+    $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault2()
+  }else{
+    $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+  }
+
+  $puppetPSHost = New-Object PuppetPSHost
+  $runspace = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace($puppetPSHost, $sessionState)
+  $runspace.Open()
+}
+
+$powershell_code = @'
+<%= powershell_code %>
+'@
+
+try
+{
+  $ps = $null
+  $puppetPSHost.ResetExitStatus()
+
+  if($PSVersionTable.PSVersion -ge [Version]'3.0'){
+    $runspace.ResetRunspaceState()
+  }
+
+  $ps = [System.Management.Automation.PowerShell]::Create()
+  $ps.Runspace = $runspace
+
+  [Void]$ps.AddScript($ourFunctions)
+  $ps.Invoke()
+
+  if(!$environmentVariables){
+    $environmentVariables = $ps.AddCommand('Get-ProcessEnvironmentVariables').Invoke()
+  }
+
+  if($PSVersionTable.PSVersion -le [Version]'2.0'){
+    if(!$psVariables){
+      $psVariables = $ps.AddScript('Get-Variable').Invoke()
+    }
+    [void]$ps.AddScript('Get-Variable -Scope Global | Remove-Variable -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue')
+    $ps.Invoke()
+    [void]$ps.AddCommand('Reset-ProcessPowerShellVariables').AddParameter('psVariables', $psVariables)
+    $ps.Invoke()
+  }
+
+  [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $environmentVariables)
+  $ps.Invoke()
+
+  [Void]$ps.AddScript($powershell_code)
+  $asyncResult = $ps.BeginInvoke()
+
+  if (!$asyncResult.AsyncWaitHandle.WaitOne(<%= timeout_ms %>, $false)){
+    throw "Catastrophic failure: PowerShell module timeout (<%= timeout_ms %> ms) exceeded while executing"
+  }
+
+  $output = $ps.EndInvoke($asyncResult)
+  $output = $output | Out-String
+
+  New-XmlResult -exitcode $puppetPSHost.Exitcode -output $output -errormessage $null
+}
+catch
+{
+  try
+  {
+    if ($runspace) { $runspace.Dispose() }
+  }
+  finally
+  {
+    $runspace = $null
+  }
+  if(($puppetPSHost -ne $null) -and $puppetPSHost.ExitCode){
+    $ec = $puppetPSHost.ExitCode
+  }else{
+    # This is technically not true at this point as we do not
+    # know what exitcode we should return as an unexpected exception
+    # happened and the user did not set an exitcode. Our best guess
+    # is to return 1 so that we ensure Puppet reports this run as an error.
+    $ec = 1
+  }
+  $output = $_.Exception.Message | Out-String
+  New-XmlResult -exitcode $ec -output $null -errormessage $output
+}
+finally
+{
+  [Void]$event.Set()
+  [Void]$event.Close()
+  if ($PSVersionTable.CLRVersion.Major -ge 3) {
+    [Void]$event.Dispose()
+  }
+  if ($ps -ne $null) { [Void]$ps.Dispose() }
+}
+
+# always need a trailing newline to ensure PowerShell parses code
