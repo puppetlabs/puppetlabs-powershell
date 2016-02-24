@@ -15,4 +15,4 @@ appveyor.yml:
     - PUPPET_GEM_VERSION: 3.0.0
       RUBY_VER: 193
   test_script:
-    - 'bundle exec rspec spec/unit -fd -b'
+    - 'bundle exec rspec spec/unit spec/integration -fd -b'
