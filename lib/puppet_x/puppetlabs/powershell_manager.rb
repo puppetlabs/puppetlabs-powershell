@@ -13,6 +13,17 @@ module PuppetX
         @@instances[:cmd] ||= PowerShellManager.new(cmd)
       end
 
+      def self.win32console_enabled?
+        @win32console_enabled ||= defined?(Win32) &&
+          defined?(Win32::Console) &&
+          Win32::Console.class == Class
+      end
+
+      def self.supported?
+        @enabled ||= Puppet::Util::Platform.windows? &&
+          !win32console_enabled?
+      end
+
       def initialize(cmd)
         @stdin, @stdout, @ps_process = Open3.popen2(cmd)
 
