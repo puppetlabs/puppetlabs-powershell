@@ -241,7 +241,7 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     pexception = <<-MANIFEST
       exec{'PowershellException':
         provider  => powershell,
-        command   => 'Write-Error -message "We are writing an error"',
+        command   => 'throw "We are writing an error"',
       }
     MANIFEST
     it_should_behave_like 'should fail', pexception, /We are writing an error/i

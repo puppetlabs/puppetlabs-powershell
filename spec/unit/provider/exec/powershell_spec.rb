@@ -28,7 +28,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   }
 
   describe "#run" do
-    context "stubbed calls" do
+    context "stubbed calls", :if => Puppet.features.microsoft_windows? && Puppet.version <= '3.8.5' do
       before :each do
         Puppet::Provider::Exec.any_instance.stubs(:run)
       end
@@ -46,7 +46,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
-      it "should quote powershell.exe path", :if => Puppet.features.microsoft_windows? do
+      it "should quote powershell.exe path", :if => Puppet.features.microsoft_windows? && Puppet.version <= '3.8.5' do
         Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
           with(regexp_matches(/"#{Regexp.escape(powershell)}"/), false)
 
@@ -54,7 +54,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       end
 
       it "should quote the path to the temp file" do
-        path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
+        path = 'C:\Users\albert\AppData\Local\Temp\puppetpowershell201307157881n66f2j.ps1'
 
         provider.expects(:write_script).with(command).yields(path)
         Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
