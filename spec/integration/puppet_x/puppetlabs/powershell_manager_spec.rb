@@ -96,6 +96,13 @@ $count
       expect(first_pid).to eq(second_pid)
     end
 
+    it "should remove psvariables between runs" do
+      manager.execute('$foo = "bar"')
+      result = manager.execute('$foo')
+
+      expect(result[:stdout]).to eq(nil)
+    end
+
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
       result = manager.execute(<<-CODE
 $bytes_in_k = (1024 * 64) + 1
