@@ -103,6 +103,13 @@ $count
       expect(result[:stdout]).to eq(nil)
     end
 
+    it "should remove env variables between runs" do
+      manager.execute('[Environment]::SetEnvironmentVariable("foo", "bar", "process")')
+      result = manager.execute('Test-Path env:\foo')
+
+      expect(result[:stdout]).to eq("False\r\n")
+    end
+
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
       result = manager.execute(<<-CODE
 $bytes_in_k = (1024 * 64) + 1

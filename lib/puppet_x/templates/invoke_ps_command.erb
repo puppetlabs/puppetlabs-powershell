@@ -68,6 +68,45 @@ function New-XmlResult
 
 #this is a string so we can import into our dynamic PS instance
 $ourFunctions = @'
+function Get-ProcessEnvironmentVariables
+{
+  $processVars = [Environment]::GetEnvironmentVariables('Process').Keys |
+    % -Begin { $h = @{} } -Process { $h.$_ = (Get-Item Env:\$_).Value } -End { $h }
+
+  # eliminate Machine / User vars so that we have only process vars
+  'Machine', 'User' |
+    % { [Environment]::GetEnvironmentVariables($_).GetEnumerator() } |
+    ? { $processVars.ContainsKey($_.Name) -and ($processVars[$_.Name] -eq $_.Value) } |
+    % { $processVars.Remove($_.Name) }
+
+  $processVars.GetEnumerator() | Sort-Object Name
+}
+
+function Reset-ProcessEnvironmentVariables
+{
+  param($processVars)
+
+  # query Machine vars from registry, ensuring expansion EXCEPT for PATH
+  $vars = [Environment]::GetEnvironmentVariables('Machine').GetEnumerator() |
+    % -Begin { $h = @{} } -Process { $v = if ($_.Name -eq 'Path') { $_.Value } else { [Environment]::GetEnvironmentVariable($_.Name, 'Machine') }; $h."$($_.Name)" = $v } -End { $h }
+
+  # query User vars from registry, ensuring expansion EXCEPT for PATH
+  [Environment]::GetEnvironmentVariables('User').GetEnumerator() | % {
+      if ($_.Name -eq 'Path') { $vars[$_.Name] += ';' + $_.Value }
+      else
+      {
+        $value = [Environment]::GetEnvironmentVariable($_.Name, 'User')
+        $vars[$_.Name] = $value
+      }
+    }
+
+  $processVars.GetEnumerator() | % { $vars[$_.Name] = $_.Value }
+
+  Remove-Item -Path Env:\* -ErrorAction SilentlyContinue -WarningAction SilentlyContinue -Recurse -Verbose
+
+  $vars.GetEnumerator() | % { Set-Item -Path "Env:\$($_.Name)" -Value $_.Value -Verbose }
+}
+
 function Reset-ProcessPowerShellVariables
 {
   param($psVariables)
@@ -116,6 +155,10 @@ try
   [Void]$ps.AddScript($ourFunctions)
   $ps.Invoke()
 
+  if(!$environmentVariables){
+    $environmentVariables = $ps.AddCommand('Get-ProcessEnvironmentVariables').Invoke()
+  }
+
   if($PSVersionTable.PSVersion -le [Version]'2.0'){
     if(!$psVariables){
       $psVariables = $ps.AddScript('Get-Variable').Invoke()
@@ -125,6 +168,9 @@ try
     [void]$ps.AddCommand('Reset-ProcessPowerShellVariables').AddParameter('psVariables', $psVariables)
     $ps.Invoke()
   }
+
+  [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $environmentVariables)
+  $ps.Invoke()
 
   [Void]$ps.AddScript($powershell_code)
   $asyncResult = $ps.BeginInvoke()
