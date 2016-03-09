@@ -5,10 +5,7 @@ require 'ffi' if Puppet::Util::Platform.windows?
 module PuppetX
   module Dsc
     class PowerShellManager
-      if Puppet::Util::Platform.windows?
-        extend Puppet::Util::Windows::String
-        extend FFI::Library
-      end
+      extend FFI::Library if Puppet::Util::Platform.windows?
 
       @@instances = {}
 
@@ -33,7 +30,7 @@ module PuppetX
 
         { :stdout => out }
       ensure
-        FFI::WIN32.CloseHandle(output_ready_event) if output_ready_event
+        CloseHandle(output_ready_event) if output_ready_event
       end
 
       def exit
@@ -76,16 +73,34 @@ module PuppetX
         read_ready && stream == read_ready[0][0]
       end
 
-      def self.create_event(name, manual_reset = false, initial_state = false)
-        handle = FFI::Pointer::NULL_HANDLE
+      # copied directly from Puppet 3.7+ to support Puppet 3.5+
+      def self.wide_string(str)
+        # ruby (< 2.1) does not respect multibyte terminators, so it is possible
+        # for a string to contain a single trailing null byte, followed by garbage
+        # causing buffer overruns.
+        #
+        # See http://svn.ruby-lang.org/cgi-bin/viewvc.cgi?revision=41920&view=revision
+        newstr = str + "\0".encode(str.encoding)
+        newstr.encode!('UTF-16LE')
+      end
 
-        FFI::Pointer.from_string_to_wide_string(name) do |name_ptr|
+      NULL_HANDLE = 0
+      WIN32_FALSE = 0
+
+      def self.create_event(name, manual_reset = false, initial_state = false)
+        handle = NULL_HANDLE
+
+        str = wide_string(name)
+        # :uchar because 8 bits per byte
+        FFI::MemoryPointer.new(:uchar, str.bytesize) do |name_ptr|
+          name_ptr.put_array_of_uchar(0, str.bytes.to_a)
+
           handle = CreateEventW(FFI::Pointer::NULL,
-            manual_reset ? 1 : FFI::WIN32_FALSE,
-            initial_state ? 1 : FFI::WIN32_FALSE,
+            manual_reset ? 1 : WIN32_FALSE,
+            initial_state ? 1 : WIN32_FALSE,
             name_ptr)
 
-          if handle == FFI::Pointer::NULL_HANDLE
+          if handle == NULL_HANDLE
             msg = "Failed to create new event #{name}"
             raise Puppet::Util::Windows::Error.new(msg)
           end
@@ -100,8 +115,7 @@ module PuppetX
       WAIT_FAILED = 0xFFFFFFFF
 
       def self.wait_on(wait_object, timeout_ms = 50)
-        wait_result = Puppet::Util::Windows::Process::WaitForSingleObject(
-          wait_object, timeout_ms)
+        wait_result = WaitForSingleObject(wait_object, timeout_ms)
 
         case wait_result
         when WAIT_OBJECT_0
@@ -166,6 +180,9 @@ module PuppetX
       if Puppet::Util::Platform.windows?
         ffi_convention :stdcall
 
+        # NOTE: Puppet 3.7+ contains FFI typedef helpers, but to support 3.5
+        # use the unaliased native FFI names for parameter types
+
         # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682396(v=vs.85).aspx
         # HANDLE WINAPI CreateEvent(
         #   _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
@@ -174,7 +191,23 @@ module PuppetX
         #   _In_opt_ LPCTSTR               lpName
         # );
         ffi_lib :kernel32
-        attach_function_private :CreateEventW, [:pointer, :win32_bool, :win32_bool, :lpcwstr], :handle
+        attach_function_private :CreateEventW, [:pointer, :int32, :int32, :buffer_in], :handle
+
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx
+        # BOOL WINAPI CloseHandle(
+        #   _In_  HANDLE hObject
+        # );
+        ffi_lib :kernel32
+        attach_function_private :CloseHandle, [:handle], :int32
+
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms687032(v=vs.85).aspx
+        # DWORD WINAPI WaitForSingleObject(
+        #   _In_  HANDLE hHandle,
+        #   _In_  DWORD dwMilliseconds
+        # );
+        ffi_lib :kernel32
+        attach_function_private :WaitForSingleObject,
+          [:handle, :uint32], :uint32
       end
     end
   end
