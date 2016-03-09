@@ -1,12 +1,14 @@
 require 'securerandom'
 require 'open3'
-require 'ffi'
+require 'ffi' if Puppet::Util::Platform.windows?
 
 module PuppetX
   module Dsc
     class PowerShellManager
-      extend Puppet::Util::Windows::String
-      extend FFI::Library
+      if Puppet::Util::Platform.windows?
+        extend Puppet::Util::Windows::String
+        extend FFI::Library
+      end
 
       @@instances = {}
 
@@ -206,17 +208,19 @@ module PuppetX
         read_stdout(output_ready_event)
       end
 
-      ffi_convention :stdcall
+      if Puppet::Util::Platform.windows?
+        ffi_convention :stdcall
 
-      # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682396(v=vs.85).aspx
-      # HANDLE WINAPI CreateEvent(
-      #   _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
-      #   _In_     BOOL                  bManualReset,
-      #   _In_     BOOL                  bInitialState,
-      #   _In_opt_ LPCTSTR               lpName
-      # );
-      ffi_lib :kernel32
-      attach_function_private :CreateEventW, [:pointer, :win32_bool, :win32_bool, :lpcwstr], :handle
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682396(v=vs.85).aspx
+        # HANDLE WINAPI CreateEvent(
+        #   _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
+        #   _In_     BOOL                  bManualReset,
+        #   _In_     BOOL                  bInitialState,
+        #   _In_opt_ LPCTSTR               lpName
+        # );
+        ffi_lib :kernel32
+        attach_function_private :CreateEventW, [:pointer, :win32_bool, :win32_bool, :lpcwstr], :handle
+      end
     end
   end
 end
