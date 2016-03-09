@@ -28,62 +28,7 @@ module PuppetX
         output_ready_event_name =  "Global\\#{SecureRandom.uuid}"
         output_ready_event = self.class.create_event(output_ready_event_name)
 
-        # always need a trailing newline to ensure PowerShell parses code
-        code = <<-CODE
-        $event = [Threading.EventWaitHandle]::OpenExisting("#{output_ready_event_name}")
-        if ($runspace -eq $null)
-        {
-          $runspace = [RunspaceFactory]::CreateRunspace()
-          $runspace.Open()
-        }
-
-        $powershell_code = @'
-#{powershell_code}
-'@
-        $ps = $null
-
-        try
-        {
-          # http://learn-powershell.net/2012/05/13/using-background-runspaces-instead-of-psjobs-for-better-performance/
-          $ps = [powershell]::create()
-          $ps.Runspace = $runspace
-          [Void]$ps.AddScript($powershell_code)
-
-          $asyncResult = $ps.BeginInvoke()
-
-          if (!$asyncResult.AsyncWaitHandle.WaitOne(#{timeout_ms}, $false))
-          {
-            throw "Catastrophic failure: PowerShell DSC resource timeout (#{timeout_ms} ms) exceeded while executing"
-          }
-
-          $output = $ps.EndInvoke($asyncResult)
-          Write-Output $output
-        }
-        catch
-        {
-          try
-          {
-            if ($runspace) { $runspace.Dispose() }
-          }
-          finally
-          {
-            $runspace = $null
-          }
-          @{
-            indesiredstate = $false
-            rebootrequired = $false
-            errormessage = $_.Exception.Message
-          } | ConvertTo-Json -Compress
-        }
-        finally
-        {
-          [Void]$event.Set()
-          [Void]$event.Dispose()
-          if ($ps -ne $null) { [Void]$ps.Dispose() }
-        }
-
-        CODE
-
+        code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms)
         out = exec_read_result(code, output_ready_event)
 
         { :stdout => out }
@@ -112,6 +57,16 @@ module PuppetX
           Puppet.debug("Forcefully terminating PowerShell process.")
           Process.kill('KILL', @ps_process[:pid])
         end
+      end
+
+      def template_path
+        File.expand_path('../../templates', __FILE__)
+      end
+
+      def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = 300 * 1000)
+        template_file = File.new(template_path + "/invoke_ps_command.erb").read
+        template = ERB.new(template_file, nil, '-')
+        template.result(binding)
       end
 
       private
