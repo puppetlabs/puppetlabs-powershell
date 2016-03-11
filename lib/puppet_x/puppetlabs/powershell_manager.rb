@@ -220,6 +220,8 @@ module PuppetX
       end
 
       if Puppet::Util::Platform.windows?
+        private
+
         ffi_convention :stdcall
 
         # NOTE: Puppet 3.7+ contains FFI typedef helpers, but to support 3.5
@@ -233,14 +235,14 @@ module PuppetX
         #   _In_opt_ LPCTSTR               lpName
         # );
         ffi_lib :kernel32
-        attach_function_private :CreateEventW, [:pointer, :int32, :int32, :buffer_in], :handle
+        attach_function :CreateEventW, [:pointer, :int32, :int32, :buffer_in], :uintptr_t
 
         # http://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx
         # BOOL WINAPI CloseHandle(
         #   _In_  HANDLE hObject
         # );
         ffi_lib :kernel32
-        attach_function_private :CloseHandle, [:handle], :int32
+        attach_function :CloseHandle, [:uintptr_t], :int32
 
         # http://msdn.microsoft.com/en-us/library/windows/desktop/ms687032(v=vs.85).aspx
         # DWORD WINAPI WaitForSingleObject(
@@ -248,8 +250,8 @@ module PuppetX
         #   _In_  DWORD dwMilliseconds
         # );
         ffi_lib :kernel32
-        attach_function_private :WaitForSingleObject,
-          [:handle, :uint32], :uint32
+        attach_function :WaitForSingleObject,
+          [:uintptr_t, :uint32], :uint32
       end
     end
   end
