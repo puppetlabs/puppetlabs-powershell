@@ -32,6 +32,10 @@ RSpec.configure do |config|
     config.formatters.each { |f| f.instance_variable_set(:@output, $stdout) }
   end
 
+  config.expect_with :rspec do |c|
+    c.syntax = [:should, :expect]
+  end
+
   config.after :suite do
     # return to original tmpdir
     ENV['TMPDIR'] = oldtmpdir
