@@ -89,6 +89,22 @@ $count
       expect(result[:exitcode]).to eq(0)
     end
 
+    it "should execute code with a try/catch" do
+      result = manager.execute(<<-CODE
+try{
+  $foo = ls
+  $count = $foo.count
+  $count
+}catch{
+  Write-Error "foo"
+}
+      CODE
+      )
+
+      expect(result[:stdout]).not_to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+    end
+
     it "should reuse the same PowerShell process for multiple calls" do
       first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
       second_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
