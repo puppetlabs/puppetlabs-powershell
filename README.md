@@ -54,25 +54,28 @@ Note that the example uses the `unless` parameter to make the resource idempoten
 
 **Note:** PowerShell variables (e.g. `$_`), must be escaped in Puppet manifests either using backslashes or single quotes.
 
-Alternatively, you can put the PowerShell code for the `command`, `onlyif`, and `unless` parameters into separate templates and then invoke the template function in the resource.
+Alternatively, you can put the PowerShell code for the `command`, `onlyif`, and `unless` parameters into separate files and then invoke the file function in the resource. Templates and the `template()` function could also be used here if the PowerShell scripts need to have access to variables from Puppet.
 
 ~~~
 exec { 'rename-guest':
-  command   => template('guest/rename-guest.ps1'),
-  onlyif    => template('guest/guest-exists.ps1'),
+  command   => file('guest/rename-guest.ps1'),
+  onlyif    => file('guest/guest-exists.ps1'),
   provider  => powershell,
   logoutput => true,
 }
 ~~~
 
-Each template is a PowerShell script.
+Each file is a PowerShell script that should be in the module's `files/` folder.
+
+For example, here is the script at: `guest/files/rename-guest.ps1`
 
 ~~~
 $obj = $(Get-WMIObject Win32_UserAccount -Filter "Name='Guest'")
 $obj.Rename("OtherGuest")
 ~~~
 
-This has the added benefit of not requiring escaping '$' in the PowerShell code. Note that templates need to have DOS linefeeds or they will not work as expected. One tool for converting UNIX linefeeds to DOS linefeeds is [unix2dos](http://freecode.com/projects/dos2unix).
+This has the added benefit of not requiring escaping '$' in the PowerShell code. Note that the files need to have DOS linefeeds or they will not work as expected. One tool for converting UNIX linefeeds to DOS linefeeds is [unix2dos](http://freecode.com/projects/dos2unix).
+
 
 ##Reference
 
