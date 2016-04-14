@@ -1,14 +1,237 @@
 $hostSource = @"
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Management.Automation;
 using System.Management.Automation.Host;
+using System.Security;
+using System.Text;
 using System.Threading;
 
-public class PuppetPSHost : PSHost
+namespace Puppet
 {
+  public class PuppetPSHostRawUserInterface : PSHostRawUserInterface
+  {
+    public PuppetPSHostRawUserInterface()
+    {
+      buffersize      = new Size(120, 120);
+      backgroundcolor = ConsoleColor.Black;
+      foregroundcolor = ConsoleColor.White;
+      cursorposition  = new Coordinates(0, 0);
+      cursorsize      = 1;
+    }
+
+    private ConsoleColor backgroundcolor;
+    public override ConsoleColor BackgroundColor
+    {
+      get { return backgroundcolor; }
+      set { backgroundcolor = value; }
+    }
+
+    private Size buffersize;
+    public override Size BufferSize
+    {
+      get { return buffersize; }
+      set { buffersize = value; }
+    }
+
+    private Coordinates cursorposition;
+    public override Coordinates CursorPosition
+    {
+      get { return cursorposition; }
+      set { cursorposition = value; }
+    }
+
+    private int cursorsize;
+    public override int CursorSize
+    {
+      get { return cursorsize; }
+      set { cursorsize = value; }
+    }
+
+    private ConsoleColor foregroundcolor;
+    public override ConsoleColor ForegroundColor
+    {
+      get { return foregroundcolor; }
+      set { foregroundcolor = value; }
+    }
+
+    private Coordinates windowposition;
+    public override Coordinates WindowPosition
+    {
+      get { return windowposition; }
+      set { windowposition = value; }
+    }
+
+    private Size windowsize;
+    public override Size WindowSize
+    {
+      get { return windowsize; }
+      set { windowsize = value; }
+    }
+
+    private string windowtitle;
+    public override string WindowTitle
+    {
+      get { return windowtitle; }
+      set { windowtitle = value; }
+    }
+
+    public override bool KeyAvailable
+    {
+        get { return false; }
+    }
+
+    public override Size MaxPhysicalWindowSize
+    {
+        get { return new Size(165, 66); }
+    }
+
+    public override Size MaxWindowSize
+    {
+        get { return new Size(165, 66); }
+    }
+
+    public override void FlushInputBuffer()
+    {
+      throw new NotImplementedException();
+    }
+
+    public override BufferCell[,] GetBufferContents(Rectangle rectangle)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override KeyInfo ReadKey(ReadKeyOptions options)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override void ScrollBufferContents(Rectangle source, Coordinates destination, Rectangle clip, BufferCell fill)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override void SetBufferContents(Rectangle rectangle, BufferCell fill)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override void SetBufferContents(Coordinates origin, BufferCell[,] contents)
+    {
+      throw new NotImplementedException();
+    }
+  }
+
+  public class PuppetPSHostUserInterface : PSHostUserInterface
+  {
+    private PuppetPSHostRawUserInterface _rawui;
+    private StringBuilder _sb;
+
+    public PuppetPSHostUserInterface()
+    {
+      _sb = new StringBuilder();
+    }
+
+    public override PSHostRawUserInterface RawUI
+    {
+      get
+      {
+        if ( _rawui == null){
+          _rawui = new PuppetPSHostRawUserInterface();
+        }
+        return _rawui;
+      }
+    }
+
+    public override void Write(ConsoleColor foregroundColor, ConsoleColor backgroundColor, string value)
+    {
+      _sb.Append(value);
+    }
+
+    public override void Write(string value)
+    {
+      _sb.Append(value);
+    }
+
+    public override void WriteDebugLine(string message)
+    {
+      _sb.AppendLine("DEBUG: " + message);
+    }
+
+    public override void WriteErrorLine(string value)
+    {
+      _sb.AppendLine(value);
+    }
+
+    public override void WriteLine(string value)
+    {
+      _sb.AppendLine(value);
+    }
+
+    public override void WriteVerboseLine(string message)
+    {
+      _sb.AppendLine("VERBOSE: " + message);
+    }
+
+    public override void WriteWarningLine(string message)
+    {
+      _sb.AppendLine("WARNING: " + message);
+    }
+
+    public override void WriteProgress(long sourceId, ProgressRecord record)
+    {
+    }
+
+    public string Output
+    {
+      get
+      {
+        string text = _sb.ToString();
+        _sb = new StringBuilder();
+        return text;
+      }
+    }
+
+    public override Dictionary<string, PSObject> Prompt(string caption, string message, Collection<FieldDescription> descriptions)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override int PromptForChoice(string caption, string message, Collection<ChoiceDescription> choices, int defaultChoice)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override PSCredential PromptForCredential(string caption, string message, string userName, string targetName)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override PSCredential PromptForCredential(string caption, string message, string userName, string targetName, PSCredentialTypes allowedCredentialTypes, PSCredentialUIOptions options)
+    {
+      throw new NotImplementedException();
+    }
+
+    public override string ReadLine()
+    {
+      throw new NotImplementedException();
+    }
+
+    public override SecureString ReadLineAsSecureString()
+    {
+      throw new NotImplementedException();
+    }
+  }
+
+  public class PuppetPSHost : PSHost
+  {
     private Guid _hostId = Guid.NewGuid();
     private bool shouldExit;
     private int exitCode;
+
+    private readonly PuppetPSHostUserInterface _ui = new PuppetPSHostUserInterface();
 
     public PuppetPSHost () {}
 
@@ -22,8 +245,11 @@ public class PuppetPSHost : PSHost
 
     public override Guid InstanceId { get { return _hostId; } }
     public override string Name { get { return "PuppetPSHost"; } }
-    public override Version Version { get { return new Version(1, 0); } }
-    public override PSHostUserInterface UI { get { return null; } }
+    public override Version Version { get { return new Version(1, 1); } }
+    public override PSHostUserInterface UI
+    {
+      get { return _ui; }
+    }
     public override CultureInfo CurrentCulture
     {
         get { return Thread.CurrentThread.CurrentCulture; }
@@ -43,6 +269,7 @@ public class PuppetPSHost : PSHost
       this.shouldExit = true;
       this.exitCode = exitCode;
     }
+  }
 }
 "@
 
@@ -131,7 +358,7 @@ if ($runspace -eq $null){
     $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
   }
 
-  $puppetPSHost = New-Object PuppetPSHost
+  $puppetPSHost = New-Object Puppet.PuppetPSHost
   $runspace = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace($puppetPSHost, $sessionState)
   $runspace.Open()
 }
@@ -151,11 +378,12 @@ try
 
   $ps = [System.Management.Automation.PowerShell]::Create()
   $ps.Runspace = $runspace
-
   [Void]$ps.AddScript($ourFunctions)
   $ps.Invoke()
 
+
   if(!$environmentVariables){
+    $ps.Commands.Clear()
     $environmentVariables = $ps.AddCommand('Get-ProcessEnvironmentVariables').Invoke()
   }
 
@@ -163,26 +391,46 @@ try
     if(!$psVariables){
       $psVariables = $ps.AddScript('Get-Variable').Invoke()
     }
+
+    $ps.Commands.Clear()
     [void]$ps.AddScript('Get-Variable -Scope Global | Remove-Variable -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue')
     $ps.Invoke()
+
+    $ps.Commands.Clear()
     [void]$ps.AddCommand('Reset-ProcessPowerShellVariables').AddParameter('psVariables', $psVariables)
     $ps.Invoke()
   }
 
+  $ps.Commands.Clear()
   [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $environmentVariables)
   $ps.Invoke()
 
+  # we clear the commands before each new command
+  # to avoid command pollution
+  $ps.Commands.Clear()
   [Void]$ps.AddScript($powershell_code)
+
+  # out-default and MergeMyResults takes all output streams
+  # and writes it to the PSHost we create
+  # this needs to be the last thing executed
+  [void]$ps.AddCommand("out-default");
+  if($PSVersionTable.PSVersion -le [Version]'2.0'){
+    $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::Error, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
+  }else{
+    $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::All, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
+  }
   $asyncResult = $ps.BeginInvoke()
 
   if (!$asyncResult.AsyncWaitHandle.WaitOne(<%= timeout_ms %>, $false)){
     throw "Catastrophic failure: PowerShell module timeout (<%= timeout_ms %> ms) exceeded while executing"
   }
 
-  $output = $ps.EndInvoke($asyncResult)
-  $output = $output | Out-String
+  $ps.EndInvoke($asyncResult)
 
-  New-XmlResult -exitcode $puppetPSHost.Exitcode -output $output -errormessage $null
+  [Puppet.PuppetPSHostUserInterface]$ui = $puppetPSHost.UI
+  [string]$text = $ui.Output
+
+  New-XmlResult -exitcode $puppetPSHost.Exitcode -output $text -errormessage $null
 }
 catch
 {
