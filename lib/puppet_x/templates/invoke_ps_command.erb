@@ -102,9 +102,9 @@ function Reset-ProcessEnvironmentVariables
 
   $processVars.GetEnumerator() | % { $vars[$_.Name] = $_.Value }
 
-  Remove-Item -Path Env:\* -ErrorAction SilentlyContinue -WarningAction SilentlyContinue -Recurse -Verbose
+  Remove-Item -Path Env:\* -ErrorAction SilentlyContinue -WarningAction SilentlyContinue -Recurse
 
-  $vars.GetEnumerator() | % { Set-Item -Path "Env:\$($_.Name)" -Value $_.Value -Verbose }
+  $vars.GetEnumerator() | % { Set-Item -Path "Env:\$($_.Name)" -Value $_.Value }
 }
 
 function Reset-ProcessPowerShellVariables
