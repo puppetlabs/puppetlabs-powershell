@@ -14,7 +14,7 @@
 
 ##Overview
 
-This module adds a new exec provider capable of executing PowerShell commands. 
+This module adds a new exec provider capable of executing PowerShell commands.
 
 ##Module Description
 
@@ -29,25 +29,25 @@ This module requires PowerShell to be installed and the `powershell.exe` to be a
 
 The powershell module adapts the Puppet [exec](http://docs.puppetlabs.com/references/stable/type.html#exec) resource to run PowerShell commands. To get started, simply install the module and declare 'powershell' in `provider` with the applicable command.
 
-~~~
-    exec { 'RESOURCENAME':
-      command   => '$(SOMECOMMAND)',
-      provider  => powershell,
-    }
+~~~ puppet
+exec { 'RESOURCENAME':
+  command   => '$(SOMECOMMAND)',
+  provider  => powershell,
+}
 ~~~
 
 ##Usage
 
-When using `exec` resources with the `powershell` provider, the `command` parameter must be single-quoted to prevent Puppet from interpolating `$(..)`. 
+When using `exec` resources with the `powershell` provider, the `command` parameter must be single-quoted to prevent Puppet from interpolating `$(..)`.
 
 For instance, if you wanted to rename the Guest account:
 
-~~~
-    exec { 'rename-guest':
-      command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
-      unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
-      provider  => powershell,
-    }
+~~~ puppet
+exec { 'rename-guest':
+  command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
+  unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
+  provider  => powershell,
+}
 ~~~
 
 Note that the example uses the `unless` parameter to make the resource idempotent. The `command` is only executed if the Guest account does not exist, as indicated by `unless` returning 0.
@@ -56,7 +56,7 @@ Note that the example uses the `unless` parameter to make the resource idempoten
 
 Alternatively, you can put the PowerShell code for the `command`, `onlyif`, and `unless` parameters into separate files and then invoke the file function in the resource. Templates and the `template()` function could also be used here if the PowerShell scripts need to have access to variables from Puppet.
 
-~~~
+~~~ puppet
 exec { 'rename-guest':
   command   => file('guest/rename-guest.ps1'),
   onlyif    => file('guest/guest-exists.ps1'),
@@ -69,7 +69,7 @@ Each file is a PowerShell script that should be in the module's `files/` folder.
 
 For example, here is the script at: `guest/files/rename-guest.ps1`
 
-~~~
+~~~ powershell
 $obj = $(Get-WMIObject Win32_UserAccount -Filter "Name='Guest'")
 $obj.Rename("OtherGuest")
 ~~~
@@ -104,7 +104,7 @@ Defines whether to log command output in addition to logging the exit code. If y
 Runs the exec only if the command returns 0. Valid options: String. Default: Undefined.
 
 #####`path`
-Specifies the search path used for command execution. Valid options: String of the path, an array, or a semicolon-separated list. Default: Undefined. 
+Specifies the search path used for command execution. Valid options: String of the path, an array, or a semicolon-separated list. Default: Undefined.
 
 #####`refresh`
 Refreshes the command. Valid options: String. Default: Undefined.
@@ -120,7 +120,7 @@ Sets the maximum time in seconds that the command should take. Valid options: Nu
 
 #####`tries`
 Determines the number of times execution of the command should be attempted. Valid options: Number or a string representation of a number. Default: '1'.
- 
+
 #####`try_sleep`
 Specifies the time to sleep in seconds between `tries`. Valid options: Number or a string representation of a number. Default: Undefined.
 
