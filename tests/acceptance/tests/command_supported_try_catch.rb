@@ -26,7 +26,7 @@ teardown do
 end
 
 agents.each do |agent|
-  opts = { :catch_failures => true, :future_parser => (ENV['FUTURE_PARSER'] != 'false') }
+  opts = { :catch_failures => true }
   apply_manifest_on(agent, p1, opts)
 
   on(agent, "cmd.exe /c \"type #{outfile}\"") do |result|

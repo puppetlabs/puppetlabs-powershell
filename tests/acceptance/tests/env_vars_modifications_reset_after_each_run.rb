@@ -23,7 +23,6 @@ end
 agents.each do |agent|
   opts = {
     :expect_changes => true,
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :acceptable_exit_codes => [0, 2]
   }
 

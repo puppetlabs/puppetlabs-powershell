@@ -10,7 +10,6 @@ MANIFEST
 
 agents.each do |agent|
   opts = {
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :expect_failures => true
   }
 

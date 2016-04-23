@@ -19,7 +19,6 @@ end
 agents.each do |agent|
   opts = {
     :catch_failures => true,
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :acceptable_exit_codes => [0, 2]
   }
   apply_manifest_on(agent, p2, opts)

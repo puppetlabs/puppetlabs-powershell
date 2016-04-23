@@ -21,7 +21,6 @@ agents.each do |agent|
   step 'should NOT run command if onlyif is NOT triggered'
   opts = {
     :catch_changes => true,
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :acceptable_exit_codes => [0, 2]
   }
   apply_manifest_on(agent, onlyif_not_triggered_pp, opts)
@@ -29,7 +28,6 @@ agents.each do |agent|
   step 'should RUN command if onlyif IS triggered'
   opts = {
     :expect_changes => true,
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :acceptable_exit_codes => [0, 2]
   }
   apply_manifest_on(agent, onlyif_triggered_pp, opts)

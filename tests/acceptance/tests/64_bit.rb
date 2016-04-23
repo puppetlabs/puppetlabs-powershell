@@ -17,7 +17,6 @@ agents.each do |agent|
   step 'should succeed'
   opts = {
     :catch_failures => true,
-    :future_parser => (ENV['FUTURE_PARSER'] != 'false'),
     :acceptable_exit_codes => [0, 2]
   }
   apply_manifest_on(agent, p3, opts)
