@@ -14,4 +14,4 @@ CONFIG:
   folder: Delivery/Quality Assurance/Enterprise/Dynamic
   resourcepool: delivery/Quality Assurance/Enterprise/Dynamic
   pooling_api: http://vcloud.delivery.puppetlabs.net/
-  pe_dir: http://pe-releases.puppetlabs.lan/2016.1.1/
+  

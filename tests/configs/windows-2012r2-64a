@@ -1,10 +1,10 @@
 HOSTS:
-  win2008r2:
+  win2012r2:
     roles:
       - agent
       - default
-    platform: windows-2008r2-x86_64
-    template: win-2008r2-x86_64
+    platform: windows-2012r2-x86_64
+    template: win-2012r2-x86_64
     hypervisor: vcloud
 CONFIG:
   masterless: true
@@ -14,4 +14,3 @@ CONFIG:
   folder: Delivery/Quality Assurance/Enterprise/Dynamic
   resourcepool: delivery/Quality Assurance/Enterprise/Dynamic
   pooling_api: http://vcloud.delivery.puppetlabs.net/
-  pe_dir: http://pe-releases.puppetlabs.lan/2016.1.1/
