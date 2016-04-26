@@ -1,3 +1,18 @@
+##2015-05-03 - Supported Release 2.0.0
+###Summary
+
+Major release with performance improvements
+
+Removed support for Windows Server 2003
+
+###Features
+- Major performance improvement by sharing a single powershell session instead of creating a new powershell session per command
+- Security improvement as scripts are not stored on the filesystem temporarily
+
+###Bug Fixes
+- Updated test suites with later versions
+- Documentation cleanup
+
 ##2015-12-08 - Supported Release 1.0.6
 ###Summary
 
