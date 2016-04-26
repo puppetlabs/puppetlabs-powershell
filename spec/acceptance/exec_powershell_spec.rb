@@ -28,30 +28,6 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
       apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
 
-  end
-
-  describe 'should handle a try/catch successfully' do
-
-    powershell_cmd = <<-CMD
-try{
-  'foo';
-  exit 0
-}catch{
-  exit 1
-}
-    CMD
-
-    p1 = <<-MANIFEST
-      exec{'TestPowershell':
-        command  => '#{powershell_cmd}',
-        provider  => powershell,
-      }
-    MANIFEST
-
-    it 'should not error on first run' do
-      apply_manifest(p1, :expect_changes => true, :future_parser => FUTURE_PARSER)
-    end
-
     it 'should be idempotent' do
       expect(apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER).exit_code).to be_zero
     end
