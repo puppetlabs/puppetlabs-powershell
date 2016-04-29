@@ -36,7 +36,7 @@ end
 #end
 
 group :development do
-  gem 'rake', '~>10.1',                      :require => false
+  gem 'rake',                                :require => false
   gem 'rspec', '~>3.0',                      :require => false
   gem 'puppet-lint',                         :require => false
   gem 'puppetlabs_spec_helper', '~>0.10.3',  :require => false
