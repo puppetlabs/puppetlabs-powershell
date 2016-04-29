@@ -25,6 +25,16 @@ def location_for(place_or_version, fake_version = nil)
   end
 end
 
+# The following gems are not included by default as they require DevKit on Windows.
+# You should probably include them in a Gemfile.local or a ~/.gemfile
+#gem 'pry' #this may already be included in the gemfile
+#gem 'pry-stack_explorer', :require => false
+#if RUBY_VERSION =~ /^2/
+#  gem 'pry-byebug'
+#else
+#  gem 'pry-debugger'
+#end
+
 group :development do
   gem 'rake',                                :require => false
   gem 'rspec', '~>3.0.0',                    :require => false
@@ -35,7 +45,7 @@ group :development do
 end
 
 group :system_tests do
-  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.18')
+  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.20')
   gem 'beaker-rspec', *location_for(ENV['BEAKER_RSPEC_VERSION'] || '~> 5.1')
   gem 'beaker-puppet_install_helper',  :require => false
 end
@@ -66,6 +76,17 @@ if puppet_gem_location != :gem || puppetversion < '3.5.0'
   if Gem::Platform.local.os == 'mingw32'
     explicitly_require_windows_gems = true
   end
+
+  if puppet_gem_location == :gem
+    # If facterversion hasn't been specified and we are
+    # looking for a Puppet Gem version less than 3.5.0, we
+    # need to ensure we get a good Facter for specs.
+    gem "facter",">= 1.6.11","<= 1.7.5",:require => false unless facterversion
+    # If hieraversion hasn't been specified and we are
+    # looking for a Puppet Gem version less than 3.5.0, we
+    # need to ensure we get a good Hiera for specs.
+    gem "hiera",">= 1.0.0","<= 1.3.0",:require => false unless hieraversion
+  end
 end
 
 if explicitly_require_windows_gems
@@ -78,10 +99,6 @@ if explicitly_require_windows_gems
     gem "win32-security", "~> 0.1.2",   :require => false
     gem "win32-service", "0.7.2",       :require => false
     gem "minitar", "0.5.4",             :require => false
-    # If facterversion hasn't been specified and we are
-    # looking for a Puppet Gem version less than 3.5.0, we
-    # need to ensure we get a good Facter for Windows specs.
-    gem "facter",">= 1.6.11","<= 1.7.5",:require => false unless facterversion
   else
     gem "ffi", "~> 1.9.0",              :require => false
     gem "win32-eventlog", "~> 0.5",     :require => false
@@ -108,8 +125,14 @@ if explicitly_require_windows_gems
   gem "windows-pr",  "1.2.3",           :require => false
 end
 
+# Evaluate Gemfile.local if it exists
 if File.exists? "#{__FILE__}.local"
   eval(File.read("#{__FILE__}.local"), binding)
+end
+
+# Evaluate ~/.gemfile if it exists
+if File.exists?(File.join(Dir.home, '.gemfile'))
+  eval(File.read(File.join(Dir.home, '.gemfile')), binding)
 end
 
 # vim:ft=ruby
