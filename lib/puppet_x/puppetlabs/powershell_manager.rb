@@ -22,8 +22,7 @@ module PuppetX
       end
 
       def self.supported?
-        @enabled ||= Puppet::Util::Platform.windows? &&
-          !win32console_enabled?
+        Puppet::Util::Platform.windows? && !win32console_enabled?
       end
 
       def initialize(cmd)
