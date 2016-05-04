@@ -26,22 +26,21 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         }
   EOT
 
+  POWERSHELL_UPGRADE_MSG = <<-UPGRADE
+  The current Puppet version is outdated and uses a library that was
+  previously necessary on the current Ruby verison to support a colored console.
+
+  Unfortunately this library prevents the PowerShell module from using a shared
+  PowerShell process to dramatically improve the performance of resource
+  application.
+
+  To enable these improvements, it is suggested to upgrade to any x64 version of
+  Puppet (including 3.x), or to a Puppet version newer than 3.x.
+  UPGRADE
+
   def self.upgrade_message
-    Puppet.warning <<-UPGRADE
-The current Puppet version is outdated and uses a library that was
-previously necessary on the current Ruby verison to support a colored console.
-
-Unfortunately this library prevents the PowerShell module from using a shared
-PowerShell process to dramatically improve the performance of resource
-application.
-
-To enable these improvements, it is suggested to upgrade to any x64 version of
-Puppet (including 3.x), or to a Puppet version newer than 3.x.
-    UPGRADE
-  end
-
-  if !PuppetX::PowerShell::PowerShellManager.supported?
-    upgrade_message
+    Puppet.warning POWERSHELL_UPGRADE_MSG if !@upgrade_warning_issued
+    @upgrade_warning_issued = true
   end
 
   def self.powershell_args
@@ -56,6 +55,7 @@ Puppet (including 3.x), or to a Puppet version newer than 3.x.
 
   def run(command, check = false)
     if !PuppetX::PowerShell::PowerShellManager.supported?
+      self.class.upgrade_message
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
         # process (to prevent TOCTOU attacks), and execute powershell
