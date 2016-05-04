@@ -1,4 +1,4 @@
-##2015-05-03 - Supported Release 2.0.0
+##2015-05-17 - Supported Release 2.0.0
 ###Summary
 
 Major release with performance improvements
