@@ -44,7 +44,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def self.powershell_args
-    ps_args = ['-NoProfile', '-NonInteractive', '-Sta', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command']
+    ps_args = ['-NoProfile', '-NonInteractive', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command']
     ps_args << '-' if PuppetX::PowerShell::PowerShellManager.supported?
     ps_args
   end
