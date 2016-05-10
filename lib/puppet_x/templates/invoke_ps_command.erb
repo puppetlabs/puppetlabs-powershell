@@ -175,7 +175,7 @@ try
   [Void]$ps.AddScript($powershell_code)
   $asyncResult = $ps.BeginInvoke()
 
-  if (!$asyncResult.AsyncWaitHandle.WaitOne(<%= timeout_ms %>, $false)){
+  if (!$asyncResult.AsyncWaitHandle.WaitOne(<%= timeout_ms %>)){
     throw "Catastrophic failure: PowerShell module timeout (<%= timeout_ms %> ms) exceeded while executing"
   }
 
