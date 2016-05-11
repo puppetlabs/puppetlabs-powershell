@@ -6,7 +6,7 @@
   "license": "Apache-2.0",
   "source": "https://github.com/puppetlabs/puppetlabs-powershell",
   "project_page": "https://github.com/puppetlabs/puppetlabs-powershell",
-  "issues_url": "https://tickets.puppetlabs.com/browse/MODULES/component/12015",
+  "issues_url": "https://tickets.puppet.com/browse/MODULES/component/12015",
   "operatingsystem_support": [
     {
       "operatingsystem": "Windows",
