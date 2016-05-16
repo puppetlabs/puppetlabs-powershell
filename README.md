@@ -27,7 +27,7 @@ This module requires PowerShell to be installed and the `powershell.exe` to be a
 
 ###Beginning with powershell
 
-The powershell module adapts the Puppet [exec](http://docs.puppetlabs.com/references/stable/type.html#exec) resource to run PowerShell commands. To get started, simply install the module and declare 'powershell' in `provider` with the applicable command.
+The powershell module adapts the Puppet [exec](http://docs.puppet.com/references/stable/type.html#exec) resource to run PowerShell commands. To get started, simply install the module and declare 'powershell' in `provider` with the applicable command.
 
 ~~~ puppet
 exec { 'RESOURCENAME':
@@ -110,7 +110,7 @@ Specifies the search path used for command execution. Valid options: String of t
 Refreshes the command. Valid options: String. Default: Undefined.
 
 #####`refreshonly`
-Refreshes the command only when a dependent object is changed. Used with `subscribe` and `notify` [metaparameters](http://docs.puppetlabs.com/references/latest/metaparameter.html). Valid options: 'true', 'false'. Default: 'false'.
+Refreshes the command only when a dependent object is changed. Used with `subscribe` and `notify` [metaparameters](http://docs.puppet.com/references/latest/metaparameter.html). Valid options: 'true', 'false'. Default: 'false'.
 
 #####`returns`
 Lists the expected return code(s). An error will be returned if the executed command returns something else. Valid options: An array of acceptable return codes or a single value. Default: 0.
@@ -133,4 +133,4 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 ##Development
 
-Puppet Labs modules on the Puppet Forge are open projects, and community contributions are essential for keeping them great. We can’t access the huge number of platforms and myriad hardware, software, and deployment configurations that Puppet is intended to serve. We want to keep it as easy as possible to contribute changes so that our modules work in your environment. There are a few guidelines that we need contributors to follow so that we can have a chance of keeping on top of things. For more information, see our [module contribution guide.](https://docs.puppetlabs.com/forge/contributing.html)
+Puppet Inc modules on the Puppet Forge are open projects, and community contributions are essential for keeping them great. We can’t access the huge number of platforms and myriad hardware, software, and deployment configurations that Puppet is intended to serve. We want to keep it as easy as possible to contribute changes so that our modules work in your environment. There are a few guidelines that we need contributors to follow so that we can have a chance of keeping on top of things. For more information, see our [module contribution guide.](https://docs.puppet.com/forge/contributing.html)

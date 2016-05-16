@@ -21,6 +21,8 @@ MAINTAINERS.md:
     - "Puppet Windows Team `windows |at| puppet |dot| com`"
 NOTICE:
   copyright_holders:
+    - name: 'Josh Cooper, original author'
+      begin: 2013
     - name: 'Puppet, Inc.'
       begin: 2013
       end: 'latest'
