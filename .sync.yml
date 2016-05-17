@@ -6,21 +6,6 @@
     env: PUPPET_GEM_VERSION="3.0.0"
 Gemfile:
   supports_windows: true
-  required:
-    ':development':
-      - gem: rake
-      - gem: rspec
-        version: '~>3.0.0'
-      - gem: puppet-lint
-      - gem: puppetlabs_spec_helper
-        version: '~>0.10.3'
-      - gem: puppet_facts
-      - gem: mocha
-        version: '~>0.10.5'
-    ':system_tests':
-      - gem: beaker
-      - gem: beaker-rspec
-      - gem: beaker-puppet_install_helper
 Rakefile:
   unmanaged: true
 spec/spec_helper.rb:
@@ -30,7 +15,7 @@ appveyor.yml:
     - PUPPET_GEM_VERSION: 3.0.0
       RUBY_VER: 193
   test_script:
-    - 'bundle exec rspec spec/unit -fd -b'
+    - 'bundle exec rspec spec/unit spec/integration -fd -b'
 MAINTAINERS.md:
   maintainers:
     - "Puppet Windows Team `windows |at| puppet |dot| com`"

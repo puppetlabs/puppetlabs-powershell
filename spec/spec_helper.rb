@@ -22,7 +22,7 @@ if Puppet.features.microsoft_windows?
 end
 
 RSpec.configure do |config|
-  tmpdir = Dir.mktmpdir("rspecrun_acl")
+  tmpdir = Dir.mktmpdir("rspecrun_powershell")
   oldtmpdir = Dir.tmpdir()
   ENV['TMPDIR'] = tmpdir
 
@@ -30,6 +30,10 @@ RSpec.configure do |config|
     config.output_stream = $stdout
     config.error_stream = $stderr
     config.formatters.each { |f| f.instance_variable_set(:@output, $stdout) }
+  end
+
+  config.expect_with :rspec do |c|
+    c.syntax = [:should, :expect]
   end
 
   config.after :suite do
@@ -43,7 +47,7 @@ RSpec.configure do |config|
 end
 
 # We need this because the RAL uses 'should' as a method.  This
-# allows us the same behaviour but with a different method name.
+# allows us the same behavior but with a different method name.
 class Object
   alias :must :should
   alias :must_not :should_not
