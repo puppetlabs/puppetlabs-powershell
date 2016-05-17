@@ -141,4 +141,71 @@ $bytes_in_k = (1024 * 64) + 1
     end
   end
 
+  describe "when output is written to a PowerShell Stream" do
+    it "should collect anything written to verbose stream" do
+      result = manager.execute('$VerbosePreference = "Continue";Write-Verbose "Hello"')
+
+      expect(result[:stdout]).to eq("VERBOSE: Hello\r\n")
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect anything written to debug stream" do
+      result = manager.execute('$debugPreference = "Continue";Write-debug "Hello"')
+
+      expect(result[:stdout]).to eq("DEBUG: Hello\r\n")
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect anything written to Warning stream" do
+      result = manager.execute('Write-Warning "Hello"')
+
+      expect(result[:stdout]).to eq("WARNING: Hello\r\n")
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect anything written to Error stream" do
+      result = manager.execute('Write-Error "Hello"')
+
+      expect(result[:stdout]).to eq("Write-Error \"Hello\" : Hello\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle a Write-Error in the middle of code" do
+      result = manager.execute('ls;Write-Error "Hello";ps')
+
+      expect(result[:stdout]).not_to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle a Out-Default in the user code" do
+      result = manager.execute('\'foo\' | Out-Default')
+
+      expect(result[:stdout]).to eq("foo\r\n")
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle lots of output from user code" do
+      result = manager.execute('1..1000 | %{ (65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_} }')
+
+      expect(result[:stdout]).not_to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle a larger return of output from user code" do
+      result = manager.execute('1..1000 | %{ (65..90) + (97..122) | Get-Random -Count 5 | % {[char]$_} } | %{ $f="" } { $f+=$_ } {$f }')
+
+      expect(result[:stdout]).not_to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle shell redirection" do
+      # the test here is to ensure that this doesn't break. because we merge the streams regardless
+      # the opposite of this test shows the same thing
+      result = manager.execute('function test-warning{ ps;write-warning \'foo\' }; test-warning 3>&1')
+
+      expect(result[:stdout]).not_to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+    end
+  end
+
 end
