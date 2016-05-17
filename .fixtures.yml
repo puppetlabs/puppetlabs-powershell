@@ -1,0 +1,4 @@
+fixtures:
+  forge_modules:
+  symlinks:
+    "powershell": "#{source_dir}"

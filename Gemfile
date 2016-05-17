@@ -37,16 +37,17 @@ end
 
 group :development do
   gem 'rake',                                :require => false
-  gem 'rspec', '~>3.0.0',                    :require => false
+  gem 'rspec', '~>3.0',                      :require => false
   gem 'puppet-lint',                         :require => false
   gem 'puppetlabs_spec_helper', '~>0.10.3',  :require => false
   gem 'puppet_facts',                        :require => false
   gem 'mocha', '~>0.10.5',                   :require => false
+  gem 'pry',                                 :require => false
 end
 
 group :system_tests do
-  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.20')
   gem 'beaker-rspec', *location_for(ENV['BEAKER_RSPEC_VERSION'] || '~> 5.1')
+  gem 'beaker', *location_for(ENV['BEAKER_VERSION'] || '~> 2.20')
   gem 'beaker-puppet_install_helper',  :require => false
 end
 
