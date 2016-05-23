@@ -6,13 +6,13 @@ require 'ffi' if Puppet::Util::Platform.windows?
 
 module PuppetX
   module PowerShell
-    class PowerShellManager
+    class PSManager
       extend FFI::Library if Puppet::Util::Platform.windows?
 
       @@instances = {}
 
       def self.instance(cmd)
-        @@instances[:cmd] ||= PowerShellManager.new(cmd)
+        @@instances[:cmd] ||= PSManager.new(cmd)
       end
 
       def self.win32console_enabled?
@@ -63,7 +63,7 @@ module PuppetX
       end
 
       def exit
-        Puppet.debug "PowerShellManager exiting..."
+        Puppet.debug "PSManager exiting..."
         @stdin.puts "\nexit\n"
         @stdin.close
         @stdout.close

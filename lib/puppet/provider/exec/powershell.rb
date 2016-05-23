@@ -1,5 +1,5 @@
 require 'puppet/provider/exec'
-require_relative '../../../puppet_x/puppetlabs/powershell_manager'
+require_relative '../../../puppet_x/puppetlabs/ps_manager'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
@@ -45,16 +45,16 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def self.powershell_args
     ps_args = ['-NoProfile', '-NonInteractive', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command']
-    ps_args << '-' if PuppetX::PowerShell::PowerShellManager.supported?
+    ps_args << '-' if PuppetX::PowerShell::PSManager.supported?
     ps_args
   end
 
   def ps_manager
-    PuppetX::PowerShell::PowerShellManager.instance("#{command(:powershell)} #{self.class.powershell_args.join(' ')}")
+    PuppetX::PowerShell::PSManager.instance("#{command(:powershell)} #{self.class.powershell_args.join(' ')}")
   end
 
   def run(command, check = false)
-    if !PuppetX::PowerShell::PowerShellManager.supported?
+    if !PuppetX::PowerShell::PSManager.supported?
       self.class.upgrade_message
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
