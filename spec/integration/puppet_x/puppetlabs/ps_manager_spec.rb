@@ -1,21 +1,21 @@
 require 'spec_helper'
 require 'puppet/type'
-require 'puppet_x/puppetlabs/powershell_manager'
+require 'puppet_x/puppetlabs/ps_manager'
 
 module PuppetX
   module PowerShell
-    class PowerShellManager; end
+    class PSManager; end
   end
 end
 
-describe PuppetX::PowerShell::PowerShellManager,
-  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
+describe PuppetX::PowerShell::PSManager,
+  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PSManager.supported? do
 
   let (:manager) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
     powershell_args = provider.powershell_args
-    PuppetX::PowerShell::PowerShellManager.instance("#{powershell} #{powershell_args.join(' ')}")
+    PuppetX::PowerShell::PSManager.instance("#{powershell} #{powershell_args.join(' ')}")
   }
 
   describe "when provided powershell commands" do

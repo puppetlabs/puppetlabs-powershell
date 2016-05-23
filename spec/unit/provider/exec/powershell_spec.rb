@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
-require 'puppet_x/puppetlabs/powershell_manager'
+require 'puppet_x/puppetlabs/ps_manager'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 
@@ -31,7 +31,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   describe "#run" do
     context "stubbed calls" do
       before :each do
-        PuppetX::PowerShell::PowerShellManager.stubs(:supported?).returns(false)
+        PuppetX::PowerShell::PSManager.stubs(:supported?).returns(false)
         Puppet::Provider::Exec.any_instance.stubs(:run)
       end
 
@@ -146,7 +146,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     it 'does not emit an irrelevant upgrade message when in a non-Windows environment',
       :if => !Puppet.features.microsoft_windows? do
 
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
+      expect(PuppetX::PowerShell::PSManager.supported?).to eq(false)
 
       # run should never be called on an unsuitable provider
       Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).never
@@ -156,28 +156,28 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       apply_compiled_manifest(manifest)
     end
 
-    it 'does not emit a warning message when PowerShellManager is usable in a Windows environment',
+    it 'does not emit a warning message when PSManager is usable in a Windows environment',
       :if => Puppet.features.microsoft_windows? do
 
-      PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(false)
+      PuppetX::PowerShell::PSManager.stubs(:win32console_enabled?).returns(false)
 
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(true)
+      expect(PuppetX::PowerShell::PSManager.supported?).to eq(true)
 
-      # given PowerShellManager is supported, never emit an upgrade message
+      # given PSManager is supported, never emit an upgrade message
       Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
 
       apply_compiled_manifest(manifest)
     end
 
-    it 'emits a warning message when PowerShellManager cannot be used in a Windows environment',
+    it 'emits a warning message when PSManager cannot be used in a Windows environment',
       :if => Puppet.features.microsoft_windows? do
 
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
-      PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(true)
+      PuppetX::PowerShell::PSManager.stubs(:win32console_enabled?).returns(true)
 
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
+      expect(PuppetX::PowerShell::PSManager.supported?).to eq(false)
 
-      # given PowerShellManager is NOT supported, emit an upgrade message
+      # given PSManager is NOT supported, emit an upgrade message
       Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).once
 
       apply_compiled_manifest(manifest)
