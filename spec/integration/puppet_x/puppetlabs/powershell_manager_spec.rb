@@ -1,6 +1,6 @@
 require 'spec_helper'
 require 'puppet/type'
-require 'puppet_x/puppetlabs/powershell_manager'
+require 'puppet_x/puppetlabs/powershell/powershell_manager'
 
 module PuppetX
   module PowerShell
