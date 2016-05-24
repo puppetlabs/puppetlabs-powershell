@@ -1,6 +1,6 @@
 require 'spec_helper'
 require 'puppet/type'
-require 'puppet_x/puppetlabs/powershell_manager'
+require 'puppet_x/puppetlabs/powershell/powershell_manager'
 
 module PuppetX
   module PowerShell
@@ -88,6 +88,22 @@ $count
       expect(result[:stdout]).not_to eq(nil)
       expect(result[:exitcode]).to eq(0)
     end
+
+   it "should execute code with a try/catch" do
+     result = manager.execute(<<-CODE
+try{
+ $foo = ls
+ $count = $foo.count
+ $count
+}catch{
+ Write-Error "foo"
+}
+     CODE
+     )
+
+     expect(result[:stdout]).not_to eq(nil)
+     expect(result[:exitcode]).to eq(0)
+   end
 
     it "should reuse the same PowerShell process for multiple calls" do
       first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]

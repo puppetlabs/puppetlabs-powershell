@@ -87,7 +87,7 @@ module PuppetX
       end
 
       def template_path
-        File.expand_path('../../templates', __FILE__)
+        File.expand_path('../../../templates', __FILE__)
       end
 
       def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = 300 * 1000)

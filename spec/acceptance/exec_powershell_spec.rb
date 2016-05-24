@@ -34,6 +34,31 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
 
   end
 
+  describe 'should handle a try/catch successfully' do
+
+    powershell_cmd = <<-CMD
+try{
+ $foo = ls
+ $count = $foo.count
+ $count
+}catch{
+ Write-Error "foo"
+}
+    CMD
+
+    p1 = <<-MANIFEST
+      exec{'TestPowershell':
+        command  => '#{powershell_cmd}',
+        provider  => powershell,
+      }
+    MANIFEST
+
+    it 'should not error' do
+      apply_manifest(p1, :expect_changes => true, :future_parser => FUTURE_PARSER)
+    end
+
+  end
+
   describe 'should run commands that exit session' do
 
     exit_pp = <<-MANIFEST

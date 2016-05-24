@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
-require 'puppet_x/puppetlabs/powershell_manager'
+require 'puppet_x/puppetlabs/powershell/powershell_manager'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 
