@@ -1,4 +1,9 @@
-##2015-05-17 - Supported Release 2.0.0
+##2016-05-24 - Supported Release 2.0.1
+###Bug Fixes
+
+- Updated the powershell manager in this module in order to not conflict with the Powershell Manager in the Puppet DSC module
+
+##2016-05-17 - Supported Release 2.0.0
 ###Summary
 
 Major release with performance improvements
