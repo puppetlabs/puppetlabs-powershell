@@ -1,5 +1,6 @@
 require 'puppet/provider/exec'
-require_relative '../../../puppet_x/puppetlabs/powershell/powershell_manager'
+module_base = Pathname.new(__FILE__).dirname
+require module_base + "../../../" + 'puppet_x/puppetlabs/powershell/powershell_manager'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
