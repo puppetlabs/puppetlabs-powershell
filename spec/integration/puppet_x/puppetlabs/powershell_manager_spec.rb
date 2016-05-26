@@ -159,30 +159,34 @@ $bytes_in_k = (1024 * 64) + 1
 
   describe "when output is written to a PowerShell Stream" do
     it "should collect anything written to verbose stream" do
-      result = manager.execute('$VerbosePreference = "Continue";Write-Verbose "Hello"')
+      msg = SecureRandom.uuid.to_s.gsub('-', '')
+      result = manager.execute("$VerbosePreference = 'Continue';Write-Verbose '#{msg}'")
 
-      expect(result[:stdout]).to eq("VERBOSE: Hello\r\n")
+      expect(result[:stdout]).to match(/^VERBOSE\: #{msg}/)
       expect(result[:exitcode]).to eq(0)
     end
 
     it "should collect anything written to debug stream" do
-      result = manager.execute('$debugPreference = "Continue";Write-debug "Hello"')
+      msg = SecureRandom.uuid.to_s.gsub('-', '')
+      result = manager.execute("$debugPreference = 'Continue';Write-debug '#{msg}'")
 
-      expect(result[:stdout]).to eq("DEBUG: Hello\r\n")
+      expect(result[:stdout]).to match(/^DEBUG: #{msg}/)
       expect(result[:exitcode]).to eq(0)
     end
 
     it "should collect anything written to Warning stream" do
-      result = manager.execute('Write-Warning "Hello"')
+      msg = SecureRandom.uuid.to_s.gsub('-', '')
+      result = manager.execute("Write-Warning '#{msg}'")
 
-      expect(result[:stdout]).to eq("WARNING: Hello\r\n")
+      expect(result[:stdout]).to match(/^WARNING: #{msg}/)
       expect(result[:exitcode]).to eq(0)
     end
 
     it "should collect anything written to Error stream" do
-      result = manager.execute('Write-Error "Hello"')
+      msg = SecureRandom.uuid.to_s.gsub('-', '')
+      result = manager.execute("Write-Error '#{msg}'")
 
-      expect(result[:stdout]).to eq("Write-Error \"Hello\" : Hello\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
+      expect(result[:stdout]).to eq("Write-Error '#{msg}' : #{msg}\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
       expect(result[:exitcode]).to eq(0)
     end
 
