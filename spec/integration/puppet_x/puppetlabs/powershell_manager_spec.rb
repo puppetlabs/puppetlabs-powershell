@@ -161,7 +161,7 @@ $bytes_in_k = (1024 * 64) + 1
     it "should collect anything written to verbose stream" do
       result = manager.execute('$VerbosePreference = "Continue";Write-Verbose "Hello"')
 
-      expect(result[:stdout]).to eq("VERBOSE: Hello\r\n")
+      expect(result[:stdout]).to include("VERBOSE: Hello")
       expect(result[:exitcode]).to eq(0)
     end
 
