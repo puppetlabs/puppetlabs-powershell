@@ -29,7 +29,7 @@ RSpec.configure do |c|
     shell("/bin/touch #{default['puppetpath']}/hiera.yaml")
   end
   c.after :suite do
-    absent_files = 'file{["c:/services.txt","c:/process.txt"]: ensure => absent }'
+    absent_files = 'file{["c:/services.txt","c:/process.txt","c:/try_success.txt","c:/catch_shouldntexist.txt","c:/try_shouldntexist.txt","c:/catch_success.txt"]: ensure => absent }'
     apply_manifest(absent_files)
   end
 end

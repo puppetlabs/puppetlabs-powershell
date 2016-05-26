@@ -36,25 +36,73 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
 
   describe 'should handle a try/catch successfully' do
 
-    powershell_cmd = <<-CMD
-try{
- $foo = ls
- $count = $foo.count
- $count
-}catch{
- Write-Error "foo"
-}
-    CMD
+    it 'should demonstrably execute PowerShell code inside a try block' do
+      tryoutfile = 'C:\try_success.txt'
+      try_content = 'try_executed'
+      catchoutfile = 'c:\catch_shouldntexist.txt'
 
-    p1 = <<-MANIFEST
+      powershell_cmd = <<-CMD
+      try {
+       $foo = @(1, 2, 3).count
+       "#{try_content}" | Out-File -FilePath "#{tryoutfile}"
+      } catch {
+       "catch_executed" | Out-File -FilePath "#{catchoutfile}"
+      }
+      CMD
+
+      p1 = <<-MANIFEST
       exec{'TestPowershell':
         command  => '#{powershell_cmd}',
-        provider  => powershell,
+        provider => powershell,
       }
-    MANIFEST
+      MANIFEST
 
-    it 'should not error' do
-      apply_manifest(p1, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+
+      agents.each do |agent|
+        on(agent, "cmd.exe /c \"type #{tryoutfile}\"") do |result|
+          assert_match(/#{try_content}/, result.stdout, "Unexpected result for host '#{agent}'")
+        end
+
+        on(agent, "cmd.exe /c \"type #{catchoutfile}\"", :acceptable_exit_codes => [1]) do |result|
+          assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{agent}'")
+        end
+      end
+    end
+
+    it 'should demonstrably execute PowerShell code inside a catch block' do
+
+      tryoutfile = 'C:\try_shouldntexist.txt'
+      catchoutfile = 'c:\catch_success.txt'
+      catch_content = 'catch_executed'
+
+      powershell_cmd = <<-CMD
+      try {
+       throw "execute catch!"
+       "try_executed" | Out-File -FilePath "#{tryoutfile}"
+      } catch {
+       "#{catch_content}" | Out-File -FilePath "#{catchoutfile}"
+      }
+      CMD
+
+      p1 = <<-MANIFEST
+      exec{'TestPowershell':
+        command  => '#{powershell_cmd}',
+        provider => powershell,
+      }
+      MANIFEST
+
+      apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+
+      agents.each do |agent|
+        on(agent, "cmd.exe /c \"type #{tryoutfile}\"", :acceptable_exit_codes => [1]) do |result|
+          assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{agent}'")
+        end
+
+        on(agent, "cmd.exe /c \"type #{catchoutfile}\"") do |result|
+          assert_match(/#{catch_content}/, result.stdout, "Unexpected result for host '#{agent}'")
+        end
+      end
     end
 
   end
