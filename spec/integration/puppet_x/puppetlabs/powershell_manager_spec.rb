@@ -89,7 +89,7 @@ $count
       expect(result[:exitcode]).to eq(0)
     end
 
-   it "should execute code with a try/catch" do
+   it "should execute code with a try/catch, receiving the output of Write-Error" do
      result = manager.execute(<<-CODE
 try{
  $foo = ls
@@ -104,6 +104,39 @@ try{
      expect(result[:stdout]).not_to eq(nil)
      expect(result[:exitcode]).to eq(0)
    end
+
+    it "should be able to execute the code in a try block when using try/catch" do
+      result = manager.execute(<<-CODE
+ try {
+  $foo = @(1, 2, 3).count
+  exit 400
+ } catch {
+  exit 1
+ }
+      CODE
+      )
+
+      expect(result[:stdout]).to eq(nil)
+      # using an explicit exit code ensures we've really executed correct block
+      expect(result[:exitcode]).to eq(400)
+    end
+
+   it "should be able to execute the code in a catch block when using try/catch" do
+     result = manager.execute(<<-CODE
+try {
+  throw "Error!"
+  exit 0
+} catch {
+  exit 500
+}
+     CODE
+     )
+
+     expect(result[:stdout]).to eq(nil)
+     # using an explicit exit code ensures we've really executed correct block
+     expect(result[:exitcode]).to eq(500)
+   end
+
 
     it "should reuse the same PowerShell process for multiple calls" do
       first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
