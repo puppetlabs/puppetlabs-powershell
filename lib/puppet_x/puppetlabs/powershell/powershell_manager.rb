@@ -105,9 +105,20 @@ module PuppetX
       end
 
       def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = 300 * 1000)
-        template_file = File.new(template_path + "/invoke_ps_command.erb").read
-        template = ERB.new(template_file, nil, '-')
-        template.result(binding)
+        <<-CODE
+$params = @{
+  Code = @'
+#{powershell_code}
+'@
+  EventName = "#{output_ready_event_name}"
+  TimeoutMilliseconds = #{timeout_ms}
+}
+
+Invoke-PowerShellUserCode @params
+
+# always need a trailing newline to ensure PowerShell parses code
+
+        CODE
       end
 
       private
