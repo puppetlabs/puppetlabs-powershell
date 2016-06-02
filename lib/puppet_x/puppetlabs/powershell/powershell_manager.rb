@@ -30,6 +30,14 @@ module PuppetX
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
+        init_ready_event_name =  "Global\\#{SecureRandom.uuid}"
+        init_ready_event = self.class.create_event(init_ready_event_name)
+
+        code = make_ps_init_code(init_ready_event_name)
+        out, err = exec_read_result(code, init_ready_event)
+
+        Puppet.debug "#{Time.now} PowerShell initialization complete for pid: #{@ps_process[:pid]}"
+
         at_exit { exit }
       end
 
@@ -88,6 +96,12 @@ module PuppetX
 
       def template_path
         File.expand_path('../../../templates', __FILE__)
+      end
+
+      def make_ps_init_code(init_ready_event_name)
+        template_file = File.new(template_path + "/init_ps.ps1.erb").read
+        template = ERB.new(template_file, nil, '-')
+        template.result(binding)
       end
 
       def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = 300 * 1000)
