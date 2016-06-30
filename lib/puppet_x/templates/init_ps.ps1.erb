@@ -293,8 +293,24 @@ function New-XmlResult
   $xml.OuterXml
 }
 
-#this is a string so we can import into our dynamic PS instance
-$ourFunctions = @'
+Add-Type -TypeDefinition $hostSource -Language CSharp
+
+function Invoke-PowerShellUserCode
+{
+  [CmdletBinding()]
+  param(
+    [String]
+    $Code,
+
+    [String]
+    $EventName,
+
+    [Int]
+    $TimeoutMilliseconds
+  )
+
+  #this is a string so we can import into our dynamic PS instance
+  $ourFunctions = @'
 function Get-ProcessEnvironmentVariables
 {
   $processVars = [Environment]::GetEnvironmentVariables('Process').Keys |
@@ -346,122 +362,123 @@ function Reset-ProcessPowerShellVariables
 }
 '@
 
-Add-Type -TypeDefinition $hostSource -Language CSharp
+  $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
 
-$event = [System.Threading.EventWaitHandle]::OpenExisting("<%= output_ready_event_name %>")
+  if ($global:runspace -eq $null){
+    # CreateDefault2 requires PS3
+    if ([System.Management.Automation.Runspaces.InitialSessionState].GetMethod('CreateDefault2')){
+      $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault2()
+    }else{
+      $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+    }
 
-if ($runspace -eq $null){
-  # CreateDefault2 requires PS3
-  if ([System.Management.Automation.Runspaces.InitialSessionState].GetMethod('CreateDefault2')){
-    $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault2()
-  }else{
-    $sessionState = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+    $global:puppetPSHost = New-Object Puppet.PuppetPSHost
+    $global:runspace = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace($global:puppetPSHost, $sessionState)
+    $global:runspace.Open()
   }
 
-  $puppetPSHost = New-Object Puppet.PuppetPSHost
-  $runspace = [System.Management.Automation.Runspaces.RunspaceFactory]::CreateRunspace($puppetPSHost, $sessionState)
-  $runspace.Open()
-}
+  try
+  {
+    $ps = $null
+    $global:puppetPSHost.ResetExitStatus()
 
-$powershell_code = @'
-<%= powershell_code %>
-'@
+    if ($PSVersionTable.PSVersion -ge [Version]'3.0') {
+      $global:runspace.ResetRunspaceState()
+    }
 
-try
-{
-  $ps = $null
-  $puppetPSHost.ResetExitStatus()
-
-  if ($PSVersionTable.PSVersion -ge [Version]'3.0') {
-    $runspace.ResetRunspaceState()
-  }
-
-  $ps = [System.Management.Automation.PowerShell]::Create()
-  $ps.Runspace = $runspace
-  [Void]$ps.AddScript($ourFunctions)
-  $ps.Invoke()
+    $ps = [System.Management.Automation.PowerShell]::Create()
+    $ps.Runspace = $global:runspace
+    [Void]$ps.AddScript($ourFunctions)
+    $ps.Invoke()
 
 
-  if(!$environmentVariables){
-    $ps.Commands.Clear()
-    $environmentVariables = $ps.AddCommand('Get-ProcessEnvironmentVariables').Invoke()
-  }
+    if(!$global:environmentVariables){
+      $ps.Commands.Clear()
+      $global:environmentVariables = $ps.AddCommand('Get-ProcessEnvironmentVariables').Invoke()
+    }
 
-  if($PSVersionTable.PSVersion -le [Version]'2.0'){
-    if(!$psVariables){
-      $psVariables = $ps.AddScript('Get-Variable').Invoke()
+    if($PSVersionTable.PSVersion -le [Version]'2.0'){
+      if(!$global:psVariables){
+        $global:psVariables = $ps.AddScript('Get-Variable').Invoke()
+      }
+
+      $ps.Commands.Clear()
+      [void]$ps.AddScript('Get-Variable -Scope Global | Remove-Variable -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue')
+      $ps.Invoke()
+
+      $ps.Commands.Clear()
+      [void]$ps.AddCommand('Reset-ProcessPowerShellVariables').AddParameter('psVariables', $global:psVariables)
+      $ps.Invoke()
     }
 
     $ps.Commands.Clear()
-    [void]$ps.AddScript('Get-Variable -Scope Global | Remove-Variable -Force -ErrorAction SilentlyContinue -WarningAction SilentlyContinue')
+    [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $global:environmentVariables)
     $ps.Invoke()
 
+    # we clear the commands before each new command
+    # to avoid command pollution
     $ps.Commands.Clear()
-    [void]$ps.AddCommand('Reset-ProcessPowerShellVariables').AddParameter('psVariables', $psVariables)
-    $ps.Invoke()
+    [Void]$ps.AddScript($Code)
+
+    # out-default and MergeMyResults takes all output streams
+    # and writes it to the PSHost we create
+    # this needs to be the last thing executed
+    [void]$ps.AddCommand("out-default");
+    if($PSVersionTable.PSVersion -le [Version]'2.0'){
+      $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::Error, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
+    }else{
+      $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::All, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
+    }
+    $asyncResult = $ps.BeginInvoke()
+
+    if (!$asyncResult.AsyncWaitHandle.WaitOne($TimeoutMilliseconds)){
+      throw "Catastrophic failure: PowerShell module timeout ($TimeoutMilliseconds ms) exceeded while executing"
+    }
+
+    $ps.EndInvoke($asyncResult)
+
+    [Puppet.PuppetPSHostUserInterface]$ui = $global:puppetPSHost.UI
+    [string]$text = $ui.Output
+
+    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -errormessage $null
   }
-
-  $ps.Commands.Clear()
-  [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $environmentVariables)
-  $ps.Invoke()
-
-  # we clear the commands before each new command
-  # to avoid command pollution
-  $ps.Commands.Clear()
-  [Void]$ps.AddScript($powershell_code)
-
-  # out-default and MergeMyResults takes all output streams
-  # and writes it to the PSHost we create
-  # this needs to be the last thing executed
-  [void]$ps.AddCommand("out-default");
-  if($PSVersionTable.PSVersion -le [Version]'2.0'){
-    $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::Error, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
-  }else{
-    $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::All, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
-  }
-  $asyncResult = $ps.BeginInvoke()
-
-  if (!$asyncResult.AsyncWaitHandle.WaitOne(<%= timeout_ms %>)){
-    throw "Catastrophic failure: PowerShell module timeout (<%= timeout_ms %> ms) exceeded while executing"
-  }
-
-  $ps.EndInvoke($asyncResult)
-
-  [Puppet.PuppetPSHostUserInterface]$ui = $puppetPSHost.UI
-  [string]$text = $ui.Output
-
-  New-XmlResult -exitcode $puppetPSHost.Exitcode -output $text -errormessage $null
-}
-catch
-{
-  try
+  catch
   {
-    if ($runspace) { $runspace.Dispose() }
+    try
+    {
+      if ($global:runspace) { $global:runspace.Dispose() }
+    }
+    finally
+    {
+      $global:runspace = $null
+    }
+    if(($global:puppetPSHost -ne $null) -and $global:puppetPSHost.ExitCode){
+      $ec = $global:puppetPSHost.ExitCode
+    }else{
+      # This is technically not true at this point as we do not
+      # know what exitcode we should return as an unexpected exception
+      # happened and the user did not set an exitcode. Our best guess
+      # is to return 1 so that we ensure Puppet reports this run as an error.
+      $ec = 1
+    }
+    $output = $_.Exception.Message | Out-String
+    New-XmlResult -exitcode $ec -output $null -errormessage $output
   }
   finally
   {
-    $runspace = $null
+    [Void]$event.Set()
+    [Void]$event.Close()
+    if ($PSVersionTable.CLRVersion.Major -ge 3) {
+      [Void]$event.Dispose()
+    }
+    if ($ps -ne $null) { [Void]$ps.Dispose() }
   }
-  if(($puppetPSHost -ne $null) -and $puppetPSHost.ExitCode){
-    $ec = $puppetPSHost.ExitCode
-  }else{
-    # This is technically not true at this point as we do not
-    # know what exitcode we should return as an unexpected exception
-    # happened and the user did not set an exitcode. Our best guess
-    # is to return 1 so that we ensure Puppet reports this run as an error.
-    $ec = 1
-  }
-  $output = $_.Exception.Message | Out-String
-  New-XmlResult -exitcode $ec -output $null -errormessage $output
-}
-finally
-{
-  [Void]$event.Set()
-  [Void]$event.Close()
-  if ($PSVersionTable.CLRVersion.Major -ge 3) {
-    [Void]$event.Dispose()
-  }
-  if ($ps -ne $null) { [Void]$ps.Dispose() }
 }
 
-# always need a trailing newline to ensure PowerShell parses code
+
+$event = [Threading.EventWaitHandle]::OpenExisting('<%= init_ready_event_name %>')
+[Void]$event.Set()
+[Void]$event.Close()
+if ($PSVersionTable.CLRVersion.Major -ge 3) {
+  [Void]$event.Dispose()
+}
