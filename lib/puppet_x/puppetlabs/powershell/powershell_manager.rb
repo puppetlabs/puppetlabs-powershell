@@ -41,11 +41,11 @@ module PuppetX
         at_exit { exit }
       end
 
-      def execute(powershell_code, timeout_ms = 300 * 1000)
+      def execute(powershell_code, timeout_ms = nil, working_dir = nil)
         output_ready_event_name =  "Global\\#{SecureRandom.uuid}"
         output_ready_event = self.class.create_event(output_ready_event_name)
 
-        code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms)
+        code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms, working_dir)
 
         out, err = exec_read_result(code, output_ready_event)
 
@@ -104,7 +104,14 @@ module PuppetX
         template.result(binding)
       end
 
-      def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = 300 * 1000)
+      def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = nil, working_dir = nil)
+        begin
+          timeout_ms = Integer(timeout_ms)
+          # Lower bound protection. The polling resolution is only 50ms
+          if (timeout_ms < 50) then timeout_ms = 50 end
+        rescue
+          timeout_ms = 300 * 1000
+        end
         <<-CODE
 $params = @{
   Code = @'
@@ -112,6 +119,7 @@ $params = @{
 '@
   EventName = "#{output_ready_event_name}"
   TimeoutMilliseconds = #{timeout_ms}
+  WorkingDirectory = "#{working_dir}"
 }
 
 Invoke-PowerShellUserCode @params

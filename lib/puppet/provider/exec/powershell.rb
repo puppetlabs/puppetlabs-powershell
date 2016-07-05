@@ -68,7 +68,12 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
       end
     else
-      result = ps_manager.execute(command)
+      working_dir = resource[:cwd]
+      if (!working_dir.nil?)
+        self.fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
+      end
+
+      result = ps_manager.execute(command,nil,working_dir)
 
       stdout      = result[:stdout]
       stderr      = result[:stderr]

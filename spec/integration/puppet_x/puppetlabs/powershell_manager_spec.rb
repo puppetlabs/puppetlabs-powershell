@@ -204,6 +204,43 @@ $bytes_in_k = (1024 * 64) + 1
 
       expect(result[:errormessage]).not_to be_empty
     end
+
+    it "should error if working directory does not exist" do
+      work_dir = 'C:/some/directory/that/does/not/exist'
+
+      result = manager.execute('(Get-Location).Path',nil,work_dir)
+
+      expect(result[:exitcode]).to_not eq(0)
+      expect(result[:errormessage]).to match(/Working directory .+ does not exist/)
+    end
+
+    it "should allow forward slashes in working directory" do
+      work_dir = ENV["WINDIR"]
+      forward_work_dir = work_dir.gsub('\\','/')
+
+      result = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
+
+      expect(result).to eq("#{work_dir}\r\n")
+    end
+
+    it "should use a specific working directory if set" do
+      work_dir = ENV["WINDIR"]
+
+      result = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
+
+      expect(result).to eq("#{work_dir}\r\n")
+    end
+
+    it "should not reuse the same working directory between runs" do
+      work_dir = ENV["WINDIR"]
+      current_work_dir = Dir.getwd
+
+      first_cwd = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
+      second_cwd = manager.execute('(Get-Location).Path')[:stdout]
+
+      expect(first_cwd).to eq("#{work_dir}\r\n")
+      expect(second_cwd).to eq("#{current_work_dir}\r\n")      
+    end    
   end
 
   describe "when output is written to a PowerShell Stream" do
