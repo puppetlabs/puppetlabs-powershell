@@ -1,3 +1,16 @@
+##2016-07-12 - Supported Release 2.0.2
+###Summary
+
+Small release with bugs fixes and another speed improvement.
+
+###Features
+- Noticable speed increase by reducing the time start a PowerShell command ([MODULES-3406](https://tickets.puppetlabs.com/browse/MODULES-3406))
+
+###Bug Fixes
+- Fixed minor bugs in tests ([MODULES-3347](https://tickets.puppetlabs.com/browse/MODULES-3347))
+- Added tests for try/catch ([MODULES-2634](https://tickets.puppetlabs.com/browse/MODULES-2634))
+- Fixed bug with older ruby (1.8)
+
 ##2016-05-24 - Supported Release 2.0.1
 ###Bug Fixes
 
