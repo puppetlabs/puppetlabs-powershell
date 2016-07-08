@@ -1,15 +1,17 @@
 require 'spec_helper_acceptance'
 
 describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(fact('osfamily')) do
+  windows_agents = agents.select { |a| a.platform =~ /windows/ }
+
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
-      expect { apply_manifest(manifest, :catch_failures => true, :future_parser => FUTURE_PARSER) }.to raise_error(error_check)
+      expect { apply_manifest_on(windows_agents, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER) }.to raise_error(error_check)
     end
   end
 
   shared_examples 'apply success' do |manifest|
     it 'should succeed' do
-      apply_manifest(manifest, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
   end
 
@@ -25,36 +27,84 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
 
     it 'should not error on first run' do
       # Run it twice and test for idempotency
-      apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should be idempotent' do
-      expect(apply_manifest(p1, :catch_failures => true, :future_parser => FUTURE_PARSER).exit_code).to be_zero
+      apply_manifest_on(windows_agents, p1, :catch_failures => true, :future_parser => FUTURE_PARSER, :acceptable_exit_codes => [0])
     end
 
   end
 
   describe 'should handle a try/catch successfully' do
 
-    powershell_cmd = <<-CMD
-try{
- $foo = ls
- $count = $foo.count
- $count
-}catch{
- Write-Error "foo"
-}
-    CMD
+    it 'should demonstrably execute PowerShell code inside a try block' do
+      tryoutfile = 'C:\try_success.txt'
+      try_content = 'try_executed'
+      catchoutfile = 'c:\catch_shouldntexist.txt'
 
-    p1 = <<-MANIFEST
+      powershell_cmd = <<-CMD
+      try {
+       $foo = @(1, 2, 3).count
+       "#{try_content}" | Out-File -FilePath "#{tryoutfile}"
+      } catch {
+       "catch_executed" | Out-File -FilePath "#{catchoutfile}"
+      }
+      CMD
+
+      p1 = <<-MANIFEST
       exec{'TestPowershell':
         command  => '#{powershell_cmd}',
-        provider  => powershell,
+        provider => powershell,
       }
-    MANIFEST
+      MANIFEST
 
-    it 'should not error' do
-      apply_manifest(p1, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+
+      windows_agents.each do |agent|
+        on(agent, "cmd.exe /c \"type #{tryoutfile}\"") do |result|
+          assert_match(/#{try_content}/, result.stdout, "Unexpected result for host '#{agent}'")
+        end
+
+        on(agent, "cmd.exe /c \"type #{catchoutfile}\"", :acceptable_exit_codes => [1]) do |result|
+          assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{agent}'")
+        end
+      end
+    end
+
+    it 'should demonstrably execute PowerShell code inside a catch block' do
+
+      tryoutfile = 'C:\try_shouldntexist.txt'
+      catchoutfile = 'c:\catch_success.txt'
+      catch_content = 'catch_executed'
+
+      powershell_cmd = <<-CMD
+      try {
+       throw "execute catch!"
+       "try_executed" | Out-File -FilePath "#{tryoutfile}"
+      } catch {
+       "#{catch_content}" | Out-File -FilePath "#{catchoutfile}"
+      }
+      CMD
+
+      p1 = <<-MANIFEST
+      exec{'TestPowershell':
+        command  => '#{powershell_cmd}',
+        provider => powershell,
+      }
+      MANIFEST
+
+      apply_manifest_on(windows_agents, p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+
+      windows_agents.each do |agent|
+        on(agent, "cmd.exe /c \"type #{tryoutfile}\"", :acceptable_exit_codes => [1]) do |result|
+          assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{agent}'")
+        end
+
+        on(agent, "cmd.exe /c \"type #{catchoutfile}\"") do |result|
+          assert_match(/#{catch_content}/, result.stdout, "Unexpected result for host '#{agent}'")
+        end
+      end
     end
 
   end
@@ -69,11 +119,11 @@ try{
     MANIFEST
 
     it 'should not error on first run' do
-      apply_manifest(exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should run a second time' do
-      apply_manifest(exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -88,11 +138,11 @@ try{
     MANIFEST
 
     it 'should not error on first run' do
-      apply_manifest(break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should run a second time' do
-      apply_manifest(break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -107,11 +157,11 @@ try{
     MANIFEST
 
     it 'should not error on first run' do
-      apply_manifest(return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should run a second time' do
-      apply_manifest(return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -134,10 +184,10 @@ try{
 
     it 'should not see variable from previous run' do
       # Setup the variable
-      apply_manifest(var_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, var_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
 
       # Test to see if subsequent call sees the variable
-      apply_manifest(var_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, var_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -172,10 +222,10 @@ try{
 
     it 'should not see environment variable from previous run' do
       # Setup the environment variable
-      apply_manifest(envar_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, envar_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
 
       # Test to see if subsequent call sees the environment variable
-      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should see environment variables set outside of session' do
@@ -183,10 +233,10 @@ try{
       on(default, powershell("\\$env:outside='1'"))
 
       # Test to see if initial run sees the environment variable
-      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
 
       # Test to see if subsequent call sees the environment variable and environment purge
-      apply_manifest(envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
   end
 
@@ -209,11 +259,11 @@ try{
     MANIFEST
 
     it 'should RUN command if unless is NOT triggered' do
-      apply_manifest(unless_not_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, unless_not_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should NOT run command if unless IS triggered' do
-      apply_manifest(unless_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, unless_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -237,11 +287,11 @@ try{
     MANIFEST
 
     it 'should NOT run command if onlyif is NOT triggered' do
-      apply_manifest(onlyif_not_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, onlyif_not_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
     end
 
     it 'should RUN command if onlyif IS triggered' do
-      apply_manifest(onlyif_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, onlyif_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
     end
 
   end
@@ -256,7 +306,7 @@ try{
     MANIFEST
 
     describe file('c:/services.txt') do
-      apply_manifest(p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
@@ -284,7 +334,7 @@ try{
     }
     MANIFEST
     describe file('c:/temp/services.csv') do
-      apply_manifest(p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /puppet/ }
     end
@@ -306,7 +356,7 @@ try{
     }
     MANIFEST
     describe file(outfile) do
-      apply_manifest(pp, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, pp, :catch_failures => true, :future_parser => FUTURE_PARSER)
       it { should be_file }
       its(:content) { should match /svchost/ }
     end
@@ -335,7 +385,7 @@ try{
       }
     MANIFEST
     it 'should not fail' do
-      apply_manifest(padmin, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      apply_manifest_on(windows_agents, padmin, :catch_failures => true, :future_parser => FUTURE_PARSER)
     end
   end
 
