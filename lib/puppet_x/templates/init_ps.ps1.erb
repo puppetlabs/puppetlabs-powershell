@@ -425,6 +425,10 @@ function Invoke-PowerShellUserCode
     # and writes it to the PSHost we create
     # this needs to be the last thing executed
     [void]$ps.AddCommand("out-default");
+
+    # if the call operator & established an exit code, exit with it
+    [Void]$ps.AddScript('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }')
+
     if($PSVersionTable.PSVersion -le [Version]'2.0'){
       $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::Error, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
     }else{
