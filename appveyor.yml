@@ -10,6 +10,7 @@ init:
 - 'mkdir C:\ProgramData\PuppetLabs\puppet\var && exit 0'
 environment:
   matrix:
+  - RUBY_VER: 23-x64
   - PUPPET_GEM_VERSION: ~> 3.0
     RUBY_VER: 193
   - PUPPET_GEM_VERSION: ~> 3.0
