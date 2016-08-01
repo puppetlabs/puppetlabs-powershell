@@ -295,22 +295,8 @@ function New-XmlResult
 
 Add-Type -TypeDefinition $hostSource -Language CSharp
 
-function Invoke-PowerShellUserCode
-{
-  [CmdletBinding()]
-  param(
-    [String]
-    $Code,
-
-    [String]
-    $EventName,
-
-    [Int]
-    $TimeoutMilliseconds
-  )
-
-  #this is a string so we can import into our dynamic PS instance
-  $ourFunctions = @'
+#this is a string so we can import into our dynamic PS instance
+$global:ourFunctions = @'
 function Get-ProcessEnvironmentVariables
 {
   $processVars = [Environment]::GetEnvironmentVariables('Process').Keys |
@@ -362,6 +348,21 @@ function Reset-ProcessPowerShellVariables
 }
 '@
 
+function Invoke-PowerShellUserCode
+{
+  [CmdletBinding()]
+  param(
+    [String]
+    $Code,
+
+    [String]
+    $EventName,
+
+    [Int]
+    $TimeoutMilliseconds
+  )
+
+
   $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
 
   if ($global:runspace -eq $null){
@@ -388,7 +389,7 @@ function Reset-ProcessPowerShellVariables
 
     $ps = [System.Management.Automation.PowerShell]::Create()
     $ps.Runspace = $global:runspace
-    [Void]$ps.AddScript($ourFunctions)
+    [Void]$ps.AddScript($global:ourFunctions)
     $ps.Invoke()
 
 
@@ -424,6 +425,10 @@ function Reset-ProcessPowerShellVariables
     # and writes it to the PSHost we create
     # this needs to be the last thing executed
     [void]$ps.AddCommand("out-default");
+
+    # if the call operator & established an exit code, exit with it
+    [Void]$ps.AddScript('if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }')
+
     if($PSVersionTable.PSVersion -le [Version]'2.0'){
       $ps.Commands.Commands[0].MergeMyResults([System.Management.Automation.Runspaces.PipelineResultTypes]::Error, [System.Management.Automation.Runspaces.PipelineResultTypes]::Output);
     }else{
