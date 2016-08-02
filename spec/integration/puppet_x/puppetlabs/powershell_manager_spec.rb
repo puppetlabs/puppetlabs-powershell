@@ -47,6 +47,22 @@ describe PuppetX::PowerShell::PowerShellManager,
       expect(result[:exitcode]).to eq(1)
     end
 
+    it "should return the exitcode of the last command to set an exit code" do
+      result = manager.execute("$LASTEXITCODE = 0; write-output 'foo'; cmd.exe /c 'exit 99'; write-output 'bar'")
+
+      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
+      expect(result[:stdout]).to eq("foo\r\nbar\r\n")
+      expect(result[:exitcode]).to eq(99)
+    end
+
+    it "should return the exitcode of a script invoked with the call operator &" do
+      fixture_path = File.expand_path(File.dirname(__FILE__) + '../../../../exit-27.ps1')
+      result = manager.execute("& #{fixture_path}")
+
+      expect(result[:stdout]).to eq(nil)
+      expect(result[:exitcode]).to eq(27)
+    end
+
     it "should collect anything written to stderr" do
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
