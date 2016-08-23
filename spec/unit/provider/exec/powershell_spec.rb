@@ -2,6 +2,7 @@
 require 'spec_helper'
 require 'puppet/util'
 require 'puppet_x/puppetlabs/powershell/powershell_manager'
+require 'fileutils'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 
@@ -115,6 +116,19 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       }
     MANIFEST
     }
+    let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
+
+    before :each do
+      # a statedir setting must now exist per the new transactionstore code
+      # introduced in Puppet 4.6 for corrective changes, as a new YAML file
+      # called transactionstore.yaml will be written under this path
+      # which defaults to c:\dev\null when not set on Windows
+      Puppet[:statedir] = tmpdir
+    end
+
+    after :each do
+      FileUtils.rm_rf(tmpdir)
+    end
 
     def compile_to_catalog(string, node = Puppet::Node.new('foonode'))
       Puppet[:code] = string
