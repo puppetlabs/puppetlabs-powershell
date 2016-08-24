@@ -72,8 +72,9 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       if (!working_dir.nil?)
         self.fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
       end
+      timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
 
-      result = ps_manager.execute(command,nil,working_dir)
+      result = ps_manager.execute(command,timeout_ms,working_dir)
 
       stdout      = result[:stdout]
       stderr      = result[:stderr]
