@@ -8,6 +8,7 @@
     * [Setup requirements](#setup-requirements)
     * [Beginning with powershell](#beginning-with-powershell)
 4. [Usage - Configuration options and additional functionality](#usage)
+    * [External files and exit codes](#External-files-and-exit-codes)
 5. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
 5. [Limitations - OS compatibility, etc.](#limitations)
 6. [Development - Guide for contributing to the module](#development)
@@ -75,6 +76,38 @@ $obj.Rename("OtherGuest")
 ~~~
 
 This has the added benefit of not requiring escaping '$' in the PowerShell code. Note that the files need to have DOS linefeeds or they will not work as expected. One tool for converting UNIX linefeeds to DOS linefeeds is [unix2dos](http://freecode.com/projects/dos2unix).
+
+### External files and exit codes
+If you are calling external files, such as other PowerShell scripts or executables, be aware that the last executed script's exitcode will be used by Puppet to determine whether the command was successful.  For example:
+
+Suppose the file `C:\fail.ps1` contains the following PowerShell script
+
+~~~ powershell
+& cmd /c EXIT 5
+& cmd /c EXIT 1
+~~~
+
+and we use the following Puppet manifest
+
+~~~ puppet
+exec { 'test':
+  command   => '& C:\fail.ps1',
+  provider  => powershell,
+}
+~~~
+
+The `exec['test']` resource will always fail because the last exit code from the the external file `C:\fail.ps1` is `1`.  This behavior may have unintended consequences if you are combining multiple external files.
+
+To stop this behavior ensure that you use explicit `Exit` statements in your PowerShell scripts.  For example we changed the Puppet manifest from above to:
+
+~~~ puppet
+exec { 'test':
+  command   => '& C:\fail.ps1; Exit 0',
+  provider  => powershell,
+}
+~~~
+
+It will always succeed because the `Exit 0` statement overrides the exit code from the `C:\fail.ps1` script.
 
 
 ## Reference
