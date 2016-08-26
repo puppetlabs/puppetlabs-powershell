@@ -294,6 +294,7 @@ function New-XmlResult
 }
 
 Add-Type -TypeDefinition $hostSource -Language CSharp
+$global:DefaultWorkingDirectory = (Get-Location -PSProvider FileSystem).Path
 
 #this is a string so we can import into our dynamic PS instance
 $global:ourFunctions = @'
@@ -359,7 +360,10 @@ function Invoke-PowerShellUserCode
     $EventName,
 
     [Int]
-    $TimeoutMilliseconds
+    $TimeoutMilliseconds,
+
+    [String]
+    $WorkingDirectory    
   )
 
 
@@ -392,6 +396,12 @@ function Invoke-PowerShellUserCode
     [Void]$ps.AddScript($global:ourFunctions)
     $ps.Invoke()
 
+    if ([string]::IsNullOrEmpty($WorkingDirectory)) {
+      $ps.Runspace.SessionStateProxy.Path.SetLocation($global:DefaultWorkingDirectory)    
+    } else {
+      if (-not (Test-Path -Path $WorkingDirectory)) { Throw "Working directory `"$WorkingDirectory`" does not exist" }
+      $ps.Runspace.SessionStateProxy.Path.SetLocation($WorkingDirectory)
+    }
 
     if(!$global:environmentVariables){
       $ps.Commands.Clear()

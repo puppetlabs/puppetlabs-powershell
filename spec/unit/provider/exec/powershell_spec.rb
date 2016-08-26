@@ -108,6 +108,25 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
 
+  describe 'when specifying a working directory' do
+    describe 'that does not exist' do
+      let(:work_dir)  {
+        if Puppet.features.microsoft_windows?
+          "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist"
+        else
+          '/some/directory/that/does/not/exist'
+        end
+      }
+      let(:command)  { 'exit 0' }
+      let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :cwd => work_dir) }
+      let(:provider) { described_class.new(resource) }
+
+      it 'emits an error when working directory does not exist' do
+        expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/) 
+      end
+    end
+  end
+
   describe 'when applying a catalog' do
     let(:manifest) { <<-MANIFEST
       exec { 'PS':

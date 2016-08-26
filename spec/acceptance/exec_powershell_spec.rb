@@ -322,6 +322,17 @@ describe 'powershell provider:' do #, :unless => UNSUPPORTED_PLATFORMS.include?(
     it_should_behave_like 'should fail', pexception, /We are writing an error/i
   end
 
+  describe 'should error if timeout is exceeded' do
+    ptimeoutexception = <<-MANIFEST
+      exec{'PowershellException':
+        command  => 'Write-Host "Going to sleep now..."; Start-Sleep 5',
+        timeout  => 2,
+        provider => powershell,
+      }
+    MANIFEST
+    it_should_behave_like 'should fail', ptimeoutexception
+  end
+
   describe 'should be able to execute a ps1 file provided' do
     p2 = <<-MANIFEST
     file{'c:/services.ps1':
