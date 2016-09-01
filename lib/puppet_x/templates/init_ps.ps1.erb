@@ -450,7 +450,17 @@ function Invoke-PowerShellUserCode
       throw "Catastrophic failure: PowerShell module timeout ($TimeoutMilliseconds ms) exceeded while executing"
     }
 
-    $ps.EndInvoke($asyncResult)
+    try
+    {
+      $ps.EndInvoke($asyncResult)
+    } catch {
+      if ($_.Exception.InnerException -ne $null)
+      {
+        throw $_.Exception.InnerException
+      } else {
+        throw $_.Exception
+      }
+    }
 
     [Puppet.PuppetPSHostUserInterface]$ui = $global:puppetPSHost.UI
     [string]$text = $ui.Output
@@ -476,7 +486,14 @@ function Invoke-PowerShellUserCode
       # is to return 1 so that we ensure Puppet reports this run as an error.
       $ec = 1
     }
-    $output = $_.Exception.Message | Out-String
+
+    if ($_.Exception.ErrorRecord.InvocationInfo -ne $null)
+    {
+      $output = $_.Exception.Message + "`n`r" + $_.Exception.ErrorRecord.InvocationInfo.PositionMessage
+    } else {
+      $output = $_.Exception.Message | Out-String
+    }
+
     New-XmlResult -exitcode $ec -output $null -errormessage $output
   }
   finally
