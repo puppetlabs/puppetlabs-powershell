@@ -241,6 +241,20 @@ $bytes_in_k = (1024 * 64) + 1
       expect(first_cwd).to eq("#{work_dir}\r\n")
       expect(second_cwd).to eq("#{current_work_dir}\r\n")      
     end    
+
+    it "should not refer to 'EndInvoke' for a simple error" do
+      result = manager.execute('$ErrorActionPreference = "Stop";$test = 1/0')
+
+      expect(result[:exitcode]).to eq(1)
+      expect(result[:errormessage]).not_to match(/EndInvoke/)
+    end
+
+    it "should display line and offset information for a simple error" do
+      result = manager.execute('$ErrorActionPreference = "Stop";$test = 1/0')
+
+      expect(result[:exitcode]).to eq(1)
+      expect(result[:errormessage]).to match(/At line\:1 char\:33/)
+    end
   end
 
   describe "when output is written to a PowerShell Stream" do
