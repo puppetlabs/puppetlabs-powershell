@@ -41,7 +41,7 @@ describe PuppetX::PowerShell::PowerShellManager,
   }
 
   def create_manager
-    PuppetX::PowerShell::PowerShellManager.instance(manager_args)
+    PuppetX::PowerShell::PowerShellManager.instance(manager_args, true)
   end
 
   let (:manager) { create_manager() }
@@ -68,8 +68,14 @@ describe PuppetX::PowerShell::PowerShellManager,
         )
       end
 
-      # reason can be a single string / regex or an array of them
-      # by default the matches are treated as literal
+      def pipe_error_regex
+        @pipe_error_regex ||= (
+          epipe = Errno::EPIPE.new()
+          '^' + Regexp.escape("\#<#{epipe.class}: #{epipe.message}")
+        )
+      end
+      # reason should be a string for an exact match
+      # else an array of regex matches
       def expect_dead_manager(manager, reason, style = :exact)
         # additional attempts to use the manager will fail for the given reason
         result = manager.execute('Write-Host "hi"')
@@ -120,7 +126,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         # it catches the error and returns a -1 exitcode
         expect(exitcode).to eq(-1)
 
-        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+        expect_dead_manager(manager, pipe_error_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -132,7 +138,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         process = manager.instance_variable_get(:@ps_process)
         Process.kill('KILL', process.pid)
 
-        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+        expect_dead_manager(manager, pipe_error_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -140,8 +146,8 @@ describe PuppetX::PowerShell::PowerShellManager,
       it "should create a new PowerShell manager host if the input stream is closed" do
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
-        # closing stdin from the Ruby side tears down the process
-        close_stream(manager.instance_variable_get(:@stdin), :inprocess)
+        # closing pipe from the Ruby side tears down the process
+        close_stream(manager.instance_variable_get(:@pipe), :inprocess)
 
         expect_dead_manager(manager, IOError.new('closed stream').inspect, :exact)
 
@@ -151,8 +157,8 @@ describe PuppetX::PowerShell::PowerShellManager,
       it "should create a new PowerShell manager host if the input stream handle is closed" do
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
-        # call CloseHandle against stdin, therby tearing down the PowerShell process
-        close_stream(manager.instance_variable_get(:@stdin), :viahandle)
+        # call CloseHandle against pipe, therby tearing down the PowerShell process
+        close_stream(manager.instance_variable_get(:@pipe), :viahandle)
 
         expect_dead_manager(manager, bad_file_descriptor_regex, :regex)
 
@@ -296,6 +302,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('[System.Console]::Out.WriteLine("foo")')
 
       expect(result[:stdout]).to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
       expect(result[:stderr]).to eq([])
       expect(result[:exitcode]).to eq(0)
     end
@@ -312,6 +319,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('ps;[System.Console]::Out.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
       expect(result[:stderr]).to eq([])
       expect(result[:exitcode]).to eq(0)
     end
@@ -320,6 +328,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('ps;[System.Console]::Out.WriteLine("foo");[System.Console]::Error.WriteLine("bar")')
 
       expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
       expect(result[:stderr]).to eq(["bar\r\n"])
       expect(result[:exitcode]).to eq(0)
     end
@@ -333,7 +342,6 @@ describe PuppetX::PowerShell::PowerShellManager,
       let (:mixed_utf8) { "A\u06FF\u16A0\u{2070E}" } # Aۿᚠ𠜎
 
       it "when writing basic text" do
-        pending "currently unsupported"
         code = "Write-Output '#{mixed_utf8}'"
         result = manager.execute(code)
 
@@ -342,7 +350,6 @@ describe PuppetX::PowerShell::PowerShellManager,
       end
 
       it "when writing basic text to stderr" do
-        pending "currently unsupported"
         code = "[System.Console]::Error.WriteLine('#{mixed_utf8}')"
         result = manager.execute(code)
 

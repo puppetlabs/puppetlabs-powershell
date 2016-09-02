@@ -4,12 +4,22 @@ param (
   [String]
   $InitReadyEventName,
 
+  [Parameter(Mandatory = $true)]
+  [String]
+  $NamedPipeName,
+
   [Parameter(Mandatory = $false)]
   [Switch]
-  $EmitDebugOutput = $False
+  $EmitDebugOutput = $False,
+
+  [Parameter(Mandatory = $false)]
+  [System.Text.Encoding]
+  $Encoding = [System.Text.Encoding]::UTF8
 )
 
 $script:EmitDebugOutput = $EmitDebugOutput
+# Necessary for [System.Console]::Error.WriteLine to roundtrip with UTF-8
+[System.Console]::OutputEncoding = $Encoding
 
 $hostSource = @"
 using System;
@@ -512,7 +522,7 @@ function Invoke-PowerShellUserCode
     [string]$text = $ui.Output
     [string]$stderr = $ui.StdErr
 
-    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null
+    @((New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null), $EventName)
   }
   catch
   {
@@ -543,11 +553,10 @@ function Invoke-PowerShellUserCode
 
     # make an attempt to read StdErr as it may contain info about failures
     try { $err = $global:puppetPSHost.UI.StdErr } catch { $err = $null }
-    New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output
+    @((New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output), $EventName)
   }
   finally
   {
-    Signal-Event -EventName $EventName
     if ($ps -ne $null) { [Void]$ps.Dispose() }
   }
 }
@@ -586,4 +595,222 @@ function Signal-Event
   Write-SystemDebugMessage -Message "Signaled event $EventName"
 }
 
-Signal-Event -EventName $InitReadyEventName
+
+function Write-StreamResponse
+{
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [System.IO.Pipes.PipeStream]
+    $Stream,
+
+    [Parameter(Mandatory = $true)]
+    [String]
+    $Response,
+
+    [Parameter(Mandatory = $true)]
+    [System.Text.Encoding]
+    $Encoding
+  )
+
+  # convert string to bytes in the specified encoding and write them to stream
+  $bytes = $Encoding.GetBytes($Response)
+  $Stream.Write($bytes, 0, $bytes.Length)
+  # and add the newline so Ruby IO.gets works
+  $bytes = $Encoding.GetBytes([System.Environment]::NewLine)
+  $Stream.Write($bytes, 0, $bytes.Length)
+  $Stream.Flush()
+
+  Write-SystemDebugMessage -Message "Wrote Data to Stream:`n$Response"
+}
+
+function Read-Int32FromStream
+{
+  [CmdletBinding()]
+  param (
+   [Parameter(Mandatory = $true)]
+   [System.IO.Pipes.PipeStream]
+   $Stream
+  )
+
+  $length = New-Object Byte[] 4
+  # Read blocks until all 4 bytes available
+  $Stream.Read($length, 0, 4) | Out-Null
+  # value is sent in Little Endian, but if the CPU is not, in-place reverse the array
+  if (![BitConverter]::IsLittleEndian) { [Array]::Reverse($length) }
+  $value = [BitConverter]::ToInt32($length, 0)
+
+  Write-SystemDebugMessage -Message "Read Byte[] $length from stream as Int32 $value"
+
+  return $value
+}
+
+function Read-BytesFromStream
+{
+  [CmdletBinding()]
+  param (
+   [Parameter(Mandatory = $true)]
+   [System.IO.Stream]
+   $Stream,
+
+   [Parameter(Mandatory = $true)]
+   [Int32]
+   $Count,
+
+   [Parameter(Mandatory = $false)]
+   [Int32]
+   $BufferChunkSize = 4096
+  )
+
+  $bytes = New-Object Byte[] $Count
+
+  # keep draining stream in chunks until expected number of bytes read
+  $read = 0
+  $buffer = New-Object Byte[] $BufferChunkSize
+  while ($read -lt $Count)
+  {
+    # ensure that only expected bytes are waited on
+    $toRead = [Math]::Min(($Count - $read), $BufferChunkSize)
+
+    Write-SystemDebugMessage -Message "Attempting to read $toRead raw bytes"
+
+    # this should return either a full buffer or remaining bytes
+    $lastRead = $Stream.Read($buffer, 0, $toRead)
+
+    Write-SystemDebugMessage -Message "Buffer received $lastRead raw bytes"
+
+    # copy the $lastRead number of bytes read into $buffer out to the byte[]
+    [Array]::Copy($buffer, 0, $bytes, $read, $lastRead)
+
+    # and keep track of total bytes read
+    $read += $lastRead
+  }
+
+  Write-SystemDebugMessage -Message "Buffer received total $read raw bytes"
+
+  return $bytes
+}
+
+# Message format is:
+# 1 byte - command identifier
+#     0 - Exit
+#     1 - Execute
+#    -1 - Exit - automatically returned when ReadByte encounters a closed pipe
+# [optional] 4 bytes - Little Endian encoded 32-bit code block length for execute
+#                      Intel CPUs are little endian, hence the .NET Framework typically is
+# [optional] variable length - code block
+function ConvertTo-PipeCommand
+{
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [System.IO.Pipes.PipeStream]
+    $Stream,
+
+    [Parameter(Mandatory = $true)]
+    [System.Text.Encoding]
+    $Encoding,
+
+    [Parameter(Mandatory = $false)]
+    [Int32]
+    $BufferChunkSize = 4096
+  )
+
+  # command identifier is a single value - ReadByte blocks until byte is ready / pipe closes
+  $command = $Stream.ReadByte()
+
+  Write-SystemDebugMessage -Message "Command id $command read from pipe"
+
+  switch ($command)
+  {
+    # Exit
+    # ReadByte returns a -1 when the pipe is closed on the other end
+    { @(0, -1) -contains $_ } { return @{ Command = 'Exit' }}
+
+    # Execute
+    1 { $parsed = @{ Command = 'Execute' } }
+
+    default { throw "Catastrophic failure: Unexpected Command $command received" }
+  }
+
+  # read size of incoming byte buffer
+  $parsed.Length = Read-Int32FromStream -Stream $Stream
+  Write-SystemDebugMessage -Message "Expecting $($parsed.Length) raw bytes of $($Encoding.EncodingName) characters"
+
+  $parsed.RawData = Read-BytesFromStream -Stream $Stream -Count $parsed.Length -BufferChunkSize $BufferChunkSize
+
+  # turn the raw bytes into the expected encoded string!
+  $parsed.Code = $Encoding.GetString($parsed.RawData)
+
+  return $parsed
+}
+
+function Start-PipeServer
+{
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [String]
+    $ListenerReadyEventName,
+
+    [Parameter(Mandatory = $true)]
+    [String]
+    $CommandChannelPipeName,
+
+    [Parameter(Mandatory = $true)]
+    [System.Text.Encoding]
+    $Encoding
+  )
+
+  # this does not require versioning in the payload as client / server are tightly coupled
+  $server = New-Object System.IO.Pipes.NamedPipeServerStream($CommandChannelPipeName,
+    [System.IO.Pipes.PipeDirection]::InOut)
+
+  try
+  {
+    # let Ruby know the server is available and listening, and the file path can be opened
+    Signal-Event -EventName $ListenerReadyEventName
+
+    # block until Ruby process connects
+    $server.WaitForConnection()
+
+    Write-SystemDebugMessage -Message "Incoming Connection to $CommandChannelPipeName Received - Expecting Strings as $($Encoding.EncodingName)"
+
+    # Infinite Loop to process commands until EXIT received
+    $running = $true
+    while ($running)
+    {
+      # throws if an unxpected command id is read from pipe
+      $response = ConvertTo-PipeCommand -Stream $server -Encoding $Encoding
+
+      Write-SystemDebugMessage -Message "Received $($response.Command) command from client"
+
+      switch ($response.Command)
+      {
+        'Execute' {
+          Write-SystemDebugMessage -Message "[Execute] Invoking user code:`n`n $($response.Code)"
+
+          # assuming that the Ruby code always calls Invoked-PowerShellUserCode,
+          # result should already be returned as XML, eventName to signal
+          $result, $eventName = Invoke-Expression $response.Code
+
+          Write-StreamResponse -Stream $server -Response $result -Encoding $Encoding
+
+          Signal-Event -EventName $eventName
+        }
+        'Exit' { $running = $false }
+      }
+    }
+  }
+  catch [Exception]
+  {
+    Write-SystemDebugMessage -Message "PowerShell Pipe Server Failed!`n`n$_"
+    throw
+  }
+  finally
+  {
+    if ($server -ne $null) { $server.Dispose() }
+  }
+}
+
+Start-PipeServer -ListenerReadyEventName $InitReadyEventName -CommandChannelPipeName $NamedPipeName -Encoding $Encoding

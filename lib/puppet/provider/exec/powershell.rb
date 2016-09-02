@@ -44,13 +44,16 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def self.powershell_args
-    ps_args = ['-NoProfile', '-NonInteractive', '-NoLogo', '-ExecutionPolicy', 'Bypass', '-Command']
-    ps_args << '-' if PuppetX::PowerShell::PowerShellManager.supported?
+    ps_args = ['-NoProfile', '-NonInteractive', '-NoLogo', '-ExecutionPolicy', 'Bypass']
+    ps_args << '-Command' if !PuppetX::PowerShell::PowerShellManager.supported?
+
     ps_args
   end
 
   def ps_manager
-    PuppetX::PowerShell::PowerShellManager.instance("#{command(:powershell)} #{self.class.powershell_args.join(' ')}")
+    debug_output = Puppet::Util::Log.level == :debug
+    manager_args = "#{command(:powershell)} #{self.class.powershell_args().join(' ')}"
+    PuppetX::PowerShell::PowerShellManager.instance(manager_args, debug_output)
   end
 
   def run(command, check = false)
@@ -77,6 +80,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       result = ps_manager.execute(command,timeout_ms,working_dir)
 
       stdout      = result[:stdout]
+      native_out  = result[:native_stdout]
       stderr      = result[:stderr]
       exit_code   = result[:exitcode]
 
@@ -86,7 +90,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
       Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
 
-      output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s || '', exit_code)
+      output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
 
       return output, output
     end
