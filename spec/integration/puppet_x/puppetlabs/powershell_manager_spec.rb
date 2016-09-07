@@ -18,6 +18,10 @@ describe PuppetX::PowerShell::PowerShellManager,
     PuppetX::PowerShell::PowerShellManager.instance("#{powershell} #{powershell_args.join(' ')}")
   }
 
+  let(:powershell_runtime_error) { '$ErrorActionPreference = "Stop";$test = 1/0' }
+  let(:powershell_parseexception_error) { '$ErrorActionPreference = "Stop";if (1 -badoperator 2) { Exit 1 }' }
+  let(:powershell_incompleteparseexception_error) { '$ErrorActionPreference = "Stop";if (1 -eq 2) {  ' }
+
   describe "when provided powershell commands" do
     it "shows ps version" do
       result = manager.execute('$psversiontable')
@@ -239,21 +243,58 @@ $bytes_in_k = (1024 * 64) + 1
       second_cwd = manager.execute('(Get-Location).Path')[:stdout]
 
       expect(first_cwd).to eq("#{work_dir}\r\n")
-      expect(second_cwd).to eq("#{current_work_dir}\r\n")      
-    end    
-
-    it "should not refer to 'EndInvoke' for a simple error" do
-      result = manager.execute('$ErrorActionPreference = "Stop";$test = 1/0')
-
-      expect(result[:exitcode]).to eq(1)
-      expect(result[:errormessage]).not_to match(/EndInvoke/)
+      expect(second_cwd).to eq("#{current_work_dir}\r\n")
     end
 
-    it "should display line and offset information for a simple error" do
-      result = manager.execute('$ErrorActionPreference = "Stop";$test = 1/0')
+    context "with runtime error" do
+      it "should not refer to 'EndInvoke' or 'throw' for a runtime error" do
+        result = manager.execute(powershell_runtime_error)
 
-      expect(result[:exitcode]).to eq(1)
-      expect(result[:errormessage]).to match(/At line\:1 char\:33/)
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).not_to match(/EndInvoke/)
+        expect(result[:errormessage]).not_to match(/throw/)
+      end
+
+      it "should display line and char information for a runtime error" do
+        result = manager.execute(powershell_runtime_error)
+
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).to match(/At line\:1 char\:33/)
+      end
+    end
+
+    context "with ParseException error" do
+      it "should not refer to 'EndInvoke' or 'throw' for a ParseException error" do
+        result = manager.execute(powershell_parseexception_error)
+
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).not_to match(/EndInvoke/)
+        expect(result[:errormessage]).not_to match(/throw/)
+      end
+
+      it "should display line and char information for a ParseException error" do
+        result = manager.execute(powershell_parseexception_error)
+
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).to match(/At line\:1 char\:39/)
+      end
+    end
+
+    context "with IncompleteParseException error" do
+      it "should not refer to 'EndInvoke' or 'throw' for an IncompleteParseException error" do
+        result = manager.execute(powershell_incompleteparseexception_error)
+
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).not_to match(/EndInvoke/)
+        expect(result[:errormessage]).not_to match(/throw/)
+      end
+
+      it "should not display line and char information for an IncompleteParseException error" do
+        result = manager.execute(powershell_incompleteparseexception_error)
+
+        expect(result[:exitcode]).to eq(1)
+        expect(result[:errormessage]).not_to match(/At line\:\d+ char\:\d+/)
+      end
     end
   end
 
