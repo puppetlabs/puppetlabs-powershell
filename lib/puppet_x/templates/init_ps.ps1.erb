@@ -363,7 +363,7 @@ function Invoke-PowerShellUserCode
     $TimeoutMilliseconds,
 
     [String]
-    $WorkingDirectory    
+    $WorkingDirectory
   )
 
 
@@ -397,10 +397,10 @@ function Invoke-PowerShellUserCode
     $ps.Invoke()
 
     if ([string]::IsNullOrEmpty($WorkingDirectory)) {
-      $ps.Runspace.SessionStateProxy.Path.SetLocation($global:DefaultWorkingDirectory)    
+      [Void]$ps.Runspace.SessionStateProxy.Path.SetLocation($global:DefaultWorkingDirectory)
     } else {
       if (-not (Test-Path -Path $WorkingDirectory)) { Throw "Working directory `"$WorkingDirectory`" does not exist" }
-      $ps.Runspace.SessionStateProxy.Path.SetLocation($WorkingDirectory)
+      [Void]$ps.Runspace.SessionStateProxy.Path.SetLocation($WorkingDirectory)
     }
 
     if(!$global:environmentVariables){
