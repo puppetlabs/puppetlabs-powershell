@@ -366,9 +366,6 @@ function Invoke-PowerShellUserCode
     $WorkingDirectory
   )
 
-
-  $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
-
   if ($global:runspace -eq $null){
     # CreateDefault2 requires PS3
     if ([System.Management.Automation.Runspaces.InitialSessionState].GetMethod('CreateDefault2')){
@@ -501,19 +498,28 @@ function Invoke-PowerShellUserCode
   }
   finally
   {
-    [Void]$event.Set()
-    [Void]$event.Close()
-    if ($PSVersionTable.CLRVersion.Major -ge 3) {
-      [Void]$event.Dispose()
-    }
+    Signal-Event -EventName $EventName
     if ($ps -ne $null) { [Void]$ps.Dispose() }
   }
 }
 
+function Signal-Event
+{
+  [CmdletBinding()]
+  param(
+    [String]
+    $EventName
+  )
 
-$event = [Threading.EventWaitHandle]::OpenExisting('<%= init_ready_event_name %>')
-[Void]$event.Set()
-[Void]$event.Close()
-if ($PSVersionTable.CLRVersion.Major -ge 3) {
-  [Void]$event.Dispose()
+  $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
+
+  [Void]$event.Set()
+  [Void]$event.Close()
+  if ($PSVersionTable.CLRVersion.Major -ge 3) {
+    [Void]$event.Dispose()
+  }
+
+  if ($DebugPreference -ne 'SilentlyContinue') { [System.Diagnostics.Debug]::WriteLine("Signaled event $EventName") }
 }
+
+Signal-Event -EventName '<%= init_ready_event_name %>'
