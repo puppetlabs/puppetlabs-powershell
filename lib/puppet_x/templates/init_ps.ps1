@@ -1,3 +1,10 @@
+[CmdletBinding()]
+param (
+  [Parameter(Mandatory = $true)]
+  [String]
+  $InitReadyEventName
+)
+
 $hostSource = @"
 using System;
 using System.Collections.Generic;
@@ -522,4 +529,4 @@ function Signal-Event
   if ($DebugPreference -ne 'SilentlyContinue') { [System.Diagnostics.Debug]::WriteLine("Signaled event $EventName") }
 }
 
-Signal-Event -EventName '<%= init_ready_event_name %>'
+Signal-Event -EventName $InitReadyEventName
