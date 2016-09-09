@@ -2,8 +2,14 @@
 param (
   [Parameter(Mandatory = $true)]
   [String]
-  $InitReadyEventName
+  $InitReadyEventName,
+
+  [Parameter(Mandatory = $false)]
+  [Switch]
+  $EmitDebugOutput = $False
 )
+
+$script:EmitDebugOutput = $EmitDebugOutput
 
 $hostSource = @"
 using System;
@@ -510,6 +516,21 @@ function Invoke-PowerShellUserCode
   }
 }
 
+function Write-SystemDebugMessage
+{
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory = $true)]
+    [String]
+    $Message
+  )
+
+  if ($script:EmitDebugOutput -or ($DebugPreference -ne 'SilentlyContinue'))
+  {
+    [System.Diagnostics.Debug]::WriteLine($Message)
+  }
+}
+
 function Signal-Event
 {
   [CmdletBinding()]
@@ -526,7 +547,7 @@ function Signal-Event
     [Void]$event.Dispose()
   }
 
-  if ($DebugPreference -ne 'SilentlyContinue') { [System.Diagnostics.Debug]::WriteLine("Signaled event $EventName") }
+  Write-SystemDebugMessage -Message "Signaled event $EventName"
 }
 
 Signal-Event -EventName $InitReadyEventName

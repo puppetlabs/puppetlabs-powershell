@@ -101,8 +101,9 @@ module PuppetX
       end
 
       def make_ps_init_code(init_ready_event_name)
+        debug_output = Puppet::Util::Log.level == :debug ? '-EmitDebugOutput' : ''
         <<-CODE
-. #{self.class.init_path} -InitReadyEventName '#{init_ready_event_name}'
+. #{self.class.init_path} -InitReadyEventName '#{init_ready_event_name}' #{debug_output}
         CODE
       end
 
