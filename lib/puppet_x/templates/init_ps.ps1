@@ -645,52 +645,6 @@ function Read-Int32FromStream
   return $value
 }
 
-function Read-BytesFromStream
-{
-  [CmdletBinding()]
-  param (
-   [Parameter(Mandatory = $true)]
-   [System.IO.Stream]
-   $Stream,
-
-   [Parameter(Mandatory = $true)]
-   [Int32]
-   $Count,
-
-   [Parameter(Mandatory = $false)]
-   [Int32]
-   $BufferChunkSize = 4096
-  )
-
-  $bytes = New-Object Byte[] $Count
-
-  # keep draining stream in chunks until expected number of bytes read
-  $read = 0
-  $buffer = New-Object Byte[] $BufferChunkSize
-  while ($read -lt $Count)
-  {
-    # ensure that only expected bytes are waited on
-    $toRead = [Math]::Min(($Count - $read), $BufferChunkSize)
-
-    Write-SystemDebugMessage -Message "Attempting to read $toRead raw bytes"
-
-    # this should return either a full buffer or remaining bytes
-    $lastRead = $Stream.Read($buffer, 0, $toRead)
-
-    Write-SystemDebugMessage -Message "Buffer received $lastRead raw bytes"
-
-    # copy the $lastRead number of bytes read into $buffer out to the byte[]
-    [Array]::Copy($buffer, 0, $bytes, $read, $lastRead)
-
-    # and keep track of total bytes read
-    $read += $lastRead
-  }
-
-  Write-SystemDebugMessage -Message "Buffer received total $read raw bytes"
-
-  return $bytes
-}
-
 # Message format is:
 # 1 byte - command identifier
 #     0 - Exit
@@ -737,7 +691,13 @@ function ConvertTo-PipeCommand
   $parsed.Length = Read-Int32FromStream -Stream $Stream
   Write-SystemDebugMessage -Message "Expecting $($parsed.Length) raw bytes of $($Encoding.EncodingName) characters"
 
-  $parsed.RawData = Read-BytesFromStream -Stream $Stream -Count $parsed.Length -BufferChunkSize $BufferChunkSize
+  # Read blocks until all bytes are read or EOF / broken pipe hit - tested with 5MB and worked fine
+  $parsed.RawData = New-Object Byte[] $parsed.Length
+  $read = $Stream.Read($parsed.RawData, 0, $parsed.Length)
+  if ($read -lt $parsed.Length)
+  {
+    throw "Catastrophic failure: Expected $($parsed.Length) raw bytes, only received $read"
+  }
 
   # turn the raw bytes into the expected encoded string!
   $parsed.Code = $Encoding.GetString($parsed.RawData)
