@@ -94,14 +94,17 @@ module PuppetX
         end
       end
 
-      def template_path
-        File.expand_path('../../../templates', __FILE__)
+      def self.init_path
+        path = File.expand_path('../../../templates', __FILE__)
+        path = File.join(path, 'init_ps.ps1').gsub('/', '\\')
+        "\"#{path}\""
       end
 
       def make_ps_init_code(init_ready_event_name)
-        template_file = File.new(template_path + "/init_ps.ps1.erb").read
-        template = ERB.new(template_file, nil, '-')
-        template.result(binding)
+        debug_output = Puppet::Util::Log.level == :debug ? '-EmitDebugOutput' : ''
+        <<-CODE
+. #{self.class.init_path} -InitReadyEventName '#{init_ready_event_name}' #{debug_output}
+        CODE
       end
 
       def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = nil, working_dir = nil)
