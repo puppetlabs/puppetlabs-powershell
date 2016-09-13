@@ -72,10 +72,11 @@ module PuppetX
 
       def exit
         Puppet.debug "PowerShellManager exiting..."
-        @stdin.puts "\nexit\n"
-        @stdin.close
-        @stdout.close
-        @stderr.close
+        # ignore any failure to call exit against PS process
+        @stdin.puts "\nexit\n" if !@stdin.closed? rescue nil
+        @stdin.close if !@stdin.closed?
+        @stdout.close if !@stdout.closed?
+        @stderr.close if !@stderr.closed?
 
         exit_msg = "PowerShell process did not terminate in reasonable time"
         begin
