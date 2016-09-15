@@ -11,12 +11,30 @@ end
 describe PuppetX::PowerShell::PowerShellManager,
   :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
 
-  let (:manager) {
+  let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
-    powershell_args = provider.powershell_args
-    PuppetX::PowerShell::PowerShellManager.instance("#{powershell} #{powershell_args.join(' ')}")
+    cli_args = provider.powershell_args
+    "#{powershell} #{cli_args.join(' ')}"
   }
+
+  let (:manager) {
+    PuppetX::PowerShell::PowerShellManager.instance(manager_args)
+  }
+
+  describe "when managing the powershell process" do
+    describe "the PowerShellManager::instance method" do
+      it "should return the same manager instance / process given the same cmd line" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        manager_2 = PuppetX::PowerShell::PowerShellManager.instance(manager_args)
+        second_pid = manager_2.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        expect(manager_2).to eq(manager)
+        expect(first_pid).to eq(second_pid)
+      end
+    end
+  end
 
   let(:powershell_runtime_error) { '$ErrorActionPreference = "Stop";$test = 1/0' }
   let(:powershell_parseexception_error) { '$ErrorActionPreference = "Stop";if (1 -badoperator 2) { Exit 1 }' }
