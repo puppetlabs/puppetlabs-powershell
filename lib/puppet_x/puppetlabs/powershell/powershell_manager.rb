@@ -203,9 +203,6 @@ Invoke-PowerShellUserCode @params
 
       def write_stdin(input)
         @stdin.puts(input)
-      rescue => e
-        msg = "Error writing STDIN / reading STDOUT: #{e}"
-        raise Puppet::Util::Windows::Error.new(msg)
       end
 
       def drain_pipe(pipe, iterations = 10)
@@ -245,14 +242,14 @@ Invoke-PowerShellUserCode @params
         errors = errors.reject { |e| e.empty? }
 
         return output.join(''), errors
-      rescue => e
-        msg = "Error reading PIPE: #{e}"
-        raise Puppet::Util::Windows::Error.new(msg)
       end
 
       def exec_read_result(powershell_code, output_ready_event)
         write_stdin(powershell_code)
         read_stdout(output_ready_event)
+      rescue => e
+        msg = "Unexpected error with pipe communication"
+        raise e, msg, e.backtrace
       end
 
       if Puppet::Util::Platform.windows?
