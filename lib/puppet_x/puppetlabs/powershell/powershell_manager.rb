@@ -12,7 +12,15 @@ module PuppetX
       @@instances = {}
 
       def self.instance(cmd)
-        @@instances[:cmd] ||= PowerShellManager.new(cmd)
+        manager = @@instances[cmd]
+
+        if manager.nil? || !manager.alive?
+          # ignore any errors trying to tear down this unusable instance
+          manager.exit if manager rescue nil
+          @@instances[cmd] = PowerShellManager.new(cmd)
+        end
+
+         @@instances[cmd]
       end
 
       def self.win32console_enabled?
@@ -26,6 +34,7 @@ module PuppetX
       end
 
       def initialize(cmd)
+        @usable = true
         @stdin, @stdout, @stderr, @ps_process = Open3.popen3(cmd)
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
@@ -41,6 +50,17 @@ module PuppetX
         at_exit { exit }
       end
 
+      def alive?
+        # powershell process running
+        @ps_process.alive? &&
+          # explicitly set during a read / write failure, like broken pipe EPIPE
+          @usable &&
+          # an explicit failure state might not have been hit, but IO may be closed
+          self.class.is_stream_valid?(@stdin) &&
+          self.class.is_stream_valid?(@stdout) &&
+          self.class.is_stream_valid?(@stderr)
+      end
+
       def execute(powershell_code, timeout_ms = nil, working_dir = nil)
         output_ready_event_name =  "Global\\#{SecureRandom.uuid}"
         output_ready_event = self.class.create_event(output_ready_event_name)
@@ -48,6 +68,9 @@ module PuppetX
         code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms, working_dir)
 
         out, err = exec_read_result(code, output_ready_event)
+
+        # an error was caught during execution that has invalidated any results
+        return { :exitcode => -1, :stderr => err } if !@usable && out.nil?
 
         # Powershell adds in newline characters as it tries to wrap output around the display (by default 80 chars).
         # This behavior is expected and cannot be changed, however it corrupts the XML e.g. newlines in the middle of
@@ -72,10 +95,11 @@ module PuppetX
 
       def exit
         Puppet.debug "PowerShellManager exiting..."
-        @stdin.puts "\nexit\n"
-        @stdin.close
-        @stdout.close
-        @stderr.close
+        # ignore any failure to call exit against PS process
+        @stdin.puts "\nexit\n" if !@stdin.closed? rescue nil
+        @stdin.close if !@stdin.closed?
+        @stdout.close if !@stdout.closed?
+        @stderr.close if !@stderr.closed?
 
         exit_msg = "PowerShell process did not terminate in reasonable time"
         begin
@@ -137,6 +161,22 @@ Invoke-PowerShellUserCode @params
       def self.is_readable?(stream, timeout = 0.5)
         read_ready = IO.select([stream], [], [], timeout)
         read_ready && stream == read_ready[0][0]
+      end
+
+      # when a stream has been closed by handle, but Ruby still has a file
+      # descriptor for it, it can be tricky to determine that it's actually dead
+      # the .fileno will still return an int, and calling get_osfhandle against
+      # it returns what the CRT thinks is a valid Windows HANDLE value, but
+      # that may no longer exist
+      def self.is_stream_valid?(stream)
+        # when a stream is closed, its obviously invalid, but Ruby doesn't always know
+        !stream.closed? &&
+        # so calling stat will yield an EBADF when underlying OS handle is bad
+        # as this resolves to a HANDLE and then calls the Windows API
+        !stream.stat.nil?
+      # any exceptions mean the stream is dead
+      rescue
+        false
       end
 
       # copied directly from Puppet 3.7+ to support Puppet 3.5+
@@ -202,9 +242,6 @@ Invoke-PowerShellUserCode @params
 
       def write_stdin(input)
         @stdin.puts(input)
-      rescue => e
-        msg = "Error writing STDIN / reading STDOUT: #{e}"
-        raise Puppet::Util::Windows::Error.new(msg)
       end
 
       def drain_pipe(pipe, iterations = 10)
@@ -224,7 +261,12 @@ Invoke-PowerShellUserCode @params
         waited = 0
 
         # drain the pipe while waiting for the event signal
+        # but prevent an infinite loop by validating the process, pipes, etc
         while WAIT_TIMEOUT == self.class.wait_on(output_ready_event, wait_interval_ms)
+          # Ruby will gleefully allow trying to read stdout / stderr that are
+          # no longer connected to a live process, so therefore check the
+          # liveness here and raise the broken pipe error that Ruby would usually
+          raise Errno::EPIPE if !alive?
           # TODO: While this does ensure that both pipes have been
           # drained it can block on either longer than necessary or
           # deadlock waiting for one or the other to finish. The correct
@@ -244,14 +286,24 @@ Invoke-PowerShellUserCode @params
         errors = errors.reject { |e| e.empty? }
 
         return output.join(''), errors
-      rescue => e
-        msg = "Error reading PIPE: #{e}"
-        raise Puppet::Util::Windows::Error.new(msg)
       end
 
       def exec_read_result(powershell_code, output_ready_event)
         write_stdin(powershell_code)
         read_stdout(output_ready_event)
+      # if any pipes are broken, the manager is totally hosed
+      # bad file descriptors mean closed stream handles
+      rescue Errno::EPIPE, Errno::EBADF => e
+        @usable = false
+        return nil, [[e.inspect, e.backtrace].flatten]
+      # catch closed stream errors specifically
+      rescue IOError => ioerror
+        raise if !ioerror.message.start_with?('closed stream')
+        @usable = false
+        return nil, [[ioerror.inspect, ioerror.backtrace].flatten]
+      rescue => e
+        msg = "Unexpected error with pipe communication"
+        raise e, msg, e.backtrace
       end
 
       if Puppet::Util::Platform.windows?

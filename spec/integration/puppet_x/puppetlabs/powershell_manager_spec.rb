@@ -5,18 +5,219 @@ require 'puppet_x/puppetlabs/powershell/powershell_manager'
 module PuppetX
   module PowerShell
     class PowerShellManager; end
+    if Puppet::Util::Platform.windows?
+      module WindowsAPI
+        require 'ffi'
+        extend FFI::Library
+
+        ffi_convention :stdcall
+
+        # https://msdn.microsoft.com/en-us/library/ks2530z6%28v=VS.100%29.aspx
+        # intptr_t _get_osfhandle(
+        #    int fd
+        # );
+        ffi_lib [FFI::CURRENT_PROCESS, 'msvcrt']
+        attach_function :get_osfhandle, :_get_osfhandle, [:int], :uintptr_t
+
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx
+        # BOOL WINAPI CloseHandle(
+        #   _In_  HANDLE hObject
+        # );
+        ffi_lib :kernel32
+        attach_function :CloseHandle, [:uintptr_t], :int32
+      end
+    end
   end
 end
 
 describe PuppetX::PowerShell::PowerShellManager,
   :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
 
-  let (:manager) {
+  let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
-    powershell_args = provider.powershell_args
-    PuppetX::PowerShell::PowerShellManager.instance("#{powershell} #{powershell_args.join(' ')}")
+    cli_args = provider.powershell_args
+    "#{powershell} #{cli_args.join(' ')}"
   }
+
+  def create_manager
+    PuppetX::PowerShell::PowerShellManager.instance(manager_args)
+  end
+
+  let (:manager) { create_manager() }
+
+  describe "when managing the powershell process" do
+    describe "the PowerShellManager::instance method" do
+      it "should return the same manager instance / process given the same cmd line" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        manager_2 = create_manager()
+        second_pid = manager_2.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        expect(manager_2).to eq(manager)
+        expect(first_pid).to eq(second_pid)
+      end
+
+      def bad_file_descriptor_regex
+        # Ruby can do something like:
+        # <Errno::EBADF: Bad file descriptor>
+        # <Errno::EBADF: Bad file descriptor @ io_fillbuf - fd:10 >
+        @bad_file_descriptor_regex ||= (
+          ebadf = Errno::EBADF.new()
+          '^' + Regexp.escape("\#<#{ebadf.class}: #{ebadf.message}")
+        )
+      end
+
+      # reason can be a single string / regex or an array of them
+      # by default the matches are treated as literal
+      def expect_dead_manager(manager, reason, style = :exact)
+        # additional attempts to use the manager will fail for the given reason
+        result = manager.execute('Write-Host "hi"')
+        expect(result[:exitcode]).to eq(-1)
+
+        if reason.is_a?(String)
+          expect(result[:stderr][0][0]).to eq(reason) if style == :exact
+          expect(result[:stderr][0][0]).to match(reason) if style == :regex
+        elsif reason.is_a?(Array)
+          expect(reason).to include(result[:stderr][0][0]) if style == :exact
+          if style == :regex
+            expect(result[:stderr][0][0]).to satisfy("should match expected error(s): #{reason}") do |msg|
+              reason.any? { |m| msg.match m }
+            end
+          end
+        end
+
+        # and the manager no longer considers itself alive
+        expect(manager.alive?).to eq(false)
+      end
+
+      def expect_different_manager_returned_than(manager, pid)
+        # acquire another manager instance
+        new_manager = create_manager()
+
+        # which should be different than the one passed in
+        expect(new_manager).to_not eq(manager)
+
+        # with a different PID
+        second_pid = new_manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+        expect(pid).to_not eq(second_pid)
+      end
+
+      def close_stream(stream, style = :inprocess)
+        if style == :inprocess
+          stream.close
+        else style == :viahandle
+          handle = PuppetX::PowerShell::WindowsAPI.get_osfhandle(stream.fileno)
+          PuppetX::PowerShell::WindowsAPI.CloseHandle(handle)
+        end
+      end
+
+      it "should create a new PowerShell manager host if user code exits the first process" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+        exitcode = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Kill()')[:exitcode]
+
+        # when a process gets torn down out from under manager before reading stdout
+        # it catches the error and returns a -1 exitcode
+        expect(exitcode).to eq(-1)
+
+        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the underlying PowerShell process is killed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # kill the PID from Ruby
+        process = manager.instance_variable_get(:@ps_process)
+        Process.kill('KILL', process.pid)
+
+        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the input stream is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # closing stdin from the Ruby side tears down the process
+        close_stream(manager.instance_variable_get(:@stdin), :inprocess)
+
+        expect_dead_manager(manager, IOError.new('closed stream').inspect, :exact)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the input stream handle is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # call CloseHandle against stdin, therby tearing down the PowerShell process
+        close_stream(manager.instance_variable_get(:@stdin), :viahandle)
+
+        expect_dead_manager(manager, bad_file_descriptor_regex, :regex)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the output stream is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # closing stdout from the Ruby side allows process to run
+        close_stream(manager.instance_variable_get(:@stdout), :inprocess)
+
+        # fails with vanilla EPIPE or closed stream IOError depening on timing / Ruby version
+        msgs = [ Errno::EPIPE.new().inspect, IOError.new('closed stream').inspect ]
+        expect_dead_manager(manager, msgs, :exact)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the output stream handle is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # call CloseHandle against stdout, which leaves PowerShell process running
+        close_stream(manager.instance_variable_get(:@stdout), :viahandle)
+
+        # fails with vanilla EPIPE or various EBADF depening on timing / Ruby version
+        msgs = [
+          '^' + Regexp.escape(Errno::EPIPE.new().inspect),
+          bad_file_descriptor_regex
+        ]
+        expect_dead_manager(manager, msgs, :regex)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the error stream is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # closing stderr from the Ruby side allows process to run
+        close_stream(manager.instance_variable_get(:@stderr), :inprocess)
+
+        # fails with vanilla EPIPE or closed stream IOError depening on timing / Ruby version
+        msgs = [ Errno::EPIPE.new().inspect, IOError.new('closed stream').inspect ]
+        expect_dead_manager(manager, msgs, :exact)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+
+      it "should create a new PowerShell manager host if the error stream handle is closed" do
+        first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
+
+        # call CloseHandle against stderr, which leaves PowerShell process running
+        close_stream(manager.instance_variable_get(:@stderr), :viahandle)
+
+        # fails with vanilla EPIPE or various EBADF depening on timing / Ruby version
+        msgs = [
+          '^' + Regexp.escape(Errno::EPIPE.new().inspect),
+          bad_file_descriptor_regex
+        ]
+        expect_dead_manager(manager, msgs, :regex)
+
+        expect_different_manager_returned_than(manager, first_pid)
+      end
+    end
+  end
 
   let(:powershell_runtime_error) { '$ErrorActionPreference = "Stop";$test = 1/0' }
   let(:powershell_parseexception_error) { '$ErrorActionPreference = "Stop";if (1 -badoperator 2) { Exit 1 }' }
@@ -177,6 +378,19 @@ try {
       result = manager.execute('Test-Path env:\foo')
 
       expect(result[:stdout]).to eq("False\r\n")
+    end
+
+    it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
+      # this was tested successfully up to 5MB of text
+      buffer_string_96k = 'a' * ((1024 * 96) + 1)
+      result = manager.execute(<<-CODE
+'#{buffer_string_96k}' | Write-Output
+        CODE
+        )
+
+      expect(result[:errormessage]).to eq(nil)
+      expect(result[:exitcode]).to eq(0)
+      expect(result[:stdout]).to eq("#{buffer_string_96k}\r\n")
     end
 
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
