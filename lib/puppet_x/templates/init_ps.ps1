@@ -1,3 +1,16 @@
+[CmdletBinding()]
+param (
+  [Parameter(Mandatory = $true)]
+  [String]
+  $InitReadyEventName,
+
+  [Parameter(Mandatory = $false)]
+  [Switch]
+  $EmitDebugOutput = $False
+)
+
+$script:EmitDebugOutput = $EmitDebugOutput
+
 $hostSource = @"
 using System;
 using System.Collections.Generic;
@@ -363,11 +376,8 @@ function Invoke-PowerShellUserCode
     $TimeoutMilliseconds,
 
     [String]
-    $WorkingDirectory    
+    $WorkingDirectory
   )
-
-
-  $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
 
   if ($global:runspace -eq $null){
     # CreateDefault2 requires PS3
@@ -397,10 +407,10 @@ function Invoke-PowerShellUserCode
     $ps.Invoke()
 
     if ([string]::IsNullOrEmpty($WorkingDirectory)) {
-      $ps.Runspace.SessionStateProxy.Path.SetLocation($global:DefaultWorkingDirectory)    
+      [Void]$ps.Runspace.SessionStateProxy.Path.SetLocation($global:DefaultWorkingDirectory)
     } else {
       if (-not (Test-Path -Path $WorkingDirectory)) { Throw "Working directory `"$WorkingDirectory`" does not exist" }
-      $ps.Runspace.SessionStateProxy.Path.SetLocation($WorkingDirectory)
+      [Void]$ps.Runspace.SessionStateProxy.Path.SetLocation($WorkingDirectory)
     }
 
     if(!$global:environmentVariables){
@@ -453,6 +463,9 @@ function Invoke-PowerShellUserCode
     try
     {
       $ps.EndInvoke($asyncResult)
+    } catch [System.Management.Automation.IncompleteParseException] {
+      # https://msdn.microsoft.com/en-us/library/system.management.automation.incompleteparseexception%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+      throw $_.Exception.Message
     } catch {
       if ($_.Exception.InnerException -ne $null)
       {
@@ -498,19 +511,43 @@ function Invoke-PowerShellUserCode
   }
   finally
   {
-    [Void]$event.Set()
-    [Void]$event.Close()
-    if ($PSVersionTable.CLRVersion.Major -ge 3) {
-      [Void]$event.Dispose()
-    }
+    Signal-Event -EventName $EventName
     if ($ps -ne $null) { [Void]$ps.Dispose() }
   }
 }
 
+function Write-SystemDebugMessage
+{
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory = $true)]
+    [String]
+    $Message
+  )
 
-$event = [Threading.EventWaitHandle]::OpenExisting('<%= init_ready_event_name %>')
-[Void]$event.Set()
-[Void]$event.Close()
-if ($PSVersionTable.CLRVersion.Major -ge 3) {
-  [Void]$event.Dispose()
+  if ($script:EmitDebugOutput -or ($DebugPreference -ne 'SilentlyContinue'))
+  {
+    [System.Diagnostics.Debug]::WriteLine($Message)
+  }
 }
+
+function Signal-Event
+{
+  [CmdletBinding()]
+  param(
+    [String]
+    $EventName
+  )
+
+  $event = [System.Threading.EventWaitHandle]::OpenExisting($EventName)
+
+  [Void]$event.Set()
+  [Void]$event.Close()
+  if ($PSVersionTable.CLRVersion.Major -ge 3) {
+    [Void]$event.Dispose()
+  }
+
+  Write-SystemDebugMessage -Message "Signaled event $EventName"
+}
+
+Signal-Event -EventName $InitReadyEventName
