@@ -150,9 +150,6 @@ $params = @{
 }
 
 Invoke-PowerShellUserCode @params
-
-# always need a trailing newline to ensure PowerShell parses code
-
         CODE
       end
 
