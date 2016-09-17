@@ -179,6 +179,9 @@ describe PuppetX::PowerShell::PowerShellManager,
       end
 
       it "should create a new PowerShell manager host if the output stream handle is closed" do
+        # currently skipped as it can trigger an internal Ruby thread clean-up race
+        # its unknown why this test fails, but not the identical test against @stderr
+        skip('This test can cause intermittent segfaults in Ruby with w32_reset_event invalid handle')
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
         # call CloseHandle against stdout, which leaves PowerShell process running

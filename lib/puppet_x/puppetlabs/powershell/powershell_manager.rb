@@ -77,14 +77,12 @@ module PuppetX
       end
 
       def execute(powershell_code, timeout_ms = nil, working_dir = nil)
-        output_ready_event_name =  "Global\\#{SecureRandom.uuid}"
-        output_ready_event = self.class.create_event(output_ready_event_name)
+        code = make_ps_code(powershell_code, timeout_ms, working_dir)
 
-        code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms, working_dir)
 
         # err is drained stderr pipe (not captured by redirection inside PS)
         # or during a failure, a Ruby callstack array
-        out, native_stdout, err = exec_read_result(code, output_ready_event)
+        out, native_stdout, err = exec_read_result(code)
 
         # an error was caught during execution that has invalidated any results
         return { :exitcode => -1, :stderr => err } if !@usable && out.nil?
@@ -112,8 +110,6 @@ module PuppetX
         props << [:native_stdout, native_stdout]
 
         Hash[ props ]
-      ensure
-        CloseHandle(output_ready_event) if output_ready_event
       end
 
       def exit
@@ -138,7 +134,7 @@ module PuppetX
         "\"#{path}\""
       end
 
-      def make_ps_code(powershell_code, output_ready_event_name, timeout_ms = nil, working_dir = nil)
+      def make_ps_code(powershell_code, timeout_ms = nil, working_dir = nil)
         begin
           timeout_ms = Integer(timeout_ms)
           # Lower bound protection. The polling resolution is only 50ms
@@ -152,7 +148,6 @@ $params = @{
   Code = @'
 #{powershell_code}
 '@
-  EventName = "#{output_ready_event_name}"
   TimeoutMilliseconds = #{timeout_ms}
   WorkingDirectory = "#{working_dir}"
 }
@@ -302,50 +297,57 @@ Invoke-PowerShellUserCode @params
         output
       end
 
-      def read_streams(output_ready_event, wait_interval_ms = 50)
+      def read_streams
         pipe_done_reading = Mutex.new
         pipe_done_reading.lock
         start_time = Time.now
 
-        pipe_reader = Thread.new { drain_pipe_until_signaled(@pipe, pipe_done_reading) }
         stdout_reader = Thread.new { drain_pipe_until_signaled(@stdout, pipe_done_reading) }
         stderr_reader = Thread.new { drain_pipe_until_signaled(@stderr, pipe_done_reading) }
+        pipe_reader = Thread.new(@pipe) do |pipe|
+          # read a Little Endian 32-bit integer for length of response
+          expected_response_length = pipe.sysread(4).unpack('V').first
+          return nil if expected_response_length == 0
 
-        # wait until an event signal
-        # OR a terminal state with child process / streams has been reached
-        while WAIT_TIMEOUT == self.class.wait_on(output_ready_event, wait_interval_ms)
-          # if reader threads have died, likely due to closed streams / handles
-          break if !pipe_reader.alive? || !stdout_reader.alive? || !stderr_reader.alive?
-
-          # Ruby will gleefully allow trying to read stdout / stderr that are
-          # no longer connected to a live process, so therefore check the
-          # liveness here and raise the broken pipe error that Ruby would usually
-          # since stdin isn't checked here, fail if process dead instead
-          raise Errno::EPIPE if !@ps_process.alive?
+          # reads the expected bytes as a binary string or fails
+          pipe.sysread(expected_response_length)
         end
 
         Puppet.debug "Waited #{Time.now - start_time} total seconds."
 
-        # signal stdout / stderr readers via mutex
-        pipe_done_reading.unlock
+        # block until sysread has completed or errors
+        begin
+          output = pipe_reader.value
+          output = output.force_encoding(Encoding::UTF_8) if !output.nil?
+        ensure
+          # signal stdout / stderr readers via mutex
+          # so that Ruby doesn't crash waiting on an invalid event
+          pipe_done_reading.unlock
+        end
 
         # given redirection on PowerShell side, this should always be empty
         stdout = stdout_reader.value
 
         [
-          pipe_reader.value.join(''),
+          pipe_reader.value,
           stdout == [] ? nil : stdout.join(''), # native stdout
           stderr_reader.value # native stderr
         ]
+      ensure
+        # failsafe if the prior unlock was never reached / Mutex wasn't unlocked
+        pipe_done_reading.unlock if pipe_done_reading.locked?
+        # wait for all non-nil threads to see mutex unlocked and finish
+        [pipe_reader, stdout_reader, stderr_reader].compact.each(&:join)
       end
 
-      def exec_read_result(powershell_code, output_ready_event)
+      def exec_read_result(powershell_code)
         write_pipe(pipe_command(:execute))
         write_pipe(pipe_data(powershell_code))
-        read_streams(output_ready_event)
+        read_streams()
       # if any pipes are broken, the manager is totally hosed
       # bad file descriptors mean closed stream handles
-      rescue Errno::EPIPE, Errno::EBADF => e
+      # EOFError is a closed pipe (could be as a result of tearing down process)
+      rescue Errno::EPIPE, Errno::EBADF, EOFError => e
         @usable = false
         return nil, nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
@@ -372,13 +374,6 @@ Invoke-PowerShellUserCode @params
         # );
         ffi_lib :kernel32
         attach_function :CreateEventW, [:pointer, :int32, :int32, :buffer_in], :uintptr_t
-
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx
-        # BOOL WINAPI CloseHandle(
-        #   _In_  HANDLE hObject
-        # );
-        ffi_lib :kernel32
-        attach_function :CloseHandle, [:uintptr_t], :int32
 
         # http://msdn.microsoft.com/en-us/library/windows/desktop/ms687032(v=vs.85).aspx
         # DWORD WINAPI WaitForSingleObject(

@@ -411,9 +411,6 @@ function Invoke-PowerShellUserCode
     [String]
     $Code,
 
-    [String]
-    $EventName,
-
     [Int]
     $TimeoutMilliseconds,
 
@@ -522,7 +519,7 @@ function Invoke-PowerShellUserCode
     [string]$text = $ui.Output
     [string]$stderr = $ui.StdErr
 
-    @((New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null), $EventName)
+    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null
   }
   catch
   {
@@ -553,7 +550,7 @@ function Invoke-PowerShellUserCode
 
     # make an attempt to read StdErr as it may contain info about failures
     try { $err = $global:puppetPSHost.UI.StdErr } catch { $err = $null }
-    @((New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output), $EventName)
+    New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output
   }
   finally
   {
@@ -615,9 +612,15 @@ function Write-StreamResponse
 
   # convert string to bytes in the specified encoding and write them to stream
   $bytes = $Encoding.GetBytes($Response)
-  $Stream.Write($bytes, 0, $bytes.Length)
-  # and add the newline so Ruby IO.gets works
-  $bytes = $Encoding.GetBytes([System.Environment]::NewLine)
+
+  # length prefix the reponse so Ruby side of pipe knows how much to read
+  $length = [BitConverter]::GetBytes($bytes.Length)
+  if (![BitConverter]::IsLittleEndian) { [Array]::Reverse($length) }
+  $Stream.Write($length, 0, 4)
+  $Stream.Flush()
+
+  Write-SystemDebugMessage -Message "Wrote Int32 $($bytes.Length) as Byte[] $length to Stream:`n$Response"
+
   $Stream.Write($bytes, 0, $bytes.Length)
   $Stream.Flush()
 
@@ -751,12 +754,10 @@ function Start-PipeServer
           Write-SystemDebugMessage -Message "[Execute] Invoking user code:`n`n $($response.Code)"
 
           # assuming that the Ruby code always calls Invoked-PowerShellUserCode,
-          # result should already be returned as XML, eventName to signal
-          $result, $eventName = Invoke-Expression $response.Code
+          # result should already be returned as XML
+          $result = Invoke-Expression $response.Code
 
           Write-StreamResponse -Stream $server -Response $result -Encoding $Encoding
-
-          Signal-Event -EventName $eventName
         }
         'Exit' { $running = $false }
       }
