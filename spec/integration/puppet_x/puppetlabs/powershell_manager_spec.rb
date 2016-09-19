@@ -272,7 +272,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
       # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
-      expect(result[:stderr][0][0]).to eq("foo\n")
+      expect(result[:stderr][0]).to eq("foo\n")
       expect(result[:exitcode]).to eq(0)
     end
 
@@ -280,7 +280,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('ps;[System.Console]::Error.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq(nil)
-      expect(result[:stderr]).not_to eq(nil)
+      expect(result[:stderr][0]).to eq("foo\n")
       expect(result[:exitcode]).to eq(0)
     end
 

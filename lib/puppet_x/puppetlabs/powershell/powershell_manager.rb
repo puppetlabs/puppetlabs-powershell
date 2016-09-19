@@ -156,6 +156,7 @@ Invoke-PowerShellUserCode @params
       private
 
       def self.is_readable?(stream, timeout = 0.5)
+        raise Errno::EPIPE if !is_stream_valid?(stream)
         read_ready = IO.select([stream], [], [], timeout)
         read_ready && stream == read_ready[0][0]
       end
@@ -241,48 +242,60 @@ Invoke-PowerShellUserCode @params
         @stdin.puts(input)
       end
 
-      def drain_pipe(pipe, iterations = 10)
-        output = []
-        0.upto(iterations) do
-          break if !self.class.is_readable?(pipe, 0.1)
+      def read_from_pipe(pipe, timeout = 0.1, &block)
+        if self.class.is_readable?(pipe, timeout)
           l = pipe.gets
           Puppet.debug "#{Time.now} PIPE> #{l}"
-          output << l
+          # since gets can return a nil at EOF, skip returning that value
+          yield l if !l.nil?
         end
+
+        nil
+      end
+
+      def drain_pipe_until_signaled(pipe, signal)
+        output = []
+
+        read_from_pipe(pipe) { |s| output << s } until !signal.locked?
+
+        # there's ultimately a bit of a race here
+        # read one more time after signal is received
+        read_from_pipe(pipe, 0) { |s| output << s }
         output
       end
 
       def read_stdout(output_ready_event, wait_interval_ms = 50)
-        output = []
-        errors = []
+        pipe_done_reading = Mutex.new
+        pipe_done_reading.lock
         waited = 0
 
-        # drain the pipe while waiting for the event signal
-        # but prevent an infinite loop by validating the process, pipes, etc
+        stdout_reader = Thread.new { drain_pipe_until_signaled(@stdout, pipe_done_reading) }
+        stderr_reader = Thread.new { drain_pipe_until_signaled(@stderr, pipe_done_reading) }
+
+        # wait until an event signal
+        # OR a terminal state with child process / streams has been reached
         while WAIT_TIMEOUT == self.class.wait_on(output_ready_event, wait_interval_ms)
+          # if reader threads have died, likely due to closed streams / handles
+          break if !stdout_reader.alive? || !stderr_reader.alive?
+
           # Ruby will gleefully allow trying to read stdout / stderr that are
           # no longer connected to a live process, so therefore check the
           # liveness here and raise the broken pipe error that Ruby would usually
-          raise Errno::EPIPE if !alive?
-          # TODO: While this does ensure that both pipes have been
-          # drained it can block on either longer than necessary or
-          # deadlock waiting for one or the other to finish. The correct
-          # way to deal with this is to drain each pipe from seperate threads
-          # but time ran on in this implementation and this will be addressed soon
-          output << drain_pipe(@stdout)
-          errors << drain_pipe(@stderr)
+          # since stdin isn't checked here, fail if process dead instead
+          raise Errno::EPIPE if !@ps_process.alive?
+
           waited += wait_interval_ms
         end
 
         Puppet.debug "Waited #{waited} total milliseconds."
 
-        # once signaled, ensure everything has been drained
-        output << drain_pipe(@stdout, 1000)
-        errors << drain_pipe(@stderr, 1000)
+        # signal stdout / stderr readers via mutex
+        pipe_done_reading.unlock
 
-        errors = errors.reject { |e| e.empty? }
-
-        return output.join(''), errors
+        [
+          stdout_reader.value.join(''),
+          stderr_reader.value
+        ]
       end
 
       def exec_read_result(powershell_code, output_ready_event)
