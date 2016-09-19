@@ -76,12 +76,12 @@ describe PuppetX::PowerShell::PowerShellManager,
         expect(result[:exitcode]).to eq(-1)
 
         if reason.is_a?(String)
-          expect(result[:stderr][0][0]).to eq(reason) if style == :exact
-          expect(result[:stderr][0][0]).to match(reason) if style == :regex
+          expect(result[:stderr][0]).to eq(reason) if style == :exact
+          expect(result[:stderr][0]).to match(reason) if style == :regex
         elsif reason.is_a?(Array)
-          expect(reason).to include(result[:stderr][0][0]) if style == :exact
+          expect(reason).to include(result[:stderr][0]) if style == :exact
           if style == :regex
-            expect(result[:stderr][0][0]).to satisfy("should match expected error(s): #{reason}") do |msg|
+            expect(result[:stderr][0]).to satisfy("should match expected error(s): #{reason}") do |msg|
               reason.any? { |m| msg.match m }
             end
           end
@@ -271,8 +271,7 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should collect anything written to stderr" do
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
-      expect(result[:stderr][0]).to eq("foo\n")
+      expect(result[:stderr]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(0)
     end
 
@@ -280,7 +279,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('ps;[System.Console]::Error.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq(nil)
-      expect(result[:stderr][0]).to eq("foo\n")
+      expect(result[:stderr]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(0)
     end
 

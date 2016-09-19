@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.Management.Automation;
 using System.Management.Automation.Host;
 using System.Security;
@@ -141,10 +142,12 @@ namespace Puppet
   {
     private PuppetPSHostRawUserInterface _rawui;
     private StringBuilder _sb;
+    private StringWriter _errWriter;
 
     public PuppetPSHostUserInterface()
     {
       _sb = new StringBuilder();
+      _errWriter = new StringWriter(new StringBuilder());
     }
 
     public override PSHostRawUserInterface RawUI
@@ -156,6 +159,11 @@ namespace Puppet
         }
         return _rawui;
       }
+    }
+
+    public void ResetConsoleStreams()
+    {
+      System.Console.SetError(_errWriter);
     }
 
     public override void Write(ConsoleColor foregroundColor, ConsoleColor backgroundColor, string value)
@@ -203,6 +211,17 @@ namespace Puppet
       {
         string text = _sb.ToString();
         _sb = new StringBuilder();
+        return text;
+      }
+    }
+
+    public string StdErr
+    {
+      get
+      {
+        _errWriter.Flush();
+        string text = _errWriter.GetStringBuilder().ToString();
+        _errWriter.GetStringBuilder().Length = 0; // Only .NET 4+ has .Clear()
         return text;
       }
     }
@@ -255,6 +274,10 @@ namespace Puppet
       this.exitCode = 0;
       this.shouldExit = false;
     }
+    public void ResetConsoleStreams()
+    {
+      _ui.ResetConsoleStreams();
+    }
 
     public override Guid InstanceId { get { return _hostId; } }
     public override string Name { get { return "PuppetPSHost"; } }
@@ -291,6 +314,7 @@ function New-XmlResult
   param(
     [Parameter()]$exitcode,
     [Parameter()]$output,
+    [Parameter()]$stderr,
     [Parameter()]$errormessage
   )
 
@@ -300,6 +324,7 @@ function New-XmlResult
 <ReturnResult>
   <Property Name='exitcode'>$($exitcode)</Property>
   <Property Name='errormessage'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$errormessage)))</Property>
+  <Property Name='stderr'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$stderr)))</Property>
   <Property Name='stdout'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$output)))</Property>
 </ReturnResult>
 "@
@@ -396,6 +421,7 @@ function Invoke-PowerShellUserCode
   {
     $ps = $null
     $global:puppetPSHost.ResetExitStatus()
+    $global:puppetPSHost.ResetConsoleStreams()
 
     if ($PSVersionTable.PSVersion -ge [Version]'3.0') {
       $global:runspace.ResetRunspaceState()
@@ -477,8 +503,9 @@ function Invoke-PowerShellUserCode
 
     [Puppet.PuppetPSHostUserInterface]$ui = $global:puppetPSHost.UI
     [string]$text = $ui.Output
+    [string]$stderr = $ui.StdErr
 
-    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -errormessage $null
+    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null
   }
   catch
   {
@@ -507,7 +534,9 @@ function Invoke-PowerShellUserCode
       $output = $_.Exception.Message | Out-String
     }
 
-    New-XmlResult -exitcode $ec -output $null -errormessage $output
+    # make an attempt to read StdErr as it may contain info about failures
+    try { $err = $global:puppetPSHost.UI.StdErr } catch { $err = $null }
+    New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output
   }
   finally
   {

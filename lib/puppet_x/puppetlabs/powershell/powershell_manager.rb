@@ -35,6 +35,7 @@ module PuppetX
 
       def initialize(cmd)
         @usable = true
+        # @stderr should never be written to as PowerShell host redirects output
         @stdin, @stdout, @stderr, @ps_process = Open3.popen3(cmd)
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
@@ -67,6 +68,8 @@ module PuppetX
 
         code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms, working_dir)
 
+        # err is drained stderr pipe (not captured by redirection inside PS)
+        # or during a failure, a Ruby callstack array
         out, err = exec_read_result(code, output_ready_event)
 
         # an error was caught during execution that has invalidated any results
@@ -78,15 +81,17 @@ module PuppetX
         # newline characters are stripped. Then where required decoded from Base64 back into text
         out = REXML::Document.new(out.gsub(/\n/,""))
 
-        # picks up exitcode, errormessage and stdout
+        # picks up exitcode, errormessage, stdout and stderr
         props = REXML::XPath.each(out, '//Property').map do |prop|
           name = prop.attributes['Name']
           value = (name == 'exitcode') ?
             prop.text.to_i :
             (prop.text.nil? ? nil : Base64.decode64(prop.text))
+          # if err contains data it must be "real" stderr output
+          # which should be appended to what PS has already captured
+          value += err if err && (err != []) && (name == 'stderr')
           [name.to_sym, value]
         end
-        props << [:stderr, err]
 
         Hash[ props ]
       ensure
@@ -303,12 +308,12 @@ Invoke-PowerShellUserCode @params
       # bad file descriptors mean closed stream handles
       rescue Errno::EPIPE, Errno::EBADF => e
         @usable = false
-        return nil, [[e.inspect, e.backtrace].flatten]
+        return nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
       rescue IOError => ioerror
         raise if !ioerror.message.start_with?('closed stream')
         @usable = false
-        return nil, [[ioerror.inspect, ioerror.backtrace].flatten]
+        return nil, [ioerror.inspect, ioerror.backtrace].flatten
       end
 
       if Puppet::Util::Platform.windows?
