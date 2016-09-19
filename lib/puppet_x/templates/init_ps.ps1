@@ -143,11 +143,16 @@ namespace Puppet
     private PuppetPSHostRawUserInterface _rawui;
     private StringBuilder _sb;
     private StringWriter _errWriter;
+    private StringWriter _outWriter;
 
     public PuppetPSHostUserInterface()
     {
       _sb = new StringBuilder();
       _errWriter = new StringWriter(new StringBuilder());
+      // NOTE: StringWriter / StringBuilder are not technically thread-safe
+      // but PowerShell Write-XXX cmdlets and System.Console.Out.WriteXXX
+      // should not be executed concurrently within PowerShell, so should be safe
+      _outWriter = new StringWriter(_sb);
     }
 
     public override PSHostRawUserInterface RawUI
@@ -164,6 +169,7 @@ namespace Puppet
     public void ResetConsoleStreams()
     {
       System.Console.SetError(_errWriter);
+      System.Console.SetOut(_outWriter);
     }
 
     public override void Write(ConsoleColor foregroundColor, ConsoleColor backgroundColor, string value)
@@ -209,8 +215,9 @@ namespace Puppet
     {
       get
       {
-        string text = _sb.ToString();
-        _sb = new StringBuilder();
+        _outWriter.Flush();
+        string text = _outWriter.GetStringBuilder().ToString();
+        _outWriter.GetStringBuilder().Length = 0; // Only .NET 4+ has .Clear()
         return text;
       }
     }

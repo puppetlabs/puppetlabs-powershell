@@ -292,6 +292,38 @@ describe PuppetX::PowerShell::PowerShellManager,
       expect(result[:exitcode]).to eq(0)
     end
 
+    it "should handle writing to stdout natively" do
+      result = manager.execute('[System.Console]::Out.WriteLine("foo")')
+
+      expect(result[:stdout]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should properly interleave output written natively to stdout and via Write-XXX cmdlets" do
+      result = manager.execute('Write-Output "bar"; [System.Console]::Out.WriteLine("foo"); Write-Warning "baz";')
+
+      expect(result[:stdout]).to eq("bar\r\nfoo\r\nWARNING: baz\r\n")
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle writing to regularly captured output AND stdout natively" do
+      result = manager.execute('ps;[System.Console]::Out.WriteLine("foo")')
+
+      expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle writing to regularly captured output, stderr AND stdout natively" do
+      result = manager.execute('ps;[System.Console]::Out.WriteLine("foo");[System.Console]::Error.WriteLine("bar")')
+
+      expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["bar\r\n"])
+      expect(result[:exitcode]).to eq(0)
+    end
+
     it "should execute cmdlets" do
       result = manager.execute('ls')
 
