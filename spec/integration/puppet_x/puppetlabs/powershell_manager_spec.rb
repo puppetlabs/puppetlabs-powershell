@@ -324,6 +324,33 @@ describe PuppetX::PowerShell::PowerShellManager,
       expect(result[:exitcode]).to eq(0)
     end
 
+    context "it should handle UTF-8" do
+      # different UTF-8 widths
+      # 1-byte A
+      # 2-byte ۿ - http://www.fileformat.info/info/unicode/char/06ff/index.htm - 0xDB 0xBF / 219 191
+      # 3-byte ᚠ - http://www.fileformat.info/info/unicode/char/16A0/index.htm - 0xE1 0x9A 0xA0 / 225 154 160
+      # 4-byte 𠜎 - http://www.fileformat.info/info/unicode/char/2070E/index.htm - 0xF0 0xA0 0x9C 0x8E / 240 160 156 142
+      let (:mixed_utf8) { "A\u06FF\u16A0\u{2070E}" } # Aۿᚠ𠜎
+
+      it "when writing basic text" do
+        pending "currently unsupported"
+        code = "Write-Output '#{mixed_utf8}'"
+        result = manager.execute(code)
+
+        expect(result[:stdout]).to eq("#{mixed_utf8}\r\n")
+        expect(result[:exitcode]).to eq(0)
+      end
+
+      it "when writing basic text to stderr" do
+        pending "currently unsupported"
+        code = "[System.Console]::Error.WriteLine('#{mixed_utf8}')"
+        result = manager.execute(code)
+
+        expect(result[:stderr]).to eq(["#{mixed_utf8}\r\n"])
+        expect(result[:exitcode]).to eq(0)
+      end
+    end
+
     it "should execute cmdlets" do
       result = manager.execute('ls')
 
