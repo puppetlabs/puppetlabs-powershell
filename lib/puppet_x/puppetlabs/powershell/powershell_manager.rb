@@ -298,9 +298,6 @@ Invoke-PowerShellUserCode @params
         raise if !ioerror.message.start_with?('closed stream')
         @usable = false
         return nil, [[ioerror.inspect, ioerror.backtrace].flatten]
-      rescue => e
-        msg = "Unexpected error with pipe communication"
-        raise e, msg, e.backtrace
       end
 
       if Puppet::Util::Platform.windows?
