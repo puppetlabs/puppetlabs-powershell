@@ -267,7 +267,7 @@ Invoke-PowerShellUserCode @params
       def read_stdout(output_ready_event, wait_interval_ms = 50)
         pipe_done_reading = Mutex.new
         pipe_done_reading.lock
-        waited = 0
+        start_time = Time.now
 
         stdout_reader = Thread.new { drain_pipe_until_signaled(@stdout, pipe_done_reading) }
         stderr_reader = Thread.new { drain_pipe_until_signaled(@stderr, pipe_done_reading) }
@@ -283,11 +283,9 @@ Invoke-PowerShellUserCode @params
           # liveness here and raise the broken pipe error that Ruby would usually
           # since stdin isn't checked here, fail if process dead instead
           raise Errno::EPIPE if !@ps_process.alive?
-
-          waited += wait_interval_ms
         end
 
-        Puppet.debug "Waited #{waited} total milliseconds."
+        Puppet.debug "Waited #{Time.now - start_time} total seconds."
 
         # signal stdout / stderr readers via mutex
         pipe_done_reading.unlock
