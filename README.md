@@ -8,7 +8,8 @@
     * [Setup requirements](#setup-requirements)
     * [Beginning with powershell](#beginning-with-powershell)
 4. [Usage - Configuration options and additional functionality](#usage)
-    * [External files and exit codes](#External-files-and-exit-codes)
+    * [External files and exit codes](#external-files-and-exit-codes)
+    * [Console Error Output](#console-error-output)
 5. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
 5. [Limitations - OS compatibility, etc.](#limitations)
 6. [Development - Guide for contributing to the module](#development)
@@ -108,6 +109,18 @@ exec { 'test':
 ~~~
 
 It will always succeed because the `Exit 0` statement overrides the exit code from the `C:\fail.ps1` script.
+
+### Console Error Output
+The PowerShell module will internally capture output sent to the .NET `[System.Console]::Error` stream like:
+
+~~~ puppet
+exec { 'test':
+  command   => '[System.Console]::Error.WriteLine("foo")',
+  provider  => powershell,
+}
+~~~
+
+However, to produce output from a script, prefer to use the `Write-` prefixed cmdlets like `Write-Output`, `Write-Debug` and `Write-Error`
 
 
 ## Reference

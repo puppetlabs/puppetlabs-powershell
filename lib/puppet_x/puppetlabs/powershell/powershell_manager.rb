@@ -35,6 +35,7 @@ module PuppetX
 
       def initialize(cmd)
         @usable = true
+        # @stderr should never be written to as PowerShell host redirects output
         @stdin, @stdout, @stderr, @ps_process = Open3.popen3(cmd)
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
@@ -67,6 +68,8 @@ module PuppetX
 
         code = make_ps_code(powershell_code, output_ready_event_name, timeout_ms, working_dir)
 
+        # err is drained stderr pipe (not captured by redirection inside PS)
+        # or during a failure, a Ruby callstack array
         out, err = exec_read_result(code, output_ready_event)
 
         # an error was caught during execution that has invalidated any results
@@ -78,15 +81,17 @@ module PuppetX
         # newline characters are stripped. Then where required decoded from Base64 back into text
         out = REXML::Document.new(out.gsub(/\n/,""))
 
-        # picks up exitcode, errormessage and stdout
+        # picks up exitcode, errormessage, stdout and stderr
         props = REXML::XPath.each(out, '//Property').map do |prop|
           name = prop.attributes['Name']
           value = (name == 'exitcode') ?
             prop.text.to_i :
             (prop.text.nil? ? nil : Base64.decode64(prop.text))
+          # if err contains data it must be "real" stderr output
+          # which should be appended to what PS has already captured
+          value += err if err && (err != []) && (name == 'stderr')
           [name.to_sym, value]
         end
-        props << [:stderr, err]
 
         Hash[ props ]
       ensure
@@ -94,28 +99,14 @@ module PuppetX
       end
 
       def exit
+        @usable = false
+
         Puppet.debug "PowerShellManager exiting..."
         # ignore any failure to call exit against PS process
         @stdin.puts "\nexit\n" if !@stdin.closed? rescue nil
         @stdin.close if !@stdin.closed?
         @stdout.close if !@stdout.closed?
         @stderr.close if !@stderr.closed?
-
-        exit_msg = "PowerShell process did not terminate in reasonable time"
-        begin
-          Timeout.timeout(3) do
-            Puppet.debug "Awaiting PowerShell process termination..."
-            @exit_status = @ps_process.value
-          end
-        rescue Timeout::Error
-        end
-
-        exit_msg = "PowerShell process exited: #{@exit_status}" if @exit_status
-        Puppet.debug(exit_msg)
-        if @ps_process.alive?
-          Puppet.debug("Forcefully terminating PowerShell process.")
-          Process.kill('KILL', @ps_process[:pid])
-        end
       end
 
       def self.init_path
@@ -150,15 +141,13 @@ $params = @{
 }
 
 Invoke-PowerShellUserCode @params
-
-# always need a trailing newline to ensure PowerShell parses code
-
         CODE
       end
 
       private
 
       def self.is_readable?(stream, timeout = 0.5)
+        raise Errno::EPIPE if !is_stream_valid?(stream)
         read_ready = IO.select([stream], [], [], timeout)
         read_ready && stream == read_ready[0][0]
       end
@@ -244,48 +233,58 @@ Invoke-PowerShellUserCode @params
         @stdin.puts(input)
       end
 
-      def drain_pipe(pipe, iterations = 10)
-        output = []
-        0.upto(iterations) do
-          break if !self.class.is_readable?(pipe, 0.1)
+      def read_from_pipe(pipe, timeout = 0.1, &block)
+        if self.class.is_readable?(pipe, timeout)
           l = pipe.gets
           Puppet.debug "#{Time.now} PIPE> #{l}"
-          output << l
+          # since gets can return a nil at EOF, skip returning that value
+          yield l if !l.nil?
         end
+
+        nil
+      end
+
+      def drain_pipe_until_signaled(pipe, signal)
+        output = []
+
+        read_from_pipe(pipe) { |s| output << s } until !signal.locked?
+
+        # there's ultimately a bit of a race here
+        # read one more time after signal is received
+        read_from_pipe(pipe, 0) { |s| output << s }
         output
       end
 
       def read_stdout(output_ready_event, wait_interval_ms = 50)
-        output = []
-        errors = []
-        waited = 0
+        pipe_done_reading = Mutex.new
+        pipe_done_reading.lock
+        start_time = Time.now
 
-        # drain the pipe while waiting for the event signal
-        # but prevent an infinite loop by validating the process, pipes, etc
+        stdout_reader = Thread.new { drain_pipe_until_signaled(@stdout, pipe_done_reading) }
+        stderr_reader = Thread.new { drain_pipe_until_signaled(@stderr, pipe_done_reading) }
+
+        # wait until an event signal
+        # OR a terminal state with child process / streams has been reached
         while WAIT_TIMEOUT == self.class.wait_on(output_ready_event, wait_interval_ms)
+          # if reader threads have died, likely due to closed streams / handles
+          break if !stdout_reader.alive? || !stderr_reader.alive?
+
           # Ruby will gleefully allow trying to read stdout / stderr that are
           # no longer connected to a live process, so therefore check the
           # liveness here and raise the broken pipe error that Ruby would usually
-          raise Errno::EPIPE if !alive?
-          # TODO: While this does ensure that both pipes have been
-          # drained it can block on either longer than necessary or
-          # deadlock waiting for one or the other to finish. The correct
-          # way to deal with this is to drain each pipe from seperate threads
-          # but time ran on in this implementation and this will be addressed soon
-          output << drain_pipe(@stdout)
-          errors << drain_pipe(@stderr)
-          waited += wait_interval_ms
+          # since stdin isn't checked here, fail if process dead instead
+          raise Errno::EPIPE if !@ps_process.alive?
         end
 
-        Puppet.debug "Waited #{waited} total milliseconds."
+        Puppet.debug "Waited #{Time.now - start_time} total seconds."
 
-        # once signaled, ensure everything has been drained
-        output << drain_pipe(@stdout, 1000)
-        errors << drain_pipe(@stderr, 1000)
+        # signal stdout / stderr readers via mutex
+        pipe_done_reading.unlock
 
-        errors = errors.reject { |e| e.empty? }
-
-        return output.join(''), errors
+        [
+          stdout_reader.value.join(''),
+          stderr_reader.value
+        ]
       end
 
       def exec_read_result(powershell_code, output_ready_event)
@@ -295,15 +294,12 @@ Invoke-PowerShellUserCode @params
       # bad file descriptors mean closed stream handles
       rescue Errno::EPIPE, Errno::EBADF => e
         @usable = false
-        return nil, [[e.inspect, e.backtrace].flatten]
+        return nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
       rescue IOError => ioerror
         raise if !ioerror.message.start_with?('closed stream')
         @usable = false
-        return nil, [[ioerror.inspect, ioerror.backtrace].flatten]
-      rescue => e
-        msg = "Unexpected error with pipe communication"
-        raise e, msg, e.backtrace
+        return nil, [ioerror.inspect, ioerror.backtrace].flatten
       end
 
       if Puppet::Util::Platform.windows?
