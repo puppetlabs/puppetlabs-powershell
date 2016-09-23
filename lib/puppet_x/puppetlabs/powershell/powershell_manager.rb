@@ -99,28 +99,14 @@ module PuppetX
       end
 
       def exit
+        @usable = false
+
         Puppet.debug "PowerShellManager exiting..."
         # ignore any failure to call exit against PS process
         @stdin.puts "\nexit\n" if !@stdin.closed? rescue nil
         @stdin.close if !@stdin.closed?
         @stdout.close if !@stdout.closed?
         @stderr.close if !@stderr.closed?
-
-        exit_msg = "PowerShell process did not terminate in reasonable time"
-        begin
-          Timeout.timeout(3) do
-            Puppet.debug "Awaiting PowerShell process termination..."
-            @exit_status = @ps_process.value
-          end
-        rescue Timeout::Error
-        end
-
-        exit_msg = "PowerShell process exited: #{@exit_status}" if @exit_status
-        Puppet.debug(exit_msg)
-        if @ps_process.alive?
-          Puppet.debug("Forcefully terminating PowerShell process.")
-          Process.kill('KILL', @ps_process[:pid])
-        end
       end
 
       def self.init_path
