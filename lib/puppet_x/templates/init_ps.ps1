@@ -2,10 +2,6 @@
 param (
   [Parameter(Mandatory = $true)]
   [String]
-  $InitReadyEventName,
-
-  [Parameter(Mandatory = $true)]
-  [String]
   $NamedPipeName,
 
   [Parameter(Mandatory = $false)]
@@ -714,10 +710,6 @@ function Start-PipeServer
   param (
     [Parameter(Mandatory = $true)]
     [String]
-    $ListenerReadyEventName,
-
-    [Parameter(Mandatory = $true)]
-    [String]
     $CommandChannelPipeName,
 
     [Parameter(Mandatory = $true)]
@@ -731,9 +723,6 @@ function Start-PipeServer
 
   try
   {
-    # let Ruby know the server is available and listening, and the file path can be opened
-    Signal-Event -EventName $ListenerReadyEventName
-
     # block until Ruby process connects
     $server.WaitForConnection()
 
@@ -774,4 +763,4 @@ function Start-PipeServer
   }
 }
 
-Start-PipeServer -ListenerReadyEventName $InitReadyEventName -CommandChannelPipeName $NamedPipeName -Encoding $Encoding
+Start-PipeServer -CommandChannelPipeName $NamedPipeName -Encoding $Encoding

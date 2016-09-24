@@ -2,13 +2,10 @@ require 'rexml/document'
 require 'securerandom'
 require 'open3'
 require 'base64'
-require 'ffi' if Puppet::Util::Platform.windows?
 
 module PuppetX
   module PowerShell
     class PowerShellManager
-      extend FFI::Library if Puppet::Util::Platform.windows?
-
       @@instances = {}
 
       def self.instance(cmd, debug = false)
@@ -37,13 +34,9 @@ module PuppetX
       def initialize(cmd, debug)
         @usable = true
 
-        init_ready_event_name = "Global\\#{SecureRandom.uuid}"
         named_pipe_name = "#{SecureRandom.uuid}PuppetPsHost"
 
-        # create the event for PS to signal once the pipe server is ready
-        init_ready_event = self.class.create_event(init_ready_event_name)
-
-        ps_args = ['-File', self.class.init_path, "\"#{init_ready_event_name}\"", "\"#{named_pipe_name}\""]
+        ps_args = ['-File', self.class.init_path, "\"#{named_pipe_name}\""]
         ps_args << '"-EmitDebugOutput"' if debug
         # @stderr should never be written to as PowerShell host redirects output
         stdin, @stdout, @stderr, @ps_process = Open3.popen3("#{cmd} #{ps_args.join(' ')}")
@@ -51,14 +44,21 @@ module PuppetX
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
+        pipe_path = "\\\\.\\pipe\\#{named_pipe_name}"
         # wait for the pipe server to signal ready, and fail if no response in 10 seconds
-        ps_pipe_wait_ms = 10 * 1000
-        if WAIT_TIMEOUT == self.class.wait_on(init_ready_event, ps_pipe_wait_ms)
-          fail "Failure waiting for PowerShell process #{@ps_process[:pid]} to start pipe server"
+
+        # wait up to 10 seconds in 0.2 second intervals to be able to open the pipe
+        50.times do
+          begin
+            # pipe is opened in binary mode and must always
+            @pipe = File.open(pipe_path, 'r+b')
+            break
+          rescue
+            sleep 0.2
+          end
         end
 
-        # pipe is opened in binary mode and must always
-        @pipe = File.open("\\\\.\\pipe\\#{named_pipe_name}" , 'r+b')
+        fail "Failure waiting for PowerShell process #{@ps_process[:pid]} to start pipe server" if @pipe.nil?
 
         Puppet.debug "#{Time.now} PowerShell initialization complete for pid: #{@ps_process[:pid]}"
 
@@ -191,56 +191,6 @@ Invoke-PowerShellUserCode @params
         newstr.encode!('UTF-16LE')
       end
 
-      NULL_HANDLE = 0
-      WIN32_FALSE = 0
-
-      def self.create_event(name, manual_reset = false, initial_state = false)
-        handle = NULL_HANDLE
-
-        str = wide_string(name)
-        # :uchar because 8 bits per byte
-        FFI::MemoryPointer.new(:uchar, str.bytesize) do |name_ptr|
-          name_ptr.put_array_of_uchar(0, str.bytes.to_a)
-
-          handle = CreateEventW(FFI::Pointer::NULL,
-            manual_reset ? 1 : WIN32_FALSE,
-            initial_state ? 1 : WIN32_FALSE,
-            name_ptr)
-
-          if handle == NULL_HANDLE
-            msg = "Failed to create new event #{name}"
-            raise Puppet::Util::Windows::Error.new(msg)
-          end
-        end
-
-        handle
-      end
-
-      WAIT_ABANDONED = 0x00000080
-      WAIT_OBJECT_0 = 0x00000000
-      WAIT_TIMEOUT = 0x00000102
-      WAIT_FAILED = 0xFFFFFFFF
-
-      def self.wait_on(wait_object, timeout_ms = 50)
-        wait_result = WaitForSingleObject(wait_object, timeout_ms)
-
-        case wait_result
-        when WAIT_OBJECT_0
-          Puppet.debug "Wait object signaled"
-        when WAIT_TIMEOUT
-          Puppet.debug "Waited #{timeout_ms} milliseconds..."
-        # only applicable to mutexes - should never happen here
-        when WAIT_ABANDONED
-          msg = 'Catastrophic failure: wait object in inconsistent state'
-          raise Puppet::Util::Windows::Error.new(msg)
-        when WAIT_FAILED
-          msg = 'Catastrophic failure: waiting on object to be signaled'
-          raise Puppet::Util::Windows::Error.new(msg)
-        end
-
-        wait_result
-      end
-
       # 1 byte command identifier
       #     0 - Exit
       #     1 - Execute
@@ -357,33 +307,6 @@ Invoke-PowerShellUserCode @params
         return nil, nil, [ioerror.inspect, ioerror.backtrace].flatten
       end
 
-      if Puppet::Util::Platform.windows?
-        private
-
-        ffi_convention :stdcall
-
-        # NOTE: Puppet 3.7+ contains FFI typedef helpers, but to support 3.5
-        # use the unaliased native FFI names for parameter types
-
-        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682396(v=vs.85).aspx
-        # HANDLE WINAPI CreateEvent(
-        #   _In_opt_ LPSECURITY_ATTRIBUTES lpEventAttributes,
-        #   _In_     BOOL                  bManualReset,
-        #   _In_     BOOL                  bInitialState,
-        #   _In_opt_ LPCTSTR               lpName
-        # );
-        ffi_lib :kernel32
-        attach_function :CreateEventW, [:pointer, :int32, :int32, :buffer_in], :uintptr_t
-
-        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms687032(v=vs.85).aspx
-        # DWORD WINAPI WaitForSingleObject(
-        #   _In_  HANDLE hHandle,
-        #   _In_  DWORD dwMilliseconds
-        # );
-        ffi_lib :kernel32
-        attach_function :WaitForSingleObject,
-          [:uintptr_t, :uint32], :uint32
-      end
     end
   end
 end
