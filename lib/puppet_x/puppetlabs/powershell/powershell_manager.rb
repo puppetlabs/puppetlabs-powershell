@@ -87,29 +87,14 @@ module PuppetX
         # an error was caught during execution that has invalidated any results
         return { :exitcode => -1, :stderr => err } if !@usable && out.nil?
 
-        # Powershell adds in newline characters as it tries to wrap output around the display (by default 80 chars).
-        # This behavior is expected and cannot be changed, however it corrupts the XML e.g. newlines in the middle of
-        # element names; So instead, part of the XML is Base64 encoded prior to being put on STDOUT and in ruby all
-        # newline characters are stripped. Then where required decoded from Base64 back into text
-        out = REXML::Document.new(out.gsub(/\n/,""))
+        out[:exitcode] = out[:exitcode].to_i if !out[:exitcode].nil?
+        # if err contains data it must be "real" stderr output
+        # which should be appended to what PS has already captured
+        out[:stderr] = out[:stderr].nil? ? [] : [out[:stderr]]
+        out[:stderr] += err if !err.nil?
+        out[:native_stdout] = native_stdout
 
-        # picks up exitcode, errormessage, stdout and stderr
-        props = REXML::XPath.each(out, '//Property').map do |prop|
-          name = prop.attributes['Name']
-          value = (name == 'exitcode') ?
-            prop.text.to_i :
-            (prop.text.nil? ? nil : Base64.decode64(prop.text).force_encoding(Encoding::UTF_8))
-          # if err contains data it must be "real" stderr output
-          # which should be appended to what PS has already captured
-          if name == 'stderr'
-            value = value.nil? ? [] : [value]
-            value += err if !err.nil?
-          end
-          [name.to_sym, value]
-        end
-        props << [:native_stdout, native_stdout]
-
-        Hash[ props ]
+        out
       end
 
       def exit
@@ -191,6 +176,26 @@ Invoke-PowerShellUserCode @params
         newstr.encode!('UTF-16LE')
       end
 
+      # mutates the given bytes, removing the length prefixed vaule
+      def self.read_length_prefixed_string(bytes)
+        # 32-bit integer in Little Endian format
+        length = bytes.slice!(0, 4).unpack('V').first
+        return nil if length == 0
+        bytes.slice!(0, length).force_encoding(Encoding::UTF_8)
+      end
+
+      # bytes is a binary string containing a list of length-prefixed
+      # key / value pairs (of UTF-8 encoded strings)
+      # this method mutates the incoming value
+      def self.ps_output_to_hash(bytes)
+        hash = {}
+        while !bytes.empty?
+          hash[read_length_prefixed_string(bytes).to_sym] = read_length_prefixed_string(bytes)
+        end
+
+        hash
+      end
+
       # 1 byte command identifier
       #     0 - Exit
       #     1 - Execute
@@ -268,7 +273,7 @@ Invoke-PowerShellUserCode @params
         # block until sysread has completed or errors
         begin
           output = pipe_reader.value
-          output = output.force_encoding(Encoding::UTF_8) if !output.nil?
+          output = self.class.ps_output_to_hash(output) if !output.nil?
         ensure
           # signal stdout / stderr readers via mutex
           # so that Ruby doesn't crash waiting on an invalid event
@@ -279,7 +284,7 @@ Invoke-PowerShellUserCode @params
         stdout = stdout_reader.value
 
         [
-          pipe_reader.value,
+          output,
           stdout == [] ? nil : stdout.join(''), # native stdout
           stderr_reader.value # native stderr
         ]

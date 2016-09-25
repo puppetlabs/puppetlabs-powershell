@@ -322,28 +322,6 @@ namespace Puppet
 }
 "@
 
-function New-XmlResult
-{
-  param(
-    [Parameter()]$exitcode,
-    [Parameter()]$output,
-    [Parameter()]$stderr,
-    [Parameter()]$errormessage
-  )
-
-  # we make our own xml because ConvertTo-Xml makes hard to parse xml ruby side
-  # and we need to be sure
-  $xml = [xml]@"
-<ReturnResult>
-  <Property Name='exitcode'>$($exitcode)</Property>
-  <Property Name='errormessage'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$errormessage)))</Property>
-  <Property Name='stderr'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$stderr)))</Property>
-  <Property Name='stdout'>$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes([string]$output)))</Property>
-</ReturnResult>
-"@
-  $xml.OuterXml
-}
-
 Add-Type -TypeDefinition $hostSource -Language CSharp
 $global:DefaultWorkingDirectory = (Get-Location -PSProvider FileSystem).Path
 
@@ -512,10 +490,12 @@ function Invoke-PowerShellUserCode
     }
 
     [Puppet.PuppetPSHostUserInterface]$ui = $global:puppetPSHost.UI
-    [string]$text = $ui.Output
-    [string]$stderr = $ui.StdErr
-
-    New-XmlResult -exitcode $global:puppetPSHost.Exitcode -output $text -stderr $stderr -errormessage $null
+    return @{
+      exitcode = $global:puppetPSHost.Exitcode;
+      stdout = $ui.Output;
+      stderr = $ui.StdErr;
+      errormessage = $null;
+    }
   }
   catch
   {
@@ -546,7 +526,12 @@ function Invoke-PowerShellUserCode
 
     # make an attempt to read StdErr as it may contain info about failures
     try { $err = $global:puppetPSHost.UI.StdErr } catch { $err = $null }
-    New-XmlResult -exitcode $ec -output $null -stderr $err -errormessage $output
+    return @{
+      exitcode = $ec;
+      stdout = $null;
+      stderr = $err;
+      errormessage = $output;
+    }
   }
   finally
   {
@@ -588,6 +573,49 @@ function Signal-Event
   Write-SystemDebugMessage -Message "Signaled event $EventName"
 }
 
+function ConvertTo-LittleEndianBytes
+{
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [Int32]
+    $Value
+  )
+
+  $bytes = [BitConverter]::GetBytes($Value)
+  if (![BitConverter]::IsLittleEndian) { [Array]::Reverse($bytes) }
+
+  return $bytes
+}
+
+function ConvertTo-ByteArray
+{
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [Hashtable]
+    $Hash,
+
+    [Parameter(Mandatory = $true)]
+    [System.Text.Encoding]
+    $Encoding
+  )
+
+  # Initialize empty byte array that can be appended to
+  $result = [Byte[]]@()
+  # and add length / name / length / value from Hashtable
+  $Hash.GetEnumerator() |
+    % {
+      $name = $Encoding.GetBytes($_.Name)
+      $result += (ConvertTo-LittleEndianBytes $name.Length) + $name
+
+      $value = @()
+      if ($_.Value -ne $null) { $value = $Encoding.GetBytes($_.Value.ToString()) }
+      $result += (ConvertTo-LittleEndianBytes $value.Length) + $value
+    }
+
+  return $result
+}
 
 function Write-StreamResponse
 {
@@ -598,29 +626,20 @@ function Write-StreamResponse
     $Stream,
 
     [Parameter(Mandatory = $true)]
-    [String]
-    $Response,
-
-    [Parameter(Mandatory = $true)]
-    [System.Text.Encoding]
-    $Encoding
+    [Byte[]]
+    $Bytes
   )
 
-  # convert string to bytes in the specified encoding and write them to stream
-  $bytes = $Encoding.GetBytes($Response)
-
-  # length prefix the reponse so Ruby side of pipe knows how much to read
-  $length = [BitConverter]::GetBytes($bytes.Length)
-  if (![BitConverter]::IsLittleEndian) { [Array]::Reverse($length) }
+  $length = ConvertTo-LittleEndianBytes -Value $Bytes.Length
   $Stream.Write($length, 0, 4)
   $Stream.Flush()
 
-  Write-SystemDebugMessage -Message "Wrote Int32 $($bytes.Length) as Byte[] $length to Stream:`n$Response"
+  Write-SystemDebugMessage -Message "Wrote Int32 $($bytes.Length) as Byte[] $length to Stream"
 
   $Stream.Write($bytes, 0, $bytes.Length)
   $Stream.Flush()
 
-  Write-SystemDebugMessage -Message "Wrote Data to Stream:`n$Response"
+  Write-SystemDebugMessage -Message "Wrote $($bytes.Length) bytes of data to Stream"
 }
 
 function Read-Int32FromStream
@@ -743,10 +762,12 @@ function Start-PipeServer
           Write-SystemDebugMessage -Message "[Execute] Invoking user code:`n`n $($response.Code)"
 
           # assuming that the Ruby code always calls Invoked-PowerShellUserCode,
-          # result should already be returned as XML
+          # result should already be returned as a hash
           $result = Invoke-Expression $response.Code
 
-          Write-StreamResponse -Stream $server -Response $result -Encoding $Encoding
+          $bytes = ConvertTo-ByteArray -Hash $result -Encoding $Encoding
+
+          Write-StreamResponse -Stream $server -Bytes $bytes
         }
         'Exit' { $running = $false }
       }
