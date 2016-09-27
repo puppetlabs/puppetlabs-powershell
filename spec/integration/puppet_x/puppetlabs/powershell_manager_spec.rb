@@ -472,7 +472,7 @@ $bytes_in_k = (1024 * 64) + 1
         result = manager.execute(powershell_runtime_error)
 
         expect(result[:exitcode]).to eq(1)
-        expect(result[:errormessage]).to match(/At line\:1 char\:33/)
+        expect(result[:errormessage]).to match(/At line\:\d+ char\:\d+/)
       end
     end
 
@@ -489,7 +489,7 @@ $bytes_in_k = (1024 * 64) + 1
         result = manager.execute(powershell_parseexception_error)
 
         expect(result[:exitcode]).to eq(1)
-        expect(result[:errormessage]).to match(/At line\:1 char\:39/)
+        expect(result[:errormessage]).to match(/At line\:\d+ char\:\d+/)
       end
     end
 
