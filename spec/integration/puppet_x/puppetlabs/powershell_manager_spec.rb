@@ -456,8 +456,9 @@ $bytes_in_k = (1024 * 64) + 1
       first_cwd = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
       second_cwd = manager.execute('(Get-Location).Path')[:stdout]
 
-      expect(first_cwd).to eq("#{work_dir}\r\n")
-      expect(second_cwd).to eq("#{current_work_dir}\r\n")
+      # Paths should be case insensitive
+      expect(first_cwd.downcase).to eq("#{work_dir}\r\n".downcase)
+      expect(second_cwd.downcase).to eq("#{current_work_dir}\r\n".downcase)
     end
 
     context "with runtime error" do
