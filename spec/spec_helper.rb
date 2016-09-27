@@ -19,6 +19,20 @@ if Puppet.features.microsoft_windows?
       puts "#{path} got error #{output}"
     end
   end
+
+  def get_powershell_major_version()
+    provider = Puppet::Type.type(:exec).provider(:powershell)
+    powershell = provider.command(:powershell)
+    
+    begin
+      psversion = `#{powershell} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command \"$PSVersionTable.PSVersion.Major.ToString()\"`.chomp!.to_i
+      puts "PowerShell major version number is #{psversion}"
+    rescue
+      puts "Unable to determine PowerShell version"
+      psversion = -1    
+    end
+    psversion
+  end
 end
 
 RSpec.configure do |config|
