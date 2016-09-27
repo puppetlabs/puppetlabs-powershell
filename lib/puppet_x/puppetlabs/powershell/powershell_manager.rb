@@ -251,7 +251,7 @@ Invoke-PowerShellUserCode @params
 
         # there's ultimately a bit of a race here
         # read one more time after signal is received
-        read_from_pipe(pipe, 0) { |s| output << s }
+        read_from_pipe(pipe, 0) { |s| output << s } until !self.class.is_readable?(pipe)
         output
       end
 
