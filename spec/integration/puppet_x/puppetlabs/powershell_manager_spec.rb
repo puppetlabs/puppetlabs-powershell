@@ -31,8 +31,9 @@ module PuppetX
 end
 
 describe PuppetX::PowerShell::PowerShellManager,
-  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
-
+  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?,
+  :skip => (Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? && get_powershell_major_version >= 3) ? false : "Powershell version is less than 3.0 or undetermined" do
+  
   let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
