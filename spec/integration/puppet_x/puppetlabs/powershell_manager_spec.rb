@@ -31,8 +31,9 @@ module PuppetX
 end
 
 describe PuppetX::PowerShell::PowerShellManager,
-  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
-
+  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?,
+  :skip => (Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? && get_powershell_major_version >= 3) ? false : "Powershell version is less than 3.0 or undetermined" do
+  
   let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
@@ -455,8 +456,9 @@ $bytes_in_k = (1024 * 64) + 1
       first_cwd = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
       second_cwd = manager.execute('(Get-Location).Path')[:stdout]
 
-      expect(first_cwd).to eq("#{work_dir}\r\n")
-      expect(second_cwd).to eq("#{current_work_dir}\r\n")
+      # Paths should be case insensitive
+      expect(first_cwd.downcase).to eq("#{work_dir}\r\n".downcase)
+      expect(second_cwd.downcase).to eq("#{current_work_dir}\r\n".downcase)
     end
 
     context "with runtime error" do
@@ -472,7 +474,7 @@ $bytes_in_k = (1024 * 64) + 1
         result = manager.execute(powershell_runtime_error)
 
         expect(result[:exitcode]).to eq(1)
-        expect(result[:errormessage]).to match(/At line\:1 char\:33/)
+        expect(result[:errormessage]).to match(/At line\:\d+ char\:\d+/)
       end
     end
 
@@ -489,7 +491,7 @@ $bytes_in_k = (1024 * 64) + 1
         result = manager.execute(powershell_parseexception_error)
 
         expect(result[:exitcode]).to eq(1)
-        expect(result[:errormessage]).to match(/At line\:1 char\:39/)
+        expect(result[:errormessage]).to match(/At line\:\d+ char\:\d+/)
       end
     end
 
