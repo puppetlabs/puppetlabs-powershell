@@ -31,9 +31,8 @@ module PuppetX
 end
 
 describe PuppetX::PowerShell::PowerShellManager,
-  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?,
-  :skip => (Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? && get_powershell_major_version >= 3) ? false : "Powershell version is less than 3.0 or undetermined" do
-  
+  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
+
   let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
@@ -380,7 +379,23 @@ try {
       expect(result[:stdout]).to eq("False\r\n")
     end
 
+    def current_powershell_major_version
+      provider = Puppet::Type.type(:exec).provider(:powershell)
+      powershell = provider.command(:powershell)
+
+      begin
+        version = `#{powershell} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command \"$PSVersionTable.PSVersion.Major.ToString()\"`.chomp!.to_i
+      rescue
+        puts "Unable to determine PowerShell version"
+        version = -1
+      end
+
+      version
+    end
+
     it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
+      pending("Powershell version less than 3.0 has different Write-Output behavior") if current_powershell_major_version < 3
+
       # this was tested successfully up to 5MB of text
       buffer_string_96k = 'a' * ((1024 * 96) + 1)
       result = manager.execute(<<-CODE
