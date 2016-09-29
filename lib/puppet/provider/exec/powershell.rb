@@ -81,9 +81,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
       exit_code   = result[:exitcode]
 
       unless stderr.nil?
-        stderr.each do |er|
-          er.each { |e| Puppet.debug "STDERR: #{e.chop}" } unless er.empty?
-        end
+        stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
       end
 
       Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?

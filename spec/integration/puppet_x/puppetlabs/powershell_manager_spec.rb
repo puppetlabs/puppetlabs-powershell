@@ -271,15 +271,24 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should collect anything written to stderr" do
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect multiline output written to stderr" do
+      # induce a failure in cmd.exe that emits a multi-iline error message
+      result = manager.execute('cmd.exe /c foo.exe')
+
+      expect(result[:stdout]).to eq(nil)
+      expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\n","operable program or batch file.\n"])
+      expect(result[:exitcode]).to eq(1)
     end
 
     it "should handle writting to stdout and stderr" do
       result = manager.execute('ps;[System.Console]::Error.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq(nil)
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
     end
 
@@ -393,31 +402,42 @@ try {
       version
     end
 
-    it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
-      pending("Powershell version less than 3.0 has different Write-Output behavior") if current_powershell_major_version < 3
+    def output_cmdlet
+      # Write-Output is the default behavior, except on older PS2 where the
+      # behavior of Write-Output introduces newlines after every width number
+      # of characters as specified in the BufferSize of the custom console UI
+      # Write-Host should usually be avoided, but works for this test in old PS2
+      current_powershell_major_version >= 3 ?
+        'Write-Output' :
+        'Write-Host'
+    end
 
+    it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
       # this was tested successfully up to 5MB of text
       buffer_string_96k = 'a' * ((1024 * 96) + 1)
       result = manager.execute(<<-CODE
-'#{buffer_string_96k}' | Write-Output
+'#{buffer_string_96k}' | #{output_cmdlet}
         CODE
         )
 
       expect(result[:errormessage]).to eq(nil)
       expect(result[:exitcode]).to eq(0)
-      expect(result[:stdout]).to eq("#{buffer_string_96k}\r\n")
+      terminator = output_cmdlet == 'Write-Output' ? "\r\n" : "\n"
+      expect(result[:stdout]).to eq("#{buffer_string_96k}#{terminator}")
     end
 
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
       result = manager.execute(<<-CODE
 $bytes_in_k = (1024 * 64) + 1
-[Text.Encoding]::UTF8.GetString((New-Object Byte[] ($bytes_in_k))) | Write-Output
+[Text.Encoding]::UTF8.GetString((New-Object Byte[] ($bytes_in_k))) | #{output_cmdlet}
         CODE
         )
 
       expect(result[:errormessage]).to eq(nil)
       expect(result[:exitcode]).to eq(0)
-      expect(result[:stdout]).not_to eq(nil)
+      terminator = output_cmdlet == 'Write-Output' ? "\r\n" : "\n"
+      expected = "\x0" * (1024 * 64 + 1) + terminator
+      expect(result[:stdout]).to eq(expected)
     end
 
     it "should return a response with a timeout error if the execution timeout is exceeded" do

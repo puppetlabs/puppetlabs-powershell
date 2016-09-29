@@ -93,6 +93,27 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
         expect(resource.parameter(:unless).check(command)).to eq(false)
       end
+
+      it "runs commands properly that output to multiple streams" do
+        command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
+        output, status = provider.run(command)
+
+        if PuppetX::PowerShell::PowerShellManager.supported?
+          expected = "foo\r\n"
+        else
+          # when PowerShellManager is not used, the v1 style module collected
+          # all streams inside of a single output string
+          expected = [
+            "foo\n",
+            "bar\n'",
+            "foo.exe' is not recognized as an internal or external command,\n",
+            "operable program or batch file.\n"
+          ].join('')
+        end
+
+        expect(output).to eq(expected)
+        expect(status.exitstatus).to eq(1)
+      end
     end
   end
 
@@ -122,7 +143,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       let(:provider) { described_class.new(resource) }
 
       it 'emits an error when working directory does not exist' do
-        expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/) 
+        expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/)
       end
     end
   end
