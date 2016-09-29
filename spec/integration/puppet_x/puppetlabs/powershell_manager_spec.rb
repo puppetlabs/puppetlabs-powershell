@@ -271,15 +271,24 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should collect anything written to stderr" do
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect multiline output written to stderr" do
+      # induce a failure in cmd.exe that emits a multi-iline error message
+      result = manager.execute('cmd.exe /c foo.exe')
+
+      expect(result[:stdout]).to eq(nil)
+      expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\n","operable program or batch file.\n"])
+      expect(result[:exitcode]).to eq(1)
     end
 
     it "should handle writting to stdout and stderr" do
       result = manager.execute('ps;[System.Console]::Error.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq(nil)
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
     end
 

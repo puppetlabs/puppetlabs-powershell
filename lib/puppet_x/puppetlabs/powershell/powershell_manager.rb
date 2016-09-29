@@ -89,7 +89,10 @@ module PuppetX
             (prop.text.nil? ? nil : Base64.decode64(prop.text))
           # if err contains data it must be "real" stderr output
           # which should be appended to what PS has already captured
-          value += err if err && (err != []) && (name == 'stderr')
+          if name == 'stderr'
+            value = value.nil? ? [] : [value]
+            value += err if !err.nil?
+          end
           [name.to_sym, value]
         end
 
