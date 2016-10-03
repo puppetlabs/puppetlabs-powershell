@@ -1,3 +1,22 @@
+##2016-10-03 - Supported Release 2.0.3
+###Summary
+
+Small release with bugs fixes and another speed improvement.
+
+###Bug Fixes
+- Miscellaneous fixes which improve reliability
+- Capture exit codes when executing external scripts ([MODULES-3399](https://tickets.puppetlabs.com/browse/MODULES-3399))
+- Add ability to set current working directory ([MODULES-3565](https://tickets.puppetlabs.com/browse/MODULES-3565))
+- Respect user specified timeout ([MODULES-3709](https://tickets.puppetlabs.com/browse/MODULES-3709))
+- Improve handling of user code exceptions ([MODULES-3443](https://tickets.puppetlabs.com/browse/MODULES-3443))
+- Output line and stacktrace of user code exception ([MODULES-3839](https://tickets.puppetlabs.com/browse/MODULES-3839))
+- Improve resilience to failure of PowerShell host ([MODULES-3875](https://tickets.puppetlabs.com/browse/MODULES-3875))
+- Fix race condition in threading with PowerShell host ([MODULES-3144](https://tickets.puppetlabs.com/browse/MODULES-3144))
+- Modify tests to detect differences in PowerShell error text ([MODULES-3442](https://tickets.puppetlabs.com/browse/MODULES-3442))
+
+###Documentation updates
+- Document how to handle exit codes ([MODULES-3588](https://tickets.puppetlabs.com/browse/MODULES-3588))
+
 ##2016-07-12 - Supported Release 2.0.2
 ###Summary
 
