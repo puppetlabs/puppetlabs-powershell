@@ -110,6 +110,9 @@ module PuppetX
         @stdin.close if !@stdin.closed?
         @stdout.close if !@stdout.closed?
         @stderr.close if !@stderr.closed?
+
+        # wait up to 2 seconds for the watcher thread to fully exit
+        @ps_process.join(2)
       end
 
       def self.init_path
