@@ -322,7 +322,41 @@ namespace Puppet
 }
 "@
 
-Add-Type -TypeDefinition $hostSource -Language CSharp
+# https://stackoverflow.com/questions/38790802/determine-operating-system-in-net-core
+# doesn't work
+# ([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform([System.Runtime.InteropServices.OSPlatform]::OSX))
+function Get-Platform
+{
+  $linuxOsTypePath = '/proc/sys/kernel/ostype'
+
+  if ($ENV:windir -and ($ENV:windir -contains '\\') -and (Test-Path $ENV:windir))
+  {
+    return 'Windows'
+  }
+  elseif (Test-Path $linuxOsTypePath)
+  {
+    $osType = Get-Content $osTypePath
+    if ($osType -imatch '^Linux') { return 'Linux' }     # Linux or Android
+
+    throw New-Object System.PlatformNotSupportedException($osType)
+  }
+  elseif (Test-Path '/System/Library/CoreServices/SystemVersion.plist')
+  {
+    return 'OSX' # iOS or Android
+  }
+
+  throw New-Object System.PlatformNotSupportedException
+}
+
+if ((Get-Platform) -eq 'OSX')
+{
+  # Works around Add-Type issue:
+  # Add-Type : The type initializer for 'Crypto' threw an exception
+  # Write-Host 'Detected OSX and changing DYLD_LIBRARY_PATH'
+  # TODO: works in current running session, but not clean session??
+  $Env:DYLD_LIBRARY_PATH = '/usr/local/opt/openssl/lib'
+}
+Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Console', 'System.Management.Automation', 'System.Globalization')
 $global:DefaultWorkingDirectory = (Get-Location -PSProvider FileSystem).Path
 
 #this is a string so we can import into our dynamic PS instance
