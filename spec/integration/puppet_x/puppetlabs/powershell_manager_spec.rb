@@ -289,7 +289,7 @@ describe PuppetX::PowerShell::PowerShellManager,
       result = manager.execute('cmd.exe /c foo.exe')
 
       expect(result[:stdout]).to eq(nil)
-      expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\n","operable program or batch file.\n"])
+      expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"])
       expect(result[:exitcode]).to eq(1)
     end
 

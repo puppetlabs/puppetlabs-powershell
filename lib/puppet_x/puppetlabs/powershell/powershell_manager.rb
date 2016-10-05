@@ -232,10 +232,10 @@ Invoke-PowerShellUserCode @params
 
       def read_from_pipe(pipe, timeout = 0.1, &block)
         if self.class.is_readable?(pipe, timeout)
-          l = pipe.gets
+          l = pipe.readpartial(4096)
           Puppet.debug "#{Time.now} PIPE> #{l}"
-          # since gets can return a nil at EOF, skip returning that value
-          yield l.force_encoding(Encoding::UTF_8) if !l.nil?
+          # since readpartial may return a nil at EOF, skip returning that value
+          yield l if !l.nil?
         end
 
         nil
@@ -249,7 +249,11 @@ Invoke-PowerShellUserCode @params
         # there's ultimately a bit of a race here
         # read one more time after signal is received
         read_from_pipe(pipe, 0) { |s| output << s } until !self.class.is_readable?(pipe)
-        output
+
+        # string has been binary up to this point, so force UTF-8 now
+        output == [] ?
+          [] :
+          [output.join('').force_encoding(Encoding::UTF_8)]
       end
 
       def read_streams
