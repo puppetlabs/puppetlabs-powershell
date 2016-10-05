@@ -241,7 +241,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return simple output" do
       result = manager.execute('write-output foo')
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(0)
     end
@@ -249,7 +248,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return the exitcode specified" do
       result = manager.execute('write-output foo; exit 55')
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(55)
     end
@@ -264,7 +262,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return the exitcode of the last command to set an exit code" do
       result = manager.execute("$LASTEXITCODE = 0; write-output 'foo'; cmd.exe /c 'exit 99'; write-output 'bar'")
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\nbar\r\n")
       expect(result[:exitcode]).to eq(99)
     end
