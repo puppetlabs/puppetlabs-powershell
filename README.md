@@ -197,7 +197,16 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 * Only supported on Powershell 2.0 and above.
 
-* To use here-strings in scripts for this module, you must use the `@" / "@` syntax in your code.
+* When using here-strings in inline or templated scripts executed by this module, you must use the double-quote style syntax that begins with `@"` and ends with `"@`. The single-quote syntax that begins with `@'` and ends with `'@` is not supported.
+
+  Note that any external .ps1 script file loaded or executed with the call operator `&` is not subject to this limitation and can contain any style here-string. For instance, the script file external-code.ps1 can contain any style of here-string:
+
+  ```
+  exec { 'external-code':
+    command   => '& C:\external-code.ps1',
+    provider  => powershell,
+  }
+  ```
 
 ## Development
 
