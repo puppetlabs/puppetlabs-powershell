@@ -2,6 +2,7 @@ require 'rexml/document'
 require 'securerandom'
 require 'open3'
 require 'base64'
+require File.join(File.dirname(__FILE__), 'compatible_powershell_version')
 
 module PuppetX
   module PowerShell
@@ -27,8 +28,14 @@ module PuppetX
           Win32::Console.class == Class
       end
 
+      def self.compatible_version_of_powershell?
+        @compatible_powershell_version ||= PuppetX::PuppetLabs::PowerShell::CompatiblePowerShellVersion.compatible_version?
+      end
+
       def self.supported?
-        Puppet::Util::Platform.windows? && !win32console_enabled?
+        Puppet::Util::Platform.windows? &&
+        compatible_version_of_powershell? &&
+        !win32console_enabled?
       end
 
       def initialize(cmd, debug)
