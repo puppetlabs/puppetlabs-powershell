@@ -1,4 +1,5 @@
 require 'puppet/provider/exec'
+require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershell/compatible_powershell_version')
 require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershell/powershell_manager')
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
@@ -27,15 +28,26 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   EOT
 
   POWERSHELL_UPGRADE_MSG = <<-UPGRADE
-  The current Puppet version is outdated and uses a library that was
-  previously necessary on the current Ruby verison to support a colored console.
+  Currently, the PowerShell module has reduced v1 functionality on this agent
+  due to one or more of the following conditions:
 
-  Unfortunately this library prevents the PowerShell module from using a shared
-  PowerShell process to dramatically improve the performance of resource
-  application.
+  - Puppet 3.x (non-x64 version)
+
+    Puppet 3.x uses a Ruby version that requires a library to support a colored
+    console. Unfortunately this library prevents the PowerShell module from
+    using a shared PowerShell process to dramatically improve the performance of
+    resource application.
+
+  - PowerShell v2 with .NET Framework 2.0
+
+    PowerShell v2 works with both .NET Framework 2.0 and .NET Framework 3.5.
+    To be able to use the enhancements, we require at least .NET Framework 3.5.
+    Typically you will only see this on a base Windows Server 2008 (and R2)
+    install.
 
   To enable these improvements, it is suggested to upgrade to any x64 version of
-  Puppet (including 3.x), or to a Puppet version newer than 3.x.
+  Puppet (including 3.x), or to a Puppet version newer than 3.x and ensure you
+  have at least .NET Framework 3.5 installed.
   UPGRADE
 
   def self.upgrade_message
