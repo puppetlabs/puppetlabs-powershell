@@ -1,3 +1,14 @@
+##2016-11-14 - Supported Release 2.1.0
+###Summary
+
+Small release with bugs fixes and another speed improvement.
+
+###Bug Fixes
+- Support Windows 2016/WMF 5.1 using named pipes ([MODULES-3690](https://tickets.puppetlabs.com/browse/MODULES-3690))
+
+###Documentation updates
+- Document herestring ([DOC-2960](https://tickets.puppetlabs.com/browse/DOC-2960))
+
 ##2016-10-05 - Supported Release 2.0.3
 ###Summary
 
