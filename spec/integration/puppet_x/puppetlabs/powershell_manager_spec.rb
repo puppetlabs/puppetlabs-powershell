@@ -74,6 +74,14 @@ describe PuppetX::PowerShell::PowerShellManager,
           '^' + Regexp.escape("\#<#{epipe.class}: #{epipe.message}")
         )
       end
+
+      def connection_reset_regex
+        @connection_reset_regex ||= (
+          econnreset = Errno::ECONNRESET.new()
+          '^' + Regexp.escape("\#<#{econnreset.class}: #{econnreset.message}")
+        )
+      end
+
       # reason should be a string for an exact match
       # else an array of regex matches
       def expect_dead_manager(manager, reason, style = :exact)
@@ -126,7 +134,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         # it catches the error and returns a -1 exitcode
         expect(exitcode).to eq(-1)
 
-        expect_dead_manager(manager, pipe_error_regex, :regex)
+        expect_dead_manager(manager, connection_reset_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -138,7 +146,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         process = manager.instance_variable_get(:@ps_process)
         Process.kill('KILL', process.pid)
 
-        expect_dead_manager(manager, pipe_error_regex, :regex)
+        expect_dead_manager(manager, connection_reset_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -147,7 +155,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
         # closing pipe from the Ruby side tears down the process
-        close_stream(manager.instance_variable_get(:@pipe), :inprocess)
+        close_stream(manager.instance_variable_get(:@socket), :inprocess)
 
         expect_dead_manager(manager, IOError.new('closed stream').inspect, :exact)
 
@@ -158,7 +166,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
         # call CloseHandle against pipe, therby tearing down the PowerShell process
-        close_stream(manager.instance_variable_get(:@pipe), :viahandle)
+        close_stream(manager.instance_variable_get(:@socket), :viahandle)
 
         expect_dead_manager(manager, bad_file_descriptor_regex, :regex)
 
