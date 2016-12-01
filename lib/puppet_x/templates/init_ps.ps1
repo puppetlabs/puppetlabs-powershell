@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param (
   [Parameter(Mandatory = $true)]
-  [String]
-  $NamedPipeName,
+  [Int32]
+  $Port,
 
   [Parameter(Mandatory = $false)]
   [Switch]
@@ -656,7 +656,7 @@ function Write-StreamResponse
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
-    [System.IO.Pipes.PipeStream]
+    [System.Net.Sockets.NetworkStream]
     $Stream,
 
     [Parameter(Mandatory = $true)]
@@ -681,7 +681,7 @@ function Read-Int32FromStream
   [CmdletBinding()]
   param (
    [Parameter(Mandatory = $true)]
-   [System.IO.Pipes.PipeStream]
+   [System.Net.Sockets.NetworkStream]
    $Stream
   )
 
@@ -701,16 +701,16 @@ function Read-Int32FromStream
 # 1 byte - command identifier
 #     0 - Exit
 #     1 - Execute
-#    -1 - Exit - automatically returned when ReadByte encounters a closed pipe
+#    -1 - Exit - automatically returned when ReadByte encounters a closed stream
 # [optional] 4 bytes - Little Endian encoded 32-bit code block length for execute
 #                      Intel CPUs are little endian, hence the .NET Framework typically is
 # [optional] variable length - code block
-function ConvertTo-PipeCommand
+function ConvertTo-PowerShellHostCommand
 {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
-    [System.IO.Pipes.PipeStream]
+    [System.Net.Sockets.NetworkStream]
     $Stream,
 
     [Parameter(Mandatory = $true)]
@@ -722,15 +722,15 @@ function ConvertTo-PipeCommand
     $BufferChunkSize = 4096
   )
 
-  # command identifier is a single value - ReadByte blocks until byte is ready / pipe closes
+  # command identifier is a single value - ReadByte blocks until byte is ready / stream closes
   $command = $Stream.ReadByte()
 
-  Write-SystemDebugMessage -Message "Command id $command read from pipe"
+  Write-SystemDebugMessage -Message "Command id $command read from stream"
 
   switch ($command)
   {
     # Exit
-    # ReadByte returns a -1 when the pipe is closed on the other end
+    # ReadByte returns a -1 when the stream is closed on the other end
     { @(0, -1) -contains $_ } { return @{ Command = 'Exit' }}
 
     # Execute
@@ -743,7 +743,7 @@ function ConvertTo-PipeCommand
   $parsed.Length = Read-Int32FromStream -Stream $Stream
   Write-SystemDebugMessage -Message "Expecting $($parsed.Length) raw bytes of $($Encoding.EncodingName) characters"
 
-  # Read blocks until all bytes are read or EOF / broken pipe hit - tested with 5MB and worked fine
+  # Read blocks until all bytes are read or EOF / broken stream hit - tested with 5MB and worked fine
   $parsed.RawData = New-Object Byte[] $parsed.Length
   $read = $Stream.Read($parsed.RawData, 0, $parsed.Length)
   if ($read -lt $parsed.Length)
@@ -757,13 +757,13 @@ function ConvertTo-PipeCommand
   return $parsed
 }
 
-function Start-PipeServer
+function Start-SocketListener
 {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
-    [String]
-    $CommandChannelPipeName,
+    [Int32]
+    $Port,
 
     [Parameter(Mandatory = $true)]
     [System.Text.Encoding]
@@ -771,22 +771,23 @@ function Start-PipeServer
   )
 
   # this does not require versioning in the payload as client / server are tightly coupled
-  $server = New-Object System.IO.Pipes.NamedPipeServerStream($CommandChannelPipeName,
-    [System.IO.Pipes.PipeDirection]::InOut)
+  $server = [System.Net.Sockets.TcpListener]::Create($Port)
+  $server.Start()
 
   try
   {
     # block until Ruby process connects
-    $server.WaitForConnection()
+    $client = $server.AcceptTcpClient()
+    $stream = $client.GetStream()
 
-    Write-SystemDebugMessage -Message "Incoming Connection to $CommandChannelPipeName Received - Expecting Strings as $($Encoding.EncodingName)"
+    Write-SystemDebugMessage -Message "Incoming Connection to $Port Received - Expecting Strings as $($Encoding.EncodingName)"
 
     # Infinite Loop to process commands until EXIT received
     $running = $true
     while ($running)
     {
-      # throws if an unxpected command id is read from pipe
-      $response = ConvertTo-PipeCommand -Stream $server -Encoding $Encoding
+      # throws if an unxpected command id is read from stream
+      $response = ConvertTo-PowerShellHostCommand -Stream $stream -Encoding $Encoding
 
       Write-SystemDebugMessage -Message "Received $($response.Command) command from client"
 
@@ -801,7 +802,7 @@ function Start-PipeServer
 
           $bytes = ConvertTo-ByteArray -Hash $result -Encoding $Encoding
 
-          Write-StreamResponse -Stream $server -Bytes $bytes
+          Write-StreamResponse -Stream $stream -Bytes $bytes
         }
         'Exit' { $running = $false }
       }
@@ -809,13 +810,23 @@ function Start-PipeServer
   }
   catch [Exception]
   {
-    Write-SystemDebugMessage -Message "PowerShell Pipe Server Failed!`n`n$_"
+    Write-SystemDebugMessage -Message "PowerShell Socket Server Failed!`n`n$_"
     throw
   }
   finally
   {
-    if ($server -ne $null) { $server.Dispose() }
+    if ($stream -ne $null) { $stream.Dispose() }
+    if ($client -ne $null)
+    {
+      $client.Stop()
+      $client.Dispose()
+    }
+    if ($server -ne $null)
+    {
+      $server.Stop()
+      $server.Dispose()
+    }
   }
 }
 
-Start-PipeServer -CommandChannelPipeName $NamedPipeName -Encoding $Encoding
+Start-SocketListener -Port $Port -Encoding $Encoding
