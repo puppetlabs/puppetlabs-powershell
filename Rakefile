@@ -1,5 +1,6 @@
 require 'puppetlabs_spec_helper/rake_tasks'
 require 'rspec/core/rake_task'
+require 'puppet_blacksmith/rake_tasks' if Bundler.rubygems.find_name('puppet-blacksmith').any?
 
 task :default => :unit
 
