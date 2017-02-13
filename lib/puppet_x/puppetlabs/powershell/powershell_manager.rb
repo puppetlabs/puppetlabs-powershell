@@ -1,7 +1,7 @@
 require 'rexml/document'
 require 'securerandom'
 require 'open3'
-require 'base64'
+require 'socket'
 require File.join(File.dirname(__FILE__), 'compatible_powershell_version')
 
 module PuppetX
@@ -41,9 +41,12 @@ module PuppetX
       def initialize(cmd, debug)
         @usable = true
 
-        named_pipe_name = "#{SecureRandom.uuid}PuppetPsHost"
+        # find a random port to listen on, and pass to PowerShell
+        temp_server = TCPServer.new('127.0.0.1', 0)
+        port = temp_server.addr[1]
+        temp_server.close()
 
-        ps_args = ['-File', self.class.init_path, "\"#{named_pipe_name}\""]
+        ps_args = ['-File', self.class.init_path, "\"#{port}\""]
         ps_args << '"-EmitDebugOutput"' if debug
         # @stderr should never be written to as PowerShell host redirects output
         stdin, @stdout, @stderr, @ps_process = Open3.popen3("#{cmd} #{ps_args.join(' ')}")
@@ -51,21 +54,22 @@ module PuppetX
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
-        pipe_path = "\\\\.\\pipe\\#{named_pipe_name}"
-        # wait for the pipe server to signal ready, and fail if no response in 10 seconds
+        # wait for the socket to be listening, and fail if no response in 10 seconds
 
-        # wait up to 10 seconds in 0.2 second intervals to be able to open the pipe
+        # wait up to 10 seconds in 0.2 second intervals to be able to open the socket
         50.times do
           begin
             # pipe is opened in binary mode and must always
-            @pipe = File.open(pipe_path, 'r+b')
+            # File.open(pipe_path, 'r+b')
+            @socket = TCPSocket.new 'localhost', port
+
             break
           rescue
             sleep 0.2
           end
         end
 
-        fail "Failure waiting for PowerShell process #{@ps_process[:pid]} to start pipe server" if @pipe.nil?
+        fail "Failure waiting for PowerShell process #{@ps_process[:pid]} to start listening on port #{port}" if @socket.nil?
 
         Puppet.debug "#{Time.now} PowerShell initialization complete for pid: #{@ps_process[:pid]}"
 
@@ -78,7 +82,7 @@ module PuppetX
           # explicitly set during a read / write failure, like broken pipe EPIPE
           @usable &&
           # an explicit failure state might not have been hit, but IO may be closed
-          self.class.is_stream_valid?(@pipe) &&
+          self.class.is_stream_valid?(@socket) &&
           self.class.is_stream_valid?(@stdout) &&
           self.class.is_stream_valid?(@stderr)
       end
@@ -111,7 +115,7 @@ module PuppetX
         # pipe may still be open, but if stdout / stderr are dead PS process is in trouble
         # and will block forever on a write to the pipe
         # its safer to close pipe on Ruby side, which gracefully shuts down PS side
-        @pipe.close if !@pipe.closed?
+        @socket.close if !@socket.closed?
         @stdout.close if !@stdout.closed?
         @stderr.close if !@stderr.closed?
 
@@ -228,8 +232,8 @@ Invoke-PowerShellUserCode @params
       def write_pipe(input)
         # for compat with Ruby 2.1 and lower, its important to use syswrite and not write
         # otherwise the pipe breaks after writing 1024 bytes
-        written = @pipe.syswrite(input)
-        @pipe.flush()
+        written = @socket.syswrite(input)
+        @socket.flush()
 
         if written != input.length
           msg = "Only wrote #{written} out of #{input.length} expected bytes to PowerShell pipe"
@@ -270,13 +274,15 @@ Invoke-PowerShellUserCode @params
 
         stdout_reader = Thread.new { drain_pipe_until_signaled(@stdout, pipe_done_reading) }
         stderr_reader = Thread.new { drain_pipe_until_signaled(@stderr, pipe_done_reading) }
-        pipe_reader = Thread.new(@pipe) do |pipe|
+        pipe_reader = Thread.new(@socket) do |pipe|
           # read a Little Endian 32-bit integer for length of response
           expected_response_length = pipe.sysread(4).unpack('V').first
-          return nil if expected_response_length == 0
-
-          # reads the expected bytes as a binary string or fails
-          pipe.sysread(expected_response_length)
+          if expected_response_length == 0
+            nil
+          else
+            # reads the expected bytes as a binary string or fails
+            pipe.sysread(expected_response_length)
+          end
         end
 
         Puppet.debug "Waited #{Time.now - start_time} total seconds."
@@ -284,7 +290,7 @@ Invoke-PowerShellUserCode @params
         # block until sysread has completed or errors
         begin
           output = pipe_reader.value
-          output = self.class.ps_output_to_hash(output) if !output.nil?
+          output = self.class.ps_output_to_hash(output || [])
         ensure
           # signal stdout / stderr readers via mutex
           # so that Ruby doesn't crash waiting on an invalid event
@@ -313,7 +319,7 @@ Invoke-PowerShellUserCode @params
       # if any pipes are broken, the manager is totally hosed
       # bad file descriptors mean closed stream handles
       # EOFError is a closed pipe (could be as a result of tearing down process)
-      rescue Errno::EPIPE, Errno::EBADF, EOFError => e
+      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EBADF, EOFError => e
         @usable = false
         return nil, nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
