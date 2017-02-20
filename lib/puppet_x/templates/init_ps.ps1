@@ -328,7 +328,7 @@ namespace Puppet
 function Get-Platform
 {
   $linuxOsTypePath = '/proc/sys/kernel/ostype'
-
+  
   if ($ENV:windir -and ($ENV:windir -contains '\\') -and (Test-Path $ENV:windir))
   {
     return 'Windows'
@@ -356,7 +356,11 @@ if ((Get-Platform) -eq 'OSX')
   # TODO: works in current running session, but not clean session??
   $Env:DYLD_LIBRARY_PATH = '/usr/local/opt/openssl/lib'
 }
-Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Console', 'System.Management.Automation', 'System.Globalization')
+if ($PSVersionTable.PSEdition -eq 'Desktop') {
+  Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Management.Automation', 'System.Globalization')
+} else {
+  Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Console', 'System.Management.Automation', 'System.Globalization')
+}
 $global:DefaultWorkingDirectory = (Get-Location -PSProvider FileSystem).Path
 
 #this is a string so we can import into our dynamic PS instance
