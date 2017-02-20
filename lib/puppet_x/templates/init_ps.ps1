@@ -328,8 +328,8 @@ namespace Puppet
 function Get-Platform
 {
   $linuxOsTypePath = '/proc/sys/kernel/ostype'
-  
-  if ($ENV:windir -and ($ENV:windir -contains '\\') -and (Test-Path $ENV:windir))
+
+  if ($ENV:windir -and ($ENV:windir -like '*\*') -and (Test-Path $ENV:windir))
   {
     return 'Windows'
   }
