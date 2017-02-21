@@ -73,6 +73,14 @@ module PuppetX
 
         Puppet.debug "#{Time.now} PowerShell initialization complete for pid: #{@ps_process[:pid]}"
 
+output = ''
+read_from_pipe(@stderr, 0) { |s| output << s } until !self.class.is_readable?(@stderr)
+unless output.length == 0
+  puts "debug ---- STDERR during init"
+  puts output
+  puts "debug ---- STDERR during init"
+end
+
         at_exit { exit }
       end
 
