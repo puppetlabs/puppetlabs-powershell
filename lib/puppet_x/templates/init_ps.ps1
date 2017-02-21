@@ -356,10 +356,11 @@ if ((Get-Platform) -eq 'OSX')
   # TODO: works in current running session, but not clean session??
   $Env:DYLD_LIBRARY_PATH = '/usr/local/opt/openssl/lib'
 }
-if ($PSVersionTable.PSEdition -eq 'Desktop') {
-  Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Management.Automation', 'System.Globalization')
-} else {
+if ($PSVersionTable.PSEdition -eq 'Core') {
+  # Only PS Core edition has System.Console
   Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Console', 'System.Management.Automation', 'System.Globalization')
+} else {
+  Add-Type -TypeDefinition $hostSource -Language CSharp -ReferencedAssemblies @('System.Collections', 'System.Management.Automation', 'System.Globalization')
 }
 $global:DefaultWorkingDirectory = (Get-Location -PSProvider FileSystem).Path
 
