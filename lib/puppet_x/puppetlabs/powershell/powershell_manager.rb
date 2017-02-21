@@ -123,7 +123,13 @@ end
         # pipe may still be open, but if stdout / stderr are dead PS process is in trouble
         # and will block forever on a write to the pipe
         # its safer to close pipe on Ruby side, which gracefully shuts down PS side
-        @socket.close if !@socket.closed?
+        begin
+          @socket.close if !@socket.closed?
+        rescue
+          # It is possible to get into race-y state where ruby thinks the socket is not closed
+          # however the socket handle is not "valid" anymore.  In this case various errors could be thrown
+          # so it's best to just ignore all incoming erros and carry on
+        end
         @stdout.close if !@stdout.closed?
         @stderr.close if !@stderr.closed?
 
@@ -326,8 +332,8 @@ Invoke-PowerShellUserCode @params
         read_streams()
       # if any pipes are broken, the manager is totally hosed
       # bad file descriptors mean closed stream handles
-      # EOFError is a closed pipe (could be as a result of tearing down process)
-      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EBADF, EOFError => e
+      # EOFError and ENOTSOCK is a closed pipe (could be as a result of tearing down process)
+      rescue Errno::ECONNRESET, Errno::EPIPE, Errno::EBADF, Errno::ENOTSOCK, EOFError => e
         @usable = false
         return nil, nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
