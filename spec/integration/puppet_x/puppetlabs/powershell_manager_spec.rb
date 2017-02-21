@@ -75,6 +75,13 @@ describe PuppetX::PowerShell::PowerShellManager,
         )
       end
 
+      def not_socket_error_regex
+        @pipe_error_regex ||= (
+          enotsock = Errno::ENOTSOCK.new()
+          '^' + Regexp.escape("\#<#{enotsock.class}: #{enotsock.message}")
+        )
+      end
+
       def connection_reset_regex
         @connection_reset_regex ||= (
           econnreset = Errno::ECONNRESET.new()
@@ -168,7 +175,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         # call CloseHandle against pipe, therby tearing down the PowerShell process
         close_stream(manager.instance_variable_get(:@socket), :viahandle)
 
-        expect_dead_manager(manager, bad_file_descriptor_regex, :regex)
+        expect_dead_manager(manager, not_socket_error_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
