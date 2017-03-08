@@ -31,9 +31,8 @@ module PuppetX
 end
 
 describe PuppetX::PowerShell::PowerShellManager,
-  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?,
-  :skip => (Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? && get_powershell_major_version >= 3) ? false : "Powershell version is less than 3.0 or undetermined" do
-  
+  :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
+
   let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
@@ -42,7 +41,7 @@ describe PuppetX::PowerShell::PowerShellManager,
   }
 
   def create_manager
-    PuppetX::PowerShell::PowerShellManager.instance(manager_args)
+    PuppetX::PowerShell::PowerShellManager.instance(manager_args, true)
   end
 
   let (:manager) { create_manager() }
@@ -69,8 +68,14 @@ describe PuppetX::PowerShell::PowerShellManager,
         )
       end
 
-      # reason can be a single string / regex or an array of them
-      # by default the matches are treated as literal
+      def pipe_error_regex
+        @pipe_error_regex ||= (
+          epipe = Errno::EPIPE.new()
+          '^' + Regexp.escape("\#<#{epipe.class}: #{epipe.message}")
+        )
+      end
+      # reason should be a string for an exact match
+      # else an array of regex matches
       def expect_dead_manager(manager, reason, style = :exact)
         # additional attempts to use the manager will fail for the given reason
         result = manager.execute('Write-Host "hi"')
@@ -121,7 +126,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         # it catches the error and returns a -1 exitcode
         expect(exitcode).to eq(-1)
 
-        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+        expect_dead_manager(manager, pipe_error_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -133,7 +138,7 @@ describe PuppetX::PowerShell::PowerShellManager,
         process = manager.instance_variable_get(:@ps_process)
         Process.kill('KILL', process.pid)
 
-        expect_dead_manager(manager, Errno::EPIPE.new().inspect, :exact)
+        expect_dead_manager(manager, pipe_error_regex, :regex)
 
         expect_different_manager_returned_than(manager, first_pid)
       end
@@ -141,8 +146,8 @@ describe PuppetX::PowerShell::PowerShellManager,
       it "should create a new PowerShell manager host if the input stream is closed" do
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
-        # closing stdin from the Ruby side tears down the process
-        close_stream(manager.instance_variable_get(:@stdin), :inprocess)
+        # closing pipe from the Ruby side tears down the process
+        close_stream(manager.instance_variable_get(:@pipe), :inprocess)
 
         expect_dead_manager(manager, IOError.new('closed stream').inspect, :exact)
 
@@ -152,8 +157,8 @@ describe PuppetX::PowerShell::PowerShellManager,
       it "should create a new PowerShell manager host if the input stream handle is closed" do
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
-        # call CloseHandle against stdin, therby tearing down the PowerShell process
-        close_stream(manager.instance_variable_get(:@stdin), :viahandle)
+        # call CloseHandle against pipe, therby tearing down the PowerShell process
+        close_stream(manager.instance_variable_get(:@pipe), :viahandle)
 
         expect_dead_manager(manager, bad_file_descriptor_regex, :regex)
 
@@ -174,6 +179,9 @@ describe PuppetX::PowerShell::PowerShellManager,
       end
 
       it "should create a new PowerShell manager host if the output stream handle is closed" do
+        # currently skipped as it can trigger an internal Ruby thread clean-up race
+        # its unknown why this test fails, but not the identical test against @stderr
+        skip('This test can cause intermittent segfaults in Ruby with w32_reset_event invalid handle')
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
         # call CloseHandle against stdout, which leaves PowerShell process running
@@ -233,7 +241,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return simple output" do
       result = manager.execute('write-output foo')
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(0)
     end
@@ -241,7 +248,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return the exitcode specified" do
       result = manager.execute('write-output foo; exit 55')
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\n")
       expect(result[:exitcode]).to eq(55)
     end
@@ -256,7 +262,6 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should return the exitcode of the last command to set an exit code" do
       result = manager.execute("$LASTEXITCODE = 0; write-output 'foo'; cmd.exe /c 'exit 99'; write-output 'bar'")
 
-      # STDERR is interpolating the newlines thus it's \n instead of the usual Windows \r\n
       expect(result[:stdout]).to eq("foo\r\nbar\r\n")
       expect(result[:exitcode]).to eq(99)
     end
@@ -272,16 +277,85 @@ describe PuppetX::PowerShell::PowerShellManager,
     it "should collect anything written to stderr" do
       result = manager.execute('[System.Console]::Error.WriteLine("foo")')
 
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should collect multiline output written to stderr" do
+      # induce a failure in cmd.exe that emits a multi-iline error message
+      result = manager.execute('cmd.exe /c foo.exe')
+
+      expect(result[:stdout]).to eq(nil)
+      expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"])
+      expect(result[:exitcode]).to eq(1)
     end
 
     it "should handle writting to stdout and stderr" do
       result = manager.execute('ps;[System.Console]::Error.WriteLine("foo")')
 
       expect(result[:stdout]).not_to eq(nil)
-      expect(result[:stderr]).to eq("foo\r\n")
+      expect(result[:stderr]).to eq(["foo\r\n"])
       expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle writing to stdout natively" do
+      result = manager.execute('[System.Console]::Out.WriteLine("foo")')
+
+      expect(result[:stdout]).to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should properly interleave output written natively to stdout and via Write-XXX cmdlets" do
+      result = manager.execute('Write-Output "bar"; [System.Console]::Out.WriteLine("foo"); Write-Warning "baz";')
+
+      expect(result[:stdout]).to eq("bar\r\nfoo\r\nWARNING: baz\r\n")
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle writing to regularly captured output AND stdout natively" do
+      result = manager.execute('ps;[System.Console]::Out.WriteLine("foo")')
+
+      expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
+      expect(result[:stderr]).to eq([])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    it "should handle writing to regularly captured output, stderr AND stdout natively" do
+      result = manager.execute('ps;[System.Console]::Out.WriteLine("foo");[System.Console]::Error.WriteLine("bar")')
+
+      expect(result[:stdout]).not_to eq("foo\r\n")
+      expect(result[:native_stdout]).to eq(nil)
+      expect(result[:stderr]).to eq(["bar\r\n"])
+      expect(result[:exitcode]).to eq(0)
+    end
+
+    context "it should handle UTF-8" do
+      # different UTF-8 widths
+      # 1-byte A
+      # 2-byte ۿ - http://www.fileformat.info/info/unicode/char/06ff/index.htm - 0xDB 0xBF / 219 191
+      # 3-byte ᚠ - http://www.fileformat.info/info/unicode/char/16A0/index.htm - 0xE1 0x9A 0xA0 / 225 154 160
+      # 4-byte 𠜎 - http://www.fileformat.info/info/unicode/char/2070E/index.htm - 0xF0 0xA0 0x9C 0x8E / 240 160 156 142
+      let (:mixed_utf8) { "A\u06FF\u16A0\u{2070E}" } # Aۿᚠ𠜎
+
+      it "when writing basic text" do
+        code = "Write-Output '#{mixed_utf8}'"
+        result = manager.execute(code)
+
+        expect(result[:stdout]).to eq("#{mixed_utf8}\r\n")
+        expect(result[:exitcode]).to eq(0)
+      end
+
+      it "when writing basic text to stderr" do
+        code = "[System.Console]::Error.WriteLine('#{mixed_utf8}')"
+        result = manager.execute(code)
+
+        expect(result[:stderr]).to eq(["#{mixed_utf8}\r\n"])
+        expect(result[:exitcode]).to eq(0)
+      end
     end
 
     it "should execute cmdlets" do
@@ -380,29 +454,56 @@ try {
       expect(result[:stdout]).to eq("False\r\n")
     end
 
+    def current_powershell_major_version
+      provider = Puppet::Type.type(:exec).provider(:powershell)
+      powershell = provider.command(:powershell)
+
+      begin
+        version = `#{powershell} -NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command \"$PSVersionTable.PSVersion.Major.ToString()\"`.chomp!.to_i
+      rescue
+        puts "Unable to determine PowerShell version"
+        version = -1
+      end
+
+      version
+    end
+
+    def output_cmdlet
+      # Write-Output is the default behavior, except on older PS2 where the
+      # behavior of Write-Output introduces newlines after every width number
+      # of characters as specified in the BufferSize of the custom console UI
+      # Write-Host should usually be avoided, but works for this test in old PS2
+      current_powershell_major_version >= 3 ?
+        'Write-Output' :
+        'Write-Host'
+    end
+
     it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
       # this was tested successfully up to 5MB of text
       buffer_string_96k = 'a' * ((1024 * 96) + 1)
       result = manager.execute(<<-CODE
-'#{buffer_string_96k}' | Write-Output
+'#{buffer_string_96k}' | #{output_cmdlet}
         CODE
         )
 
       expect(result[:errormessage]).to eq(nil)
       expect(result[:exitcode]).to eq(0)
-      expect(result[:stdout]).to eq("#{buffer_string_96k}\r\n")
+      terminator = output_cmdlet == 'Write-Output' ? "\r\n" : "\n"
+      expect(result[:stdout]).to eq("#{buffer_string_96k}#{terminator}")
     end
 
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
       result = manager.execute(<<-CODE
 $bytes_in_k = (1024 * 64) + 1
-[Text.Encoding]::UTF8.GetString((New-Object Byte[] ($bytes_in_k))) | Write-Output
+[Text.Encoding]::UTF8.GetString((New-Object Byte[] ($bytes_in_k))) | #{output_cmdlet}
         CODE
         )
 
       expect(result[:errormessage]).to eq(nil)
       expect(result[:exitcode]).to eq(0)
-      expect(result[:stdout]).not_to eq(nil)
+      terminator = output_cmdlet == 'Write-Output' ? "\r\n" : "\n"
+      expected = "\x0" * (1024 * 64 + 1) + terminator
+      expect(result[:stdout]).to eq(expected)
     end
 
     it "should return a response with a timeout error if the execution timeout is exceeded" do
