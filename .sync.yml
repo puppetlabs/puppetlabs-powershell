@@ -1,6 +1,8 @@
 ---
 Rakefile:
   unmanaged: true
+.travis.yml:
+  unmanaged: true
 spec/spec_helper.rb:
   unmanaged: true
 appveyor.yml:
