@@ -3,13 +3,17 @@ require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershe
 require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershell/powershell_manager')
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
-  confine :operatingsystem => :windows
-
-  commands :powershell =>
+  commands :powershell => 
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
+    elsif File.exists?('/usr/bin/powershell')
+      '/usr/bin/powershell'
+    elsif File.exists?('/usr/local/bin/powershell')
+      '/usr/local/bin/powershell'
+    elsif !Puppet::Util::Platform.windows?
+      "powershell"
     else
       'powershell.exe'
     end
@@ -69,42 +73,54 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def run(command, check = false)
-    if !PuppetX::PowerShell::PowerShellManager.supported?
-      self.class.upgrade_message
+    if Puppet::Util::Platform.windows?
+      if !PuppetX::PowerShell::PowerShellManager.supported?
+        self.class.upgrade_message
+        write_script(command) do |native_path|
+          # Ideally, we could keep a handle open on the temp file in this
+          # process (to prevent TOCTOU attacks), and execute powershell
+          # with -File <path>. But powershell complains that it can't open
+          # the file for exclusive access. If we close the handle, then an
+          # attacker could modify the file before we invoke powershell. So
+          # we redirect powershell's stdin to read from the file. Current
+          # versions of Windows use per-user temp directories with strong
+          # permissions, but I'd rather not make (poor) assumptions.
+          return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        end
+      else
+        working_dir = resource[:cwd]
+        if (!working_dir.nil?)
+          self.fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
+        end
+        timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
+
+        result = ps_manager.execute(command,timeout_ms,working_dir)
+
+        stdout      = result[:stdout]
+        native_out  = result[:native_stdout]
+        stderr      = result[:stderr]
+        exit_code   = result[:exitcode]
+
+        unless stderr.nil?
+          stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
+        end
+
+        Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
+
+        output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
+
+        return output, output
+      end
+    else
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
         # process (to prevent TOCTOU attacks), and execute powershell
         # with -File <path>. But powershell complains that it can't open
         # the file for exclusive access. If we close the handle, then an
         # attacker could modify the file before we invoke powershell. So
-        # we redirect powershell's stdin to read from the file. Current
-        # versions of Windows use per-user temp directories with strong
-        # permissions, but I'd rather not make (poor) assumptions.
-        return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        # we redirect powershell's stdin to read from the file.
+        return super("sh -c \"#{native_path(command(:powershell))} #{posix_args} -Command - < #{native_path}\"", check)
       end
-    else
-      working_dir = resource[:cwd]
-      if (!working_dir.nil?)
-        self.fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
-      end
-      timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
-
-      result = ps_manager.execute(command,timeout_ms,working_dir)
-
-      stdout      = result[:stdout]
-      native_out  = result[:native_stdout]
-      stderr      = result[:stderr]
-      exit_code   = result[:exitcode]
-
-      unless stderr.nil?
-        stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
-      end
-
-      Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
-
-      output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
-
-      return output, output
     end
   end
 
@@ -135,5 +151,11 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def legacy_args
     '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
+  end
+
+  def posix_args
+    # Note - using -ExecutionPolicy causes PowerShell to abort
+    # https://github.com/PowerShell/PowerShell/issues/2742
+    '-NoProfile -NonInteractive -NoLogo'
   end
 end
