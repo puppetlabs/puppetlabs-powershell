@@ -15,8 +15,15 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
-  let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
-  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell) }
+  let(:args) {
+    if Puppet.features.microsoft_windows?
+      '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -'
+    else
+      '-NoProfile -NonInteractive -NoLogo -Command -'
+    end
+  }
+  # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
+  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}" ) }
   let(:provider) { described_class.new(resource) }
 
   let(:powershell) {
@@ -24,6 +31,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
+    elsif File.exists?('/usr/bin/powershell')
+      '/usr/bin/powershell'
+    elsif File.exists?('/usr/local/bin/powershell')
+      '/usr/local/bin/powershell'
+    elsif !Puppet::Util::Platform.windows?
+      "powershell"
     else
       'powershell.exe'
     end
@@ -42,77 +55,137 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
-      it "should call cmd.exe /c" do
-        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
-          .with(regexp_matches(/^cmd.exe \/c/), anything)
+      context "on windows", :if => Puppet.features.microsoft_windows? do
+        it "should call cmd.exe /c" do
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
+            .with(regexp_matches(/^cmd.exe \/c/), anything)
 
-        provider.run_spec_override(command)
-      end
-
-      it "should quote powershell.exe path", :if => Puppet.features.microsoft_windows? do
-        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-          with(regexp_matches(/"#{Regexp.escape(powershell)}"/), false)
-
-        provider.run_spec_override(command)
-      end
-
-      it "should quote the path to the temp file" do
-        path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
-
-        provider.expects(:write_script).with(command).yields(path)
-        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-          with(regexp_matches(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/), false)
-
-        provider.run_spec_override(command)
-      end
-
-      it "should supply default arguments to supress user interaction" do
-        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-          with(regexp_matches(/^cmd.exe \/c ".* #{args} < .*"/), false)
-
-        provider.run_spec_override(command)
-      end
-    end
-
-    context "actual runs", :if => Puppet.features.microsoft_windows? do
-      it "returns the output and status" do
-        output, status = provider.run(command)
-
-        expect(output).to match(/SID\s+:\s+S-1-5-18/)
-        expect(status.exitstatus).to eq(0)
-      end
-
-      it "returns true if the `onlyif` check command succeeds" do
-        resource[:onlyif] = command
-
-        expect(resource.parameter(:onlyif).check(command)).to eq(true)
-      end
-
-      it "returns false if the `unless` check command succeeds" do
-        resource[:unless] = command
-
-        expect(resource.parameter(:unless).check(command)).to eq(false)
-      end
-
-      it "runs commands properly that output to multiple streams" do
-        command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
-        output, status = provider.run(command)
-
-        if PuppetX::PowerShell::PowerShellManager.supported?
-          expected = "foo\r\n"
-        else
-          # when PowerShellManager is not used, the v1 style module collected
-          # all streams inside of a single output string
-          expected = [
-            "foo\n",
-            "bar\n'",
-            "foo.exe' is not recognized as an internal or external command,\n",
-            "operable program or batch file.\n"
-          ].join('')
+          provider.run_spec_override(command)
         end
 
-        expect(output).to eq(expected)
-        expect(status.exitstatus).to eq(1)
+        it "should quote powershell.exe path" do
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
+            with(regexp_matches(/"#{Regexp.escape(powershell)}"/), false)
+
+          provider.run_spec_override(command)
+        end
+
+        it "should quote the path to the temp file" do
+          path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
+
+          provider.expects(:write_script).with(command).yields(path)
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
+            with(regexp_matches(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/), false)
+
+          provider.run_spec_override(command)
+        end
+
+        it "should supply default arguments to supress user interaction" do
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
+            with(regexp_matches(/^cmd.exe \/c ".* #{args} < .*"/), false)
+
+          provider.run_spec_override(command)
+        end
+      end
+
+      context "on non-windows", :if => !Puppet.features.microsoft_windows? do
+        it "should call sh -c" do
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
+            .with(regexp_matches(/^sh -c /), anything)
+
+          provider.run_spec_override(command)
+        end
+
+        it "should supply default arguments to supress user interaction" do
+          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
+            with(regexp_matches(/^sh -c ".* #{args} < .*"/), false)
+
+          provider.run_spec_override(command)
+        end
+      end
+
+    end
+
+    context "actual runs" do
+      context "on Windows", :if => Puppet.features.microsoft_windows? do
+        it "returns the output and status" do
+          output, status = provider.run(command)
+
+          expect(output).to match(/SID\s+:\s+S-1-5-18/)
+          expect(status.exitstatus).to eq(0)
+        end
+
+        it "returns true if the `onlyif` check command succeeds" do
+          resource[:onlyif] = command
+
+          expect(resource.parameter(:onlyif).check(command)).to eq(true)
+        end
+
+        it "returns false if the `unless` check command succeeds" do
+          resource[:unless] = command
+
+          expect(resource.parameter(:unless).check(command)).to eq(false)
+        end
+
+        it "runs commands properly that output to multiple streams" do
+          command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
+          output, status = provider.run(command)
+
+          if PuppetX::PowerShell::PowerShellManager.supported?
+            expected = "foo\r\n"
+          else
+            # when PowerShellManager is not used, the v1 style module collected
+            # all streams inside of a single output string
+            expected = [
+              "foo\n",
+              "bar\n'",
+              "foo.exe' is not recognized as an internal or external command,\n",
+              "operable program or batch file.\n"
+            ].join('')
+          end
+
+          expect(output).to eq(expected)
+          expect(status.exitstatus).to eq(1)
+        end
+      end
+
+      context "on non-Windows", :if => !Puppet.features.microsoft_windows? do
+        # The usage of uname is a little fragile however there is basically nothing
+        # which is universal across all Linux/Unix/Mac distributions; Unlike Well Known SIDS in Windows
+        # The closest is the presence of the uname command and its generic text output
+        let(:command) { '& uname' }
+        let(:uname_regex) { '(Linux|Darwin)' }
+
+        it "returns the output and status" do
+          output, status = provider.run(command)
+
+          expect(output).to match(/#{uname_regex}/)
+          expect(status.exitstatus).to eq(0)
+        end
+
+        it "returns true if the `onlyif` check command succeeds" do
+          resource[:onlyif] = command
+
+          expect(resource.parameter(:onlyif).check(command)).to eq(true)
+        end
+
+        it "returns false if the `unless` check command succeeds" do
+          resource[:unless] = command
+
+          expect(resource.parameter(:unless).check(command)).to eq(false)
+        end
+
+        it "runs commands properly that output to multiple streams" do
+          command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); & foo.exe'
+          output, status = provider.run(command)
+
+          # Collected all streams inside of a single output string
+          expected = "^foo\nbar\n.+The term 'foo\.exe' is not recognized as the name of a cmdlet, function.+"
+
+          # Due to the different behaviour of sh across non-Windows platforms, must use a regex
+          expect(output).to match(expected)
+          expect(status.exitstatus).to eq(1)
+        end
       end
     end
   end
@@ -202,9 +275,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
       expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
 
-      # run should never be called on an unsuitable provider
-      Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).never
-      # and therefore neither should our upgrade message
+      # the upgrade message is not relevant on non-Windows platforms
       Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
 
       apply_compiled_manifest(manifest)
