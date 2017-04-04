@@ -3,13 +3,14 @@ require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershe
 require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershell/powershell_manager')
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
-  confine :operatingsystem => :windows
 
   commands :powershell =>
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
+    elsif File.exists?('/usr/local/bin/powershell')
+      '/usr/local/bin/powershell'
     else
       'powershell.exe'
     end
@@ -70,7 +71,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def run(command, check = false)
     if !PuppetX::PowerShell::PowerShellManager.supported?
-      self.class.upgrade_message
+      self.class.upgrade_message if Puppet::Util::Platform.windows?
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
         # process (to prevent TOCTOU attacks), and execute powershell
@@ -80,7 +81,12 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         # we redirect powershell's stdin to read from the file. Current
         # versions of Windows use per-user temp directories with strong
         # permissions, but I'd rather not make (poor) assumptions.
-        return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        if Puppet::Util::Platform.windows?
+          return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        else
+          #return super("#{native_path(command(:powershell))} #{posix_args} -Command - < #{native_path}", check)
+          return super("sh -c \"#{native_path(command(:powershell))} #{posix_args} -Command - < #{native_path}\"", check)
+        end
       end
     else
       working_dir = resource[:cwd]
@@ -135,5 +141,11 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def legacy_args
     '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
+  end
+
+  def posix_args
+    # ExecutionPolicy is a known issue right now
+    # https://github.com/PowerShell/PowerShell/blob/a6e10e4d3a863f21b01712fe57e00916a9cc06b9/docs/KNOWNISSUES.md#executionpolicy-unavailable-on-non-windows-platforms
+    '-NoProfile -NonInteractive -NoLogo'
   end
 end
