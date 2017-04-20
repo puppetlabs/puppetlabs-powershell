@@ -108,6 +108,10 @@ module PuppetX
         @usable = false
 
         Puppet.debug "PowerShellManager exiting..."
+
+        # ask server to shutdown if its still running
+        write_pipe(pipe_command(:exit)) if !@pipe.closed?
+
         # pipe may still be open, but if stdout / stderr are dead PS process is in trouble
         # and will block forever on a write to the pipe
         # its safer to close pipe on Ruby side, which gracefully shuts down PS side
@@ -116,7 +120,7 @@ module PuppetX
         @stderr.close if !@stderr.closed?
 
         # wait up to 2 seconds for the watcher thread to fully exit
-        @ps_process.join(2)
+        @ps_process.join(2) if @ps_process.alive?
       end
 
       def self.init_path
