@@ -780,8 +780,18 @@ function Start-PipeServer
   }
   finally
   {
-    if ($server -ne $null) { $server.Dispose() }
+    if ($global:runspace -ne $null)
+    {
+      $global:runspace.Dispose()
+      Write-SystemDebugMessage -Message "PowerShell Runspace Disposed`n`n$_"
+    }
+    if ($server -ne $null)
+    {
+      $server.Dispose()
+      Write-SystemDebugMessage -Message "NamedPipeServerStream Disposed`n`n$_"
+    }
   }
 }
 
 Start-PipeServer -CommandChannelPipeName $NamedPipeName -Encoding $Encoding
+Write-SystemDebugMessage -Message "Start-PipeServer Finished`n`n$_"
