@@ -131,6 +131,13 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     true
   end
 
+  def self.post_resource_eval
+    # TODO: make sure this isn't done in --noop and is only done when manager has been created
+    if PuppetX::PowerShell::PowerShellManager.supported?
+      ps_manager.exit
+    end
+  end
+
   private
   def write_script(content, &block)
     Tempfile.open(['puppet-powershell', '.ps1']) do |file|

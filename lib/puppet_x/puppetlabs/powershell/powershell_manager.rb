@@ -7,6 +7,148 @@ require File.join(File.dirname(__FILE__), 'compatible_powershell_version')
 module PuppetX
   module PowerShell
     class PowerShellManager
+      # TODO: this is probably a bad idea to reintroduce FFI given PS module intends to be cross-platform!
+      # but not sure if there are at_exit bugs in Ruby preventing Puppet from working
+      # https://gist.github.com/thbar/2218091
+      # FFI types
+      # https://github.com/ffi/ffi/wiki/Types
+      # https://msdn.microsoft.com/en-us/library/windows/desktop/aa383751(v=vs.85).aspx
+      # there are some similar defs in:
+      # https://github.com/djberg96/win32-process/blob/ffi/lib/win32/process.rb
+      # ideas come from Dr. Dobbs article:
+      # http://www.drdobbs.com/a-safer-alternative-to-terminateprocess/184416547?pgno=3
+      #
+      # BOOL SafeTerminateProcess(HANDLE hProcess, UINT uExitCode)
+      # {
+      #     DWORD dwTID, dwCode, dwErr = 0;
+      #     HANDLE hProcessDup = INVALID_HANDLE_VALUE;
+      #     HANDLE hRT = NULL;
+      #     HINSTANCE hKernel = GetModuleHandle("Kernel32");
+      #     BOOL bSuccess = FALSE;
+
+      #     BOOL bDup = DuplicateHandle(GetCurrentProcess(),
+      #                                 hProcess,
+      #                                 GetCurrentProcess(),
+      #                                 &hProcessDup,
+      #                                 PROCESS_ALL_ACCESS,
+      #                                 FALSE,
+      #                                 0);
+
+      #     // Detect the special case where the process is
+      #     // already dead...
+      #     if ( GetExitCodeProcess((bDup) ? hProcessDup : hProcess, &dwCode) &&
+      #          (dwCode == STILL_ACTIVE) )
+      #     {
+      #         FARPROC pfnExitProc;
+
+      #         pfnExitProc = GetProcAddress(hKernel, "ExitProcess");
+
+      #         hRT = CreateRemoteThread((bDup) ? hProcessDup : hProcess,
+      #                                  NULL,
+      #                                  0,
+      #                                  (LPTHREAD_START_ROUTINE)pfnExitProc,
+      #                                  (PVOID)uExitCode, 0, &dwTID);
+
+      #         if ( hRT == NULL )
+      #             dwErr = GetLastError();
+      #     }
+      #     else
+      #     {
+      #         dwErr = ERROR_PROCESS_ABORTED;
+      #     }
+
+      #     if ( hRT )
+      #     {
+      #         // Must wait process to terminate to
+      #         // guarantee that it has exited...
+      #         WaitForSingleObject((bDup) ? hProcessDup : hProcess,
+      #                             INFINITE);
+
+      #         CloseHandle(hRT);
+      #         bSuccess = TRUE;
+      #     }
+
+      #     if ( bDup )
+      #         CloseHandle(hProcessDup);
+
+      #     if ( !bSuccess )
+      #         SetLastError(dwErr);
+
+      #     return bSuccess;
+      # }
+      module WindowsAPI
+        require 'ffi'
+        extend FFI::Library
+
+        ffi_convention :stdcall
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms684320(v=vs.85).aspx
+        # HANDLE WINAPI OpenProcess(
+        #   _In_ DWORD dwDesiredAccess,
+        #   _In_ BOOL  bInheritHandle,
+        #   _In_ DWORD dwProcessId
+        # );
+        ffi_lib :kernel32
+        attach_function :OpenProcess, [:uint32, :int32, :uint32], :uintptr_t
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms682437(v=vs.85).aspx
+        # HANDLE WINAPI CreateRemoteThread(
+        #   _In_  HANDLE                 hProcess,
+        #   _In_  LPSECURITY_ATTRIBUTES  lpThreadAttributes,
+        #   _In_  SIZE_T                 dwStackSize,
+        #   _In_  LPTHREAD_START_ROUTINE lpStartAddress,
+        #   _In_  LPVOID                 lpParameter,
+        #   _In_  DWORD                  dwCreationFlags,
+        #   _Out_ LPDWORD                lpThreadId
+        # );
+        ffi_lib :kernel32
+        # TODO: SIZE_T in Windows API is ULONG_PTR which api_types has set to :pointer, but :size_t also exists in FFI
+        attach_function :CreateRemoteThread, [:uintptr_t, :pointer, :pointer, :pointer, :pointer, :int32, :pointer], :uintptr_t
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms683199(v=vs.85).aspx
+        # HMODULE WINAPI GetModuleHandle(
+        #   _In_opt_ LPCTSTR lpModuleName
+        # );
+        ffi_lib :kernel32
+        attach_function :GetModuleHandle, [:buffer_in], :uintptr_t
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms724251(v=vs.85).aspx
+        # BOOL WINAPI DuplicateHandle(
+        #   _In_  HANDLE   hSourceProcessHandle,
+        #   _In_  HANDLE   hSourceHandle,
+        #   _In_  HANDLE   hTargetProcessHandle,
+        #   _Out_ LPHANDLE lpTargetHandle,
+        #   _In_  DWORD    dwDesiredAccess,
+        #   _In_  BOOL     bInheritHandle,
+        #   _In_  DWORD    dwOptions
+        # );
+        ffi_lib :kernel32
+        attach_function :DuplicateHandle, [:uintptr_t, :uintptr_t, :uintptr_t, :pointer, :uint32, :int32, :uint32], :int32
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms683189(v=vs.85).aspx
+        # BOOL WINAPI GetExitCodeProcess(
+        #   _In_  HANDLE  hProcess,
+        #   _Out_ LPDWORD lpExitCode
+        # );
+        ffi_lib :kernel32
+        attach_function :GetExitCodeProcess, [:uintptr_t, :pointer], :int32
+
+        # https://msdn.microsoft.com/en-us/library/windows/desktop/ms683212(v=vs.85).aspx
+        # FARPROC WINAPI GetProcAddress(
+        #   _In_ HMODULE hModule,
+        #   _In_ LPCSTR  lpProcName
+        # );
+        # TODO: not sure what we do to handle FARPROC ??
+        attach_function :GetProcAddress, [:uintptr_t, :string], :pointer
+
+        # http://msdn.microsoft.com/en-us/library/windows/desktop/ms724211(v=vs.85).aspx
+        # BOOL WINAPI CloseHandle(
+        #   _In_  HANDLE hObject
+        # );
+        ffi_lib :kernel32
+        attach_function :CloseHandle, [:uintptr_t], :int32
+      end
+
       @@instances = {}
 
       def self.instance(cmd, debug = false)
@@ -46,6 +188,7 @@ module PuppetX
         ps_args = ['-File', self.class.init_path, "\"#{named_pipe_name}\""]
         ps_args << '"-EmitDebugOutput"' if debug
         # @stderr should never be written to as PowerShell host redirects output
+        # TODO: take a fd and turn it into a handle
         stdin, @stdout, @stderr, @ps_process = Open3.popen3("#{cmd} #{ps_args.join(' ')}")
         stdin.close
 
@@ -108,6 +251,10 @@ module PuppetX
         @usable = false
 
         Puppet.debug "PowerShellManager exiting..."
+
+        # ask server to shutdown if its still running
+        write_pipe(pipe_command(:exit)) if !@pipe.closed?
+
         # pipe may still be open, but if stdout / stderr are dead PS process is in trouble
         # and will block forever on a write to the pipe
         # its safer to close pipe on Ruby side, which gracefully shuts down PS side
@@ -116,7 +263,7 @@ module PuppetX
         @stderr.close if !@stderr.closed?
 
         # wait up to 2 seconds for the watcher thread to fully exit
-        @ps_process.join(2)
+        @ps_process.join(2) if @ps_process.alive?
       end
 
       def self.init_path
