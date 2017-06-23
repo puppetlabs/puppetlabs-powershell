@@ -83,8 +83,8 @@ module PuppetX
           self.class.is_stream_valid?(@stderr)
       end
 
-      def execute(powershell_code, timeout_ms = nil, working_dir = nil)
-        code = make_ps_code(powershell_code, timeout_ms, working_dir)
+      def execute(powershell_code, timeout_ms = nil, working_dir = nil, environment_variables = [])
+        code = make_ps_code(powershell_code, timeout_ms, working_dir, environment_variables)
 
 
         # err is drained stderr pipe (not captured by redirection inside PS)
@@ -131,7 +131,7 @@ module PuppetX
         "\"#{path}\""
       end
 
-      def make_ps_code(powershell_code, timeout_ms = nil, working_dir = nil)
+      def make_ps_code(powershell_code, timeout_ms = nil, working_dir = nil, environment_variables = [])
         begin
           timeout_ms = Integer(timeout_ms)
           # Lower bound protection. The polling resolution is only 50ms
@@ -139,6 +139,39 @@ module PuppetX
         rescue
           timeout_ms = 300 * 1000
         end
+
+        # Environment array firstly needs to be parsed and converted into a hashtable.  And then
+        # the values passed in need to be converted to a PowerShell Hashtable.
+        #
+        # Environment parsing is based on the Puppet exec equivalent code
+        # https://github.com/puppetlabs/puppet/blob/a9f77d71e992fc2580de7705847e31264e0fbebe/lib/puppet/provider/exec.rb#L35-L49
+        environment = {}
+        if envlist = environment_variables
+          envlist = [envlist] unless envlist.is_a? Array
+          envlist.each do |setting|
+            if setting =~ /^(\w+)=((.|\n)+)$/
+              env_name = $1
+              value = $2
+              if environment.include?(env_name) || environment.include?(env_name.to_sym)
+                Puppet.warning("Overriding environment setting '#{env_name}' with '#{value}'")
+              end
+              environment[env_name] = value
+            else
+              Puppet.warning("Cannot understand environment setting #{setting.inspect}")
+            end
+          end
+        end
+        # Convert the Ruby Hashtable into PowerShell syntax
+        exec_environment_variables = '@{'
+        environment.each do |name,value|
+          # Powershell escapes single quotes inside a single quoted string by just adding 
+          # another single quote i.e. a value of foo'bar turns into 'foo''bar' when single quoted
+          ps_name = name.gsub('\'','\'\'')
+          ps_value = value.gsub('\'','\'\'')
+          exec_environment_variables += " '#{ps_name}' = '#{ps_value}';"
+        end unless environment.empty?
+        exec_environment_variables += '}'
+
         # PS side expects Invoke-PowerShellUserCode is always the return value here
         <<-CODE
 $params = @{
@@ -147,6 +180,7 @@ $params = @{
 '@
   TimeoutMilliseconds = #{timeout_ms}
   WorkingDirectory = "#{working_dir}"
+  ExecEnvironmentVariables = #{exec_environment_variables}
 }
 
 Invoke-PowerShellUserCode @params

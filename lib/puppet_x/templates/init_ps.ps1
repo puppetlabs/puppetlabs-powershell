@@ -389,7 +389,10 @@ function Invoke-PowerShellUserCode
     $TimeoutMilliseconds,
 
     [String]
-    $WorkingDirectory
+    $WorkingDirectory,
+
+    [Hashtable]
+    $ExecEnvironmentVariables
   )
 
   if ($global:runspace -eq $null){
@@ -449,6 +452,11 @@ function Invoke-PowerShellUserCode
     $ps.Commands.Clear()
     [Void]$ps.AddCommand('Reset-ProcessEnvironmentVariables').AddParameter('processVars', $global:environmentVariables)
     $ps.Invoke()
+
+    # Set any exec level environment variables
+    if ($ExecEnvironmentVariables -ne $null) {
+      $ExecEnvironmentVariables.GetEnumerator() | % { Set-Item -Path "Env:\$($_.Name)" -Value $_.Value }
+    }
 
     # we clear the commands before each new command
     # to avoid command pollution
