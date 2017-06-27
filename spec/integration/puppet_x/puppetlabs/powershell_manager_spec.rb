@@ -514,6 +514,19 @@ $bytes_in_k = (1024 * 64) + 1
       expect(result[:errormessage]).to match(msg)
     end
 
+    it "should return any available stdout / stderr prior to being terminated if a timeout error occurs" do
+      timeout_ms = 1500
+      command = '$debugPreference = "Continue"; Write-Output "200 OK Glenn"; Write-Debug "304 Not Modified James"; Write-Error "404 Craig Not Found"; sleep 10'
+      result = manager.execute(command, timeout_ms)
+      expect(result[:exitcode]).to eq(1)
+      # starts with Write-Output and Write-Debug messages
+      expect(result[:stdout]).to match(/^200 OK Glenn\r\nDEBUG: 304 Not Modified James\r\n/)
+      # then command may have \r\n injected, so remove those for comparison
+      expect(result[:stdout].gsub(/\r\n/, '')).to include(command)
+      # and it should end with the Write-Error content
+      expect(result[:stdout]).to end_with("404 Craig Not Found\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
+    end
+
     it "should not deadlock and return a valid response given invalid unparseable PowerShell code" do
       result = manager.execute(<<-CODE
         {

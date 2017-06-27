@@ -471,6 +471,8 @@ function Invoke-PowerShellUserCode
     $asyncResult = $ps.BeginInvoke()
 
     if (!$asyncResult.AsyncWaitHandle.WaitOne($TimeoutMilliseconds)){
+      # forcibly terminate execution of pipeline
+      $ps.Stop()
       throw "Catastrophic failure: PowerShell module timeout ($TimeoutMilliseconds ms) exceeded while executing"
     }
 
@@ -524,11 +526,13 @@ function Invoke-PowerShellUserCode
       $output = $_.Exception.Message | Out-String
     }
 
-    # make an attempt to read StdErr as it may contain info about failures
+    # make an attempt to read Output / StdErr as it may contain partial output / info about failures
+    try { $out = $global:puppetPSHost.UI.Output } catch { $out = $null }
     try { $err = $global:puppetPSHost.UI.StdErr } catch { $err = $null }
+
     return @{
       exitcode = $ec;
-      stdout = $null;
+      stdout = $out;
       stderr = $err;
       errormessage = $output;
     }
