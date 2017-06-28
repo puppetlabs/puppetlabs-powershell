@@ -28,8 +28,8 @@ install:
 - type Gemfile.lock
 build: off
 test_script:
-- ps: |
-    if ( $(ruby --version) -match "^ruby\s+2\.4" ) {
+- ps: >-    
+      if ( $(ruby --version) -match "^ruby\s+2\.4" ) {
       # AppVeyor appears to have OpenSSL headers available already
       # which msys2 would normally install with:
       # pacman -S mingw-w64-x86_64-openssl --noconfirm
