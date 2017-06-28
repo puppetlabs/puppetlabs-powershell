@@ -28,7 +28,7 @@ install:
     ruby --version
     [System.IntPtr]::Size
     ls C:\
-    if ( $(ruby --version) -match "^ruby\s+2\.4.*64\]" ) {
+    if ( $(ruby --version) -match "^ruby\s+2\.4.\[x64-mingw32\]" ) {
       # AppVeyor appears to have OpenSSL headers available already
       # which msys2 would normally install with:
       # pacman -S mingw-w64-x86_64-openssl --noconfirm
