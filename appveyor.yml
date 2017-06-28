@@ -14,13 +14,11 @@ environment:
     RUBY_VER: 21
   - PUPPET_GEM_VERSION: ~> 4.0
     RUBY_VER: 21-x64
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 23
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 23-x64
-  - PUPPET_GEM_VERSION: 4.2.3
-    RUBY_VER: 21-x64
-  - PUPPET_GEM_VERSION: 4.2.3
+  - PUPPET_GEM_VERSION: ~> 5.0
+    RUBY_VER: 24
+  - PUPPET_GEM_VERSION: ~> 5.0
+    RUBY_VER: 24-x64
+  - PUPPET_GEM_VERSION: 4.7.0
     RUBY_VER: 21-x64
 matrix:
   fast_finish: true
@@ -30,6 +28,16 @@ install:
 - type Gemfile.lock
 build: off
 test_script:
+- ps: |
+    if ( $(ruby --version) -match "^ruby\s+2\.4" ) {
+      # AppVeyor appears to have OpenSSL headers available already
+      # which msys2 would normally install with:
+      # pacman -S mingw-w64-x86_64-openssl --noconfirm
+      Write-Output "Building OpenSSL gem ~> 2.0.4 to fix Ruby 2.4 / AppVeyor issue"
+      gem install openssl --version '~> 2.0.4' --no-ri --no-rdoc -- --with-openssl-dir=C:\msys64\mingw64
+    }
+    gem list openssl
+    ruby -ropenssl -e 'puts \"OpenSSL Version - #{OpenSSL::OPENSSL_VERSION}\"; puts \"OpenSSL Library Version - #{OpenSSL::OPENSSL_LIBRARY_VERSION}\"'
 - bundle exec puppet -V
 - ruby -v
 - bundle exec rspec spec/unit spec/integration -fd -b
