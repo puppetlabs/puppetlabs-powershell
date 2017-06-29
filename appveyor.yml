@@ -9,23 +9,42 @@ init:
 - 'mkdir C:\ProgramData\PuppetLabs\hiera && exit 0'
 - 'mkdir C:\ProgramData\PuppetLabs\puppet\var && exit 0'
 environment:
+  APPVEYOR_RDP_PASSWORD: 'mY^5n0w3RIG@dE!'
   matrix:
   - PUPPET_GEM_VERSION: ~> 4.0
     RUBY_VER: 21
   - PUPPET_GEM_VERSION: ~> 4.0
     RUBY_VER: 21-x64
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 23
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 23-x64
-  - PUPPET_GEM_VERSION: 4.2.3
-    RUBY_VER: 21-x64
-  - PUPPET_GEM_VERSION: 4.2.3
+  - PUPPET_GEM_VERSION: ~> 5.0
+    RUBY_VER: 24
+  - PUPPET_GEM_VERSION: ~> 5.0
+    RUBY_VER: 24-x64
+  - PUPPET_GEM_VERSION: 4.7.0
     RUBY_VER: 21-x64
 matrix:
   fast_finish: true
 install:
 - SET PATH=C:\Ruby%RUBY_VER%\bin;%PATH%
+- ps: | 
+    ruby --version
+    [System.IntPtr]::Size
+    ls C:\
+    if ( $(ruby --version) -match "^ruby\s+2\.4.*\[x64-mingw32\]" ) {
+      # AppVeyor appears to have OpenSSL headers available already
+      # which msys2 would normally install with:
+      # pacman -S mingw-w64-x86_64-openssl --noconfirm
+      Write-Output "Building OpenSSL gem ~> 2.0.4 to fix Ruby 2.4 / AppVeyor issue"
+      gem install openssl --version '~> 2.0.4' --no-ri --no-rdoc -- --with-openssl-dir=C:\msys64\mingw64
+    }
+    if ( $(ruby --version) -match "^ruby\s+2\.4.*\[i386-mingw32\]" ) {
+      # AppVeyor appears to have OpenSSL headers available already
+      # which msys2 would normally install with:
+      # pacman -S mingw-w64-x86_64-openssl --noconfirm
+      Write-Output "Building OpenSSL gem ~> 2.0.4 to fix Ruby 2.4 / AppVeyor issue"
+      gem install openssl --version '~> 2.0.4' --no-ri --no-rdoc
+    }
+    gem list openssl
+    ruby -ropenssl -e 'puts \"OpenSSL Version - #{OpenSSL::OPENSSL_VERSION}\"; puts \"OpenSSL Library Version - #{OpenSSL::OPENSSL_LIBRARY_VERSION}\"'
 - bundle install --jobs 4 --retry 2 --without system_tests
 - type Gemfile.lock
 build: off
@@ -33,6 +52,8 @@ test_script:
 - bundle exec puppet -V
 - ruby -v
 - bundle exec rspec spec/unit spec/integration -fd -b
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 notifications:
 - provider: Email
   to:
