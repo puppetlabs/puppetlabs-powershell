@@ -9,6 +9,7 @@ init:
 - 'mkdir C:\ProgramData\PuppetLabs\hiera && exit 0'
 - 'mkdir C:\ProgramData\PuppetLabs\puppet\var && exit 0'
 environment:
+  APPVEYOR_RDP_PASSWORD: 'putnam6'
   matrix:
   - PUPPET_GEM_VERSION: ~> 4.0
     RUBY_VER: 21
@@ -51,6 +52,8 @@ test_script:
 - bundle exec puppet -V
 - ruby -v
 - bundle exec rspec spec/unit spec/integration -fd -b
+on_finish:
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 notifications:
 - provider: Email
   to:
