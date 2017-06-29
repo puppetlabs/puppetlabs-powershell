@@ -454,6 +454,31 @@ try {
       expect(result[:stdout]).to eq("False\r\n")
     end
 
+    it "should set custom environment variables" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['foo=bar'])
+
+      expect(result[:stdout]).to eq("bar\r\n")
+    end
+
+    it "should remove custom environment variables between runs" do
+      manager.execute('Write-Output $ENV:foo',nil,nil,['foo=bar'])
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,[])
+
+      expect(result[:stdout]).to be nil
+    end
+
+    it "should ignore malformed custom environment variable" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['=foo','foo','foo='])
+
+      expect(result[:stdout]).to be nil
+    end
+
+    it "should use last definition for duplicate custom environment variable" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['foo=one','foo=two','foo=three'])
+
+      expect(result[:stdout]).to eq("three\r\n")
+    end
+
     def current_powershell_major_version
       provider = Puppet::Type.type(:exec).provider(:powershell)
       powershell = provider.command(:powershell)
