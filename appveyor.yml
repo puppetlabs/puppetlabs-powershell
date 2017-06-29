@@ -9,7 +9,7 @@ init:
 - 'mkdir C:\ProgramData\PuppetLabs\hiera && exit 0'
 - 'mkdir C:\ProgramData\PuppetLabs\puppet\var && exit 0'
 environment:
-  APPVEYOR_RDP_PASSWORD: 'putnam6'
+  APPVEYOR_RDP_PASSWORD: 'mY^5n0w3RIG@dE!'
   matrix:
   - PUPPET_GEM_VERSION: ~> 4.0
     RUBY_VER: 21
