@@ -454,6 +454,31 @@ try {
       expect(result[:stdout]).to eq("False\r\n")
     end
 
+    it "should set custom environment variables" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['foo=bar'])
+
+      expect(result[:stdout]).to eq("bar\r\n")
+    end
+
+    it "should remove custom environment variables between runs" do
+      manager.execute('Write-Output $ENV:foo',nil,nil,['foo=bar'])
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,[])
+
+      expect(result[:stdout]).to be nil
+    end
+
+    it "should ignore malformed custom environment variable" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['=foo','foo','foo='])
+
+      expect(result[:stdout]).to be nil
+    end
+
+    it "should use last definition for duplicate custom environment variable" do
+      result = manager.execute('Write-Output $ENV:foo',nil,nil,['foo=one','foo=two','foo=three'])
+
+      expect(result[:stdout]).to eq("three\r\n")
+    end
+
     def current_powershell_major_version
       provider = Puppet::Type.type(:exec).provider(:powershell)
       powershell = provider.command(:powershell)
@@ -512,6 +537,19 @@ $bytes_in_k = (1024 * 64) + 1
       # TODO What is the real message now?
       msg = /Catastrophic failure\: PowerShell module timeout \(#{timeout_ms} ms\) exceeded while executing\r\n/
       expect(result[:errormessage]).to match(msg)
+    end
+
+    it "should return any available stdout / stderr prior to being terminated if a timeout error occurs" do
+      timeout_ms = 1500
+      command = '$debugPreference = "Continue"; Write-Output "200 OK Glenn"; Write-Debug "304 Not Modified James"; Write-Error "404 Craig Not Found"; sleep 10'
+      result = manager.execute(command, timeout_ms)
+      expect(result[:exitcode]).to eq(1)
+      # starts with Write-Output and Write-Debug messages
+      expect(result[:stdout]).to match(/^200 OK Glenn\r\nDEBUG: 304 Not Modified James\r\n/)
+      # then command may have \r\n injected, so remove those for comparison
+      expect(result[:stdout].gsub(/\r\n/, '')).to include(command)
+      # and it should end with the Write-Error content
+      expect(result[:stdout]).to end_with("404 Craig Not Found\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
     end
 
     it "should not deadlock and return a valid response given invalid unparseable PowerShell code" do

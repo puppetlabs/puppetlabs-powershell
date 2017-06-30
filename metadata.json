@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-powershell",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "author": "Puppet Inc",
   "summary": "Adds a new exec provider for executing PowerShell commands.",
   "license": "Apache-2.0",
@@ -19,16 +19,25 @@
         "8",
         "10"
       ]
+    },
+    {
+      "operatingsystem": "Ubuntu",
+      "operatingsystemrelease": [
+        "14.04",
+        "16.04"
+      ]
+    },
+    {
+      "operatingsystem": "CentOS",
+      "operatingsystemrelease": [
+        "7"
+      ]
     }
   ],
   "requirements": [
     {
-      "name": "pe",
-      "version_requirement": ">= 3.0.0 < 2016.4.0"
-    },
-    {
       "name": "puppet",
-      "version_requirement": ">= 3.0.0 < 5.0.0"
+      "version_requirement": ">= 4.7.0 < 6.0.0"
     }
   ],
   "dependencies": [
