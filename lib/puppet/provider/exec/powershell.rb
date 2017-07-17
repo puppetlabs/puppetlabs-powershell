@@ -31,7 +31,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         }
   EOT
 
-  POWERSHELL_UPGRADE_MSG = <<-UPGRADE
+  POWERSHELL_MODULE_UPGRADE_MSG = <<-UPGRADE
   Currently, the PowerShell module has reduced v1 functionality on this agent
   due to one or more of the following conditions:
 
@@ -55,7 +55,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   UPGRADE
 
   def self.upgrade_message
-    Puppet.warning POWERSHELL_UPGRADE_MSG if !@upgrade_warning_issued
+    Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG if !@upgrade_warning_issued
     @upgrade_warning_issued = true
   end
 
