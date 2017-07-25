@@ -6,9 +6,6 @@ Rakefile:
 spec/spec_helper.rb:
   unmanaged: true
 appveyor.yml:
-  matrix_extras:
-    - PUPPET_GEM_VERSION: 4.2.3
-      RUBY_VER: 21-x64
   test_script:
     - 'bundle exec rspec spec/unit spec/integration -fd -b'
 MAINTAINERS.md:
