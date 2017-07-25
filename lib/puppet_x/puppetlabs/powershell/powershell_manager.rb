@@ -126,7 +126,7 @@ module PuppetX
 
       def self.init_path
         # a PowerShell -File compatible path to bootstrap the instance
-        path = File.expand_path('../../../templates', __FILE__)
+        path = File.expand_path('../../../templates/powershell', __FILE__)
         path = File.join(path, 'init_ps.ps1').gsub('/', '\\')
         "\"#{path}\""
       end

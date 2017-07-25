@@ -1,4 +1,15 @@
-## 2016-11-17 - Supported Release 2.1.1
+## 2017-07-27 - Supported Release 2.1.2
+
+### Summary
+
+Small release with bugs fixes.
+
+### Bug Fixes
+
+- Fix Global Warning variable ([MODULES-5224](https://tickets.puppetlabs.com/browse/MODULES-5224))
+- Move PowerShell template file to stop conflicts with DSC Module ([MODULES-5228](https://tickets.puppetlabs.com/browse/MODULES-5228))
+
+## 2017-07-07 - Supported Release 2.1.1
 
 ### Summary
 
