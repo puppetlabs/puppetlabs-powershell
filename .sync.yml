@@ -1,6 +1,12 @@
 ---
 Rakefile:
   unmanaged: true
+Gemfile:
+  optional:
+    ':development':
+      - gem: 'rspec-puppet'
+        platforms: ["mswin", "mingw", "x64_mingw"]
+        version: '< 2.6.0'
 .travis.yml:
   unmanaged: true
 spec/spec_helper.rb:
