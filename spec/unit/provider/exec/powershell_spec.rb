@@ -31,12 +31,8 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
-    elsif File.exists?('/usr/bin/powershell')
-      '/usr/bin/powershell'
-    elsif File.exists?('/usr/local/bin/powershell')
-      '/usr/local/bin/powershell'
     elsif !Puppet::Util::Platform.windows?
-      "powershell"
+      'pwsh'
     else
       'powershell.exe'
     end
