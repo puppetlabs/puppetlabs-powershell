@@ -40,7 +40,7 @@ describe PuppetX::PowerShell::PowerShellManager,
     "#{powershell} #{cli_args.join(' ')}"
   }
 
-  def create_manager
+  def create_manager()
     PuppetX::PowerShell::PowerShellManager.instance(manager_args, true)
   end
 
@@ -56,6 +56,18 @@ describe PuppetX::PowerShell::PowerShellManager,
 
         expect(manager_2).to eq(manager)
         expect(first_pid).to eq(second_pid)
+      end
+
+      it "should fail if the manger is created with a short timeout" do
+        expect {
+          PuppetX::PowerShell::PowerShellManager.new(manager_args, false, 0.01)
+        }.to raise_error do |e|
+          expect(e).to be_a(RuntimeError)
+          expected_error = /Failure waiting for PowerShell process (\d+) to start pipe server/
+          expect(e.message).to match expected_error
+          pid = expected_error.match(e.message)[1].to_i
+          expect{Process.kill(0, pid)}.to raise_error(Errno::ESRCH)
+        end
       end
 
       def bad_file_descriptor_regex
