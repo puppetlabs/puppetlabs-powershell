@@ -1,3 +1,14 @@
+## 2017-12-08 - Supported Release 2.1.3
+
+### Summary
+
+Small release with bugs fixes.
+
+### Bug Fixes
+
+- Fix timeouts and zombie process creation ([MODULES-4748](https://tickets.puppetlabs.com/browse/MODULES-4748))
+- Update PowerShell executable name for experimental cross-platform / PowerShell 6 support ([MODULES-6081](https://tickets.puppetlabs.com/browse/MODULES-6081))
+
 ## 2017-07-27 - Supported Release 2.1.2
 
 ### Summary
