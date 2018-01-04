@@ -1,25 +1,33 @@
 ---
 # Require sudo and Ubuntu 14 to install PowerShell
-sudo: required
-dist: trusty
+#sudo: required
+#dist: trusty
 language: ruby
 cache: bundler
-script: "bundle exec rake release_checks"
-#Inserting below due to the following issue: https://github.com/travis-ci/travis-ci/issues/3531#issuecomment-88311203
+#script: "bundle exec rake release_checks"
+script: "pwsh /?"
+
+addons:
+  apt:
+    sources:
+    - sourceline: 'deb [arch=amd64] https://packages.microsoft.com/ubuntu/14.04/prod trusty main'
+      key_url: 'https://packages.microsoft.com/keys/microsoft.asc'
+    packages:
+    - powershell
+
 before_install:
-  - gem update bundler
   # Powershell installation instructions from
   # https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md#ubuntu-1404
-  - curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-  - curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-  - sudo apt-get update
-  - sudo apt-get install -y powershell
+  #- curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+  #- curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+  #- sudo apt-get update
+  #p- sudo apt-get install -y powershell
 matrix:
   fast_finish: true
   include:
-  - rvm: 2.3.1
-    bundler_args: --without system_tests
-    env: PUPPET_GEM_VERSION="~> 4.0"
+  # - rvm: 2.3.1
+  #   bundler_args: --without system_tests
+  #   env: PUPPET_GEM_VERSION="~> 4.0"
   - rvm: 2.1.7
     bundler_args: --without system_tests
     env: PUPPET_GEM_VERSION="~> 4.0"
