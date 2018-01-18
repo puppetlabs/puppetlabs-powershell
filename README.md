@@ -34,7 +34,7 @@ The powershell module adapts the Puppet [exec](http://docs.puppet.com/references
 
 ~~~ puppet
 exec { 'RESOURCENAME':
-  command   => '$(SOMECOMMAND)',
+  command   => 'SOMECOMMAND',
   provider  => powershell,
 }
 ~~~
@@ -47,7 +47,7 @@ For instance, to rename the Guest account:
 
 ~~~ puppet
 exec { 'rename-guest':
-  command   => '$(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
+  command   => '(Get-WMIObject Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
   unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
   provider  => powershell,
 }
