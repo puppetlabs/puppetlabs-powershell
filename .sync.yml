@@ -8,7 +8,16 @@ Gemfile:
         platforms: ["mswin", "mingw", "x64_mingw"]
         version: '< 2.6.0'
 .travis.yml:
-  unmanaged: true
+  # Require sudo and Ubuntu 14 to install PowerShell
+  sudo: required
+  dist: trusty
+  # Powershell installation instructions from
+  # https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md#ubuntu-1404
+  before_install:
+    - curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+    - curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+    - sudo apt-get update
+    - sudo apt-get install -y powershell
 spec/spec_helper.rb:
   unmanaged: true
 appveyor.yml:
@@ -21,6 +30,6 @@ NOTICE:
   copyright_holders:
     - name: 'Josh Cooper, original author'
       begin: 2013
+      end: 2013
     - name: 'Puppet, Inc.'
       begin: 2013
-      end: 'latest'
