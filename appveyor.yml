@@ -10,20 +10,15 @@ init:
 - 'mkdir C:\ProgramData\PuppetLabs\puppet\var && exit 0'
 environment:
   matrix:
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 21
-  - PUPPET_GEM_VERSION: ~> 4.0
-    RUBY_VER: 21-x64
-  - PUPPET_GEM_VERSION: ~> 5.0
-    RUBY_VER: 24
-  - PUPPET_GEM_VERSION: ~> 5.0
-    RUBY_VER: 24-x64
-  - PUPPET_GEM_VERSION: 4.7.1
-    RUBY_VER: 21-x64
+  - APPVEYOR_BUILD_WORKER_CLOUD: puppet-appveyor-test
+    PUPPET_GEM_VERSION: ~> 5.0
+    APPVEYOR_BUILD_WORKER_IMAGE: 2008R2 WMF2
+    TEST_VARIABLE: 42
+    RUBY_VERSION: 24
 matrix:
   fast_finish: true
 install:
-- SET PATH=C:\Ruby%RUBY_VER%\bin;%PATH%
+- SET PATH=C:\Ruby%RUBY_VERSION%\bin;%PATH%
 - ps: |
     gem list openssl
     ruby -ropenssl -e 'puts \"OpenSSL Version - #{OpenSSL::OPENSSL_VERSION}\"; puts \"OpenSSL Library Version - #{OpenSSL::OPENSSL_LIBRARY_VERSION}\"'
