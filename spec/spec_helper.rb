@@ -9,7 +9,7 @@ require 'rspec'
 require 'tmpdir'
 require 'fileutils'
 
-if Puppet.features.microsoft_windows?
+if Puppet::Util::Platform.windows?
   require 'puppet/util/windows/security'
 
   def take_ownership(path)

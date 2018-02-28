@@ -16,7 +16,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
   let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) {
-    if Puppet.features.microsoft_windows?
+    if Puppet::Util::Platform.windows?
       '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -'
     else
       '-NoProfile -NonInteractive -NoLogo -Command -'
@@ -51,7 +51,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
-      context "on windows", :if => Puppet.features.microsoft_windows? do
+      context "on windows", :if => Puppet::Util::Platform.windows? do
         it "should call cmd.exe /c" do
           Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
             .with(regexp_matches(/^cmd.exe \/c/), anything)
@@ -84,7 +84,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         end
       end
 
-      context "on non-windows", :if => !Puppet.features.microsoft_windows? do
+      context "on non-windows", :if => !Puppet::Util::Platform.windows? do
         it "should call sh -c" do
           Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
             .with(regexp_matches(/^sh -c /), anything)
@@ -103,7 +103,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     context "actual runs" do
-      context "on Windows", :if => Puppet.features.microsoft_windows? do
+      context "on Windows", :if => Puppet::Util::Platform.windows? do
         it "returns the output and status" do
           output, status = provider.run(command)
 
@@ -145,7 +145,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         end
       end
 
-      context "on non-Windows", :if => !Puppet.features.microsoft_windows? do
+      context "on non-Windows", :if => !Puppet::Util::Platform.windows? do
         # The usage of uname is a little fragile however there is basically nothing
         # which is universal across all Linux/Unix/Mac distributions; Unlike Well Known SIDS in Windows
         # The closest is the presence of the uname command and its generic text output
@@ -201,7 +201,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   describe 'when specifying a working directory' do
     describe 'that does not exist' do
       let(:work_dir)  {
-        if Puppet.features.microsoft_windows?
+        if Puppet::Util::Platform.windows?
           "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist"
         else
           '/some/directory/that/does/not/exist'
@@ -267,7 +267,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     it 'does not emit an irrelevant upgrade message when in a non-Windows environment',
-      :if => !Puppet.features.microsoft_windows? do
+      :if => !Puppet::Util::Platform.windows? do
 
       expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
 
@@ -278,7 +278,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment',
-      :if => Puppet.features.microsoft_windows? do
+      :if => Puppet::Util::Platform.windows? do
 
       PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(false)
 
@@ -291,7 +291,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     it 'emits a warning message when PowerShellManager cannot be used in a Windows environment',
-      :if => Puppet.features.microsoft_windows? do
+      :if => Puppet::Util::Platform.windows? do
 
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
       PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(true)
