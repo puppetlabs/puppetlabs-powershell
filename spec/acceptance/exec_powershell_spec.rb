@@ -26,13 +26,20 @@ describe 'powershell provider:' do
 
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
-      expect { apply_manifest_on(powershell_agents, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER) }.to raise_error(error_check)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each do |hut|
+        result = execute_manifest_on(hut, manifest, :expect_failures => true)
+        unless error_check.nil?
+          expect(result.stderr).to match(error_check)
+        end
+      end
     end
   end
 
   shared_examples 'apply success' do |manifest|
     it 'should succeed' do
-      apply_manifest_on(powershell_agents, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, manifest, :catch_failures => true) }
     end
   end
 
@@ -45,7 +52,8 @@ describe 'powershell provider:' do
       }
     MANIFEST
     it 'should not fail' do
-      apply_manifest_on(host_list, padmin, :catch_failures => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      host_list.each { |hut| execute_manifest_on(hut, padmin, :catch_failures => true) }
     end
   end
 
@@ -72,14 +80,14 @@ describe 'powershell provider:' do
             MANIFEST
           end
         }
-        
+
         it 'should not error on first run' do
           # Run it twice and test for idempotency
-          apply_manifest_on(host, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER)
+          execute_manifest_on(host, manifest, :catch_failures => true)
         end
 
         it 'should be idempotent' do
-          apply_manifest_on(host, manifest, :catch_failures => true, :future_parser => FUTURE_PARSER, :acceptable_exit_codes => [0])
+          execute_manifest_on(host, manifest, :catch_chages => true)
         end
       end
     end
@@ -115,7 +123,7 @@ describe 'powershell provider:' do
           }
           MANIFEST
 
-          apply_manifest_on(host, p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+          execute_manifest_on(host, p1, :catch_failures => true)
 
           on(host, platform_string(host,"cmd.exe /c \"type #{try_successfile}\"","cat #{try_successfile}")) do |result|
             assert_match(/#{try_content}/, result.stdout, "Unexpected result for host '#{host}'")
@@ -148,7 +156,7 @@ describe 'powershell provider:' do
           }
           MANIFEST
 
-          apply_manifest_on(host, p1, :catch_failures => true, :future_parser => FUTURE_PARSER)
+          execute_manifest_on(host, p1, :catch_failures => true)
 
           on(host, platform_string(host,"cmd.exe /c \"type #{catch_successfile}\"","cat #{catch_successfile}")) do |result|
             assert_match(/#{catch_content}/, result.stdout, "Unexpected result for host '#{host}'")
@@ -178,11 +186,13 @@ describe 'powershell provider:' do
     }
 
     it 'should not error on first run' do
-      apply_manifest_on(powershell_agents, exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
-      apply_manifest_on(powershell_agents, exit_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
     end
 
   end
@@ -199,11 +209,13 @@ describe 'powershell provider:' do
     }
 
     it 'should not error on first run' do
-      apply_manifest_on(powershell_agents, break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
-      apply_manifest_on(powershell_agents, break_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
     end
 
   end
@@ -220,11 +232,13 @@ describe 'powershell provider:' do
     }
 
     it 'should not error on first run' do
-      apply_manifest_on(powershell_agents, return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
-      apply_manifest_on(powershell_agents, return_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
     end
 
   end
@@ -251,10 +265,12 @@ describe 'powershell provider:' do
 
     it 'should not see variable from previous run' do
       # Setup the variable
-      apply_manifest_on(powershell_agents, var_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, var_leak_setup_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the variable
-      apply_manifest_on(powershell_agents, var_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, var_leak_test_pp, :expect_changes => true) }
     end
 
   end
@@ -303,10 +319,12 @@ describe 'powershell provider:' do
 
     it 'should not see environment variable from previous run' do
       # Setup the environment variable
-      apply_manifest_on(powershell_agents, envar_leak_setup_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_setup_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the environment variable
-      apply_manifest_on(powershell_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
     end
 
     it 'should see environment variables set outside of session' do
@@ -322,10 +340,12 @@ describe 'powershell provider:' do
       end
 
       # Test to see if initial run sees the environment variable
-      apply_manifest_on(powershell_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the environment variable and environment purge
-      apply_manifest_on(powershell_agents, envar_leak_test_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
     end
   end
 
@@ -352,11 +372,13 @@ describe 'powershell provider:' do
     }
 
     it 'should RUN command if unless is NOT triggered' do
-      apply_manifest_on(powershell_agents, unless_not_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, unless_not_triggered_pp, :expect_changes => true) }
     end
 
     it 'should NOT run command if unless IS triggered' do
-      apply_manifest_on(powershell_agents, unless_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, unless_triggered_pp, :catch_changes => true) }
     end
 
   end
@@ -384,11 +406,13 @@ describe 'powershell provider:' do
     }
 
     it 'should NOT run command if onlyif is NOT triggered' do
-      apply_manifest_on(powershell_agents, onlyif_not_triggered_pp, :catch_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, onlyif_not_triggered_pp, :catch_changes => true) }
     end
 
     it 'should RUN command if onlyif IS triggered' do
-      apply_manifest_on(powershell_agents, onlyif_triggered_pp, :expect_changes => true, :future_parser => FUTURE_PARSER)
+      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+      powershell_agents.each { |hut| execute_manifest_on(hut, onlyif_triggered_pp, :expect_changes => true) }
     end
 
   end
@@ -407,7 +431,8 @@ describe 'powershell provider:' do
       let(:file_path) { 'C:/services.txt' }
 
       it 'should apply the manifest' do
-        apply_manifest_on(windows_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        windows_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
       end
 
       it { should be_file }
@@ -418,7 +443,8 @@ describe 'powershell provider:' do
       let(:file_path) { '/services.txt' }
 
       it 'should apply the manifest' do
-        apply_manifest_on(posix_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        posix_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
       end
 
       it { should be_file }
@@ -462,12 +488,13 @@ describe 'powershell provider:' do
       }
       MANIFEST
       describe file('c:/temp/services.csv') do
-        apply_manifest_on(windows_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        windows_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
         it { should be_file }
         its(:content) { should match /puppet/ }
       end
     end
-    
+
     context 'on POSIX platforms', :if => posix_agents.count > 0 do
       p2 = <<-MANIFEST
       file{'/external-script.ps1':
@@ -482,7 +509,8 @@ describe 'powershell provider:' do
       MANIFEST
 
       describe file('/tmp/commands.csv') do
-        apply_manifest_on(posix_agents, p2, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        posix_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
         it { should be_file }
         its(:content) { should match /Get-Command/ }
       end
@@ -506,7 +534,8 @@ describe 'powershell provider:' do
       }
       MANIFEST
       describe file(outfile) do
-        apply_manifest_on(windows_agents, pp, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        windows_agents.each { |hut| execute_manifest_on(hut, pp, :catch_failures => true) }
         it { should be_file }
         its(:content) { should match /svchost/ }
       end
@@ -530,7 +559,8 @@ describe 'powershell provider:' do
       }
       MANIFEST
       describe file(outfile) do
-        apply_manifest_on(posix_agents, pp, :catch_failures => true, :future_parser => FUTURE_PARSER)
+        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
+        posix_agents.each { |hut| execute_manifest_on(hut, pp, :catch_failures => true) }
         it { should be_file }
         its(:content) { should match /Export-Csv/ }
       end
@@ -561,6 +591,7 @@ describe 'powershell provider:' do
       $pr = New-Object Security.Principal.WindowsPrincipal $id
       if(!($pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))){Write-Error "Not in admin"}
     PS1
+    #require 'pry'; binding.pry
     it_should_behave_like 'standard exec', ps1, windows_agents
   end
 

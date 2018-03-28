@@ -1,6 +1,7 @@
 require 'beaker-rspec/spec_helper'
 require 'beaker-rspec/helpers/serverspec'
 require 'beaker/puppet_install_helper'
+require 'beaker/testmode_switcher/dsl'
 
 UNSUPPORTED_PLATFORMS = ['debian', 'ubuntu', 'Solaris']
 FUTURE_PARSER = ENV['FUTURE_PARSER'] == 'true' || false
@@ -66,10 +67,10 @@ RSpec.configure do |c|
 
     # Ensure test files don't exist before we run the test suite
     absent_files = 'file{["c:/services.txt","c:/process.txt","c:/try_success.txt","c:/catch_shouldntexist.txt","c:/try_shouldntexist.txt","c:/catch_success.txt"]: ensure => absent }'
-    apply_manifest_on(windows_agents,absent_files) if windows_agents.count > 0
+    apply_manifest_on(windows_agents, absent_files, :catch_failures => true) if windows_agents.count > 0
 
     absent_files = 'file{["/services.txt","/process.txt","/try_success.txt","/catch_shouldntexist.txt","/try_shouldntexist.txt","/catch_success.txt"]: ensure => absent }'
-    apply_manifest_on(posix_agents,absent_files) if posix_agents.count > 0
+    apply_manifest_on(posix_agents, absent_files, :catch_failures => true) if posix_agents.count > 0
   end
 end
 
