@@ -1,8 +1,19 @@
+## 2017-03-29 - Supported Release 2.1.4
+
+### Summary
+
+Small release with bug fixes
+
+### Bug Fixes
+
+- Unabled to start pipes server in PowerShell process on some Windows 2008r2 images ([MODULES-6927](https://tickets.puppetlabs.com/browse/MODULES-6927))
+- Minor updates to PowerShell syntax in README examples.
+
 ## 2017-12-08 - Supported Release 2.1.3
 
 ### Summary
 
-Small release with bugs fixes.
+Small release with bug fixes.
 
 ### Bug Fixes
 
