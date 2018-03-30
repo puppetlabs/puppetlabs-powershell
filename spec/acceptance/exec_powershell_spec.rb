@@ -591,7 +591,6 @@ describe 'powershell provider:' do
       $pr = New-Object Security.Principal.WindowsPrincipal $id
       if(!($pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))){Write-Error "Not in admin"}
     PS1
-    #require 'pry'; binding.pry
     it_should_behave_like 'standard exec', ps1, windows_agents
   end
 
