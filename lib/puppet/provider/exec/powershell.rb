@@ -41,13 +41,13 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   - PowerShell v2 with .NET Framework 2.0
 
     PowerShell v2 works with both .NET Framework 2.0 and .NET Framework 3.5.
-    To be able to use the enhancements, we require at least .NET Framework 3.5.
+    To be able to use the enhancements, we require .NET Framework 3.5.
     Typically you will only see this on a base Windows Server 2008 (and R2)
     install.
 
   To enable these improvements, it is suggested to upgrade to any x64 version of
   Puppet (including 3.x), or to a Puppet version newer than 3.x and ensure you
-  have at least .NET Framework 3.5 installed.
+  have .NET Framework 3.5 installed.
   UPGRADE
 
   def self.upgrade_message
