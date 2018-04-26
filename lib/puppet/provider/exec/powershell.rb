@@ -3,7 +3,7 @@ require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershe
 require File.join(File.dirname(__FILE__), '../../../puppet_x/puppetlabs/powershell/powershell_manager')
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
-  commands :powershell => 
+  commands :powershell =>
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -27,7 +27,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         }
   EOT
 
-  POWERSHELL_MODULE_UPGRADE_MSG = <<-UPGRADE
+  POWERSHELL_MODULE_UPGRADE_MSG ||= <<-UPGRADE
   Currently, the PowerShell module has reduced v1 functionality on this agent
   due to one or more of the following conditions:
 
