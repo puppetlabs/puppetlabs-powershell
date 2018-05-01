@@ -144,7 +144,15 @@ module PuppetX
 
       def make_ps_code(powershell_code, timeout_ms = nil, working_dir = nil, environment_variables = [])
         begin
+
+          # Zero timeout is a special case. Other modules sometimes treat this
+          # as an infinite timeout. We don't support infinite, so for the case
+          # of a user specifying zero, we sub in the default value of 300
+          # seconds.
+          if (timeout_ms == 0) then timeout_ms = 300 * 1000 end
+
           timeout_ms = Integer(timeout_ms)
+
           # Lower bound protection. The polling resolution is only 50ms
           if (timeout_ms < 50) then timeout_ms = 50 end
         rescue

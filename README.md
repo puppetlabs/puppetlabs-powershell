@@ -177,7 +177,7 @@ Lists the expected return code(s). If the executed command returns something els
 
 ##### `timeout`
 
-Sets the maximum time in seconds that the command should take. Valid options: Number or string representation of a number. Default: 300.
+Sets the maximum time in seconds that the command should take. Valid options: Number or string representation of a number. Default: 300. A value of `0` for this property will result in using the default timeout of 300. Inifinite timeout is not supported in this module, but large timeouts are allowed if needed.
 
 ##### `tries`
 
