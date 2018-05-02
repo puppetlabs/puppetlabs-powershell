@@ -570,6 +570,26 @@ $bytes_in_k = (1024 * 64) + 1
       expect(result[:stdout]).to end_with("404 Craig Not Found\r\n    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException\r\n    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException\r\n \r\n")
     end
 
+    it "should use a default timeout of 300 seconds if the user specified a timeout of 0" do
+      timeout_ms = 0
+      command = 'return $true'
+      code = manager.make_ps_code(command, timeout_ms)
+      expect(code).to match(/TimeoutMilliseconds = 300000/)
+    end
+
+    it "Should use the correct correct timeout if a small value is specified" do
+
+      # Zero timeout is not supported, and a timeout less than 50ms is not supported.
+      # This test is to ensure that the code that inserts the default timeout when 
+      # the user specified zero, does not interfere with the other default of 50ms
+      # if the user specifies a value less than that.
+
+      timeout_ms = 20
+      command = 'return $true'
+      code = manager.make_ps_code(command, timeout_ms)
+      expect(code).to match(/TimeoutMilliseconds = 50/)
+    end
+
     it "should not deadlock and return a valid response given invalid unparseable PowerShell code" do
       result = manager.execute(<<-CODE
         {
