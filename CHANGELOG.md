@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [2.1.5] - 2018-05-08
+
 ### Added
 
 - Metadata for supporting Windows Server 2016 ([MODULES-4271](https://tickets.puppetlabs.com/browse/MODULES-4271))
