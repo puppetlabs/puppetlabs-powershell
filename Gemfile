@@ -49,7 +49,6 @@ group :development do
   gem "json_pure", '<= 2.0.1',                            :require => false if Gem::Version.new(RUBY_VERSION.dup) < Gem::Version.new('2.0.0')
   gem "fast_gettext", '1.1.0',                            :require => false if Gem::Version.new(RUBY_VERSION.dup) < Gem::Version.new('2.1.0')
   gem "fast_gettext",                                     :require => false if Gem::Version.new(RUBY_VERSION.dup) >= Gem::Version.new('2.1.0')
-  gem "rspec-puppet", '< 2.6.0',                          :require => false, :platforms => ["mswin", "mingw", "x64_mingw"]
 end
 
 group :system_tests do
