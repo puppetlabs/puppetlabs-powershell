@@ -1,35 +1,44 @@
 ---
-Rakefile:
-  unmanaged: true
 Gemfile:
-  optional:
+  required:
     ':system_tests':
+      - gem: 'puppet-module-posix-system-r#{minor_version}'
+        platforms: ruby
+      - gem: 'puppet-module-win-system-r#{minor_version}'
+        platforms:
+          - mswin
+          - mingw
+          - x64_mingw
+      - gem: beaker
+        version: '~> 3.13'
+        from_env: BEAKER_VERSION
+      - gem: beaker-abs
+        version: '~> 0.1'
+        from_env: BEAKER_ABS_VERSION
+      - gem: beaker-pe
+      - gem: beaker-hostgenerator
+        version: '>= 0.0'
+        from_env: BEAKER_HOSTGENERATOR_VERSION
+      - gem: beaker-rspec
+        version: '>= 0.0'
+        from_env: BEAKER_RSPEC_VERSION
       - gem: beaker-testmode_switcher
         version: '~> 0.4'
       - gem: master_manipulator
-.travis.yml:
-  # Require sudo and Ubuntu 14 to install PowerShell
-  sudo: required
-  dist: trusty
-  # Powershell installation instructions from
-  # https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md#ubuntu-1404
-  before_install:
-    - curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-    - curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-    - sudo apt-get update
-    - sudo apt-get install -y powershell
-spec/spec_helper.rb:
+      - gem: puppet-blacksmith
+        version: '~> 3.4'
+
+# For the moment don't do any rubocop checks.
+.rubocop.yml:
+  include_todos: true
+  selected_profile: off
+
+spec/default_facts.yml:
   unmanaged: true
-appveyor.yml:
-  test_script:
-    - 'bundle exec rspec spec/unit spec/integration -fd -b'
-MAINTAINERS.md:
-  maintainers:
-    - "Puppet Windows Team `windows |at| puppet |dot| com`"
-NOTICE:
-  copyright_holders:
-    - name: 'Josh Cooper, original author'
-      begin: 2013
-      end: 2013
-    - name: 'Puppet, Inc.'
-      begin: 2013
+
+# Due to https://github.com/puppetlabs/pdk-templates/issues/133 we can't manage Travis CI yet.
+.travis.yml:
+  unmanaged: true
+
+.gitlab-ci.yml:
+  delete: true
