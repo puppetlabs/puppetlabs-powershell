@@ -7,6 +7,9 @@
   "source": "https://github.com/puppetlabs/puppetlabs-powershell",
   "project_page": "https://github.com/puppetlabs/puppetlabs-powershell",
   "issues_url": "https://tickets.puppet.com/browse/MODULES/component/12015",
+  "dependencies": [
+
+  ],
   "operatingsystem_support": [
     {
       "operatingsystem": "Windows",
@@ -41,7 +44,7 @@
       "version_requirement": ">= 4.7.0 < 6.0.0"
     }
   ],
-  "dependencies": [
-
-  ]
+  "pdk-version": "1.6.0",
+  "template-url": "file://C:/Program Files/Puppet Labs/DevelopmentKit/share/cache/pdk-templates.git",
+  "template-ref": "1.6.0-0-gf5564c0"
 }
