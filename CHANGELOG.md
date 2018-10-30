@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [2.2.0] - 2018-10-29
+
+### Added
+
+- Added support for Puppet 6 ([MODULES-7833](https://tickets.puppetlabs.com/browse/MODULES-7833))
+
+### Changed
+
+- Updated the module to PDK format ([MODULES-7402](https://tickets.puppetlabs.com/browse/MODULES-7402))
+- Updated Beaker to version 4 ([MODULES-7658](https://tickets.puppetlabs.com/browse/MODULES-7658))
+
 ## [2.1.5] - 2018-05-08
 
 ### Added
@@ -111,7 +122,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 - Updated test suites with later versions ([MODULES-2452](https://tickets.puppetlabs.com/browse/MODULES-2452), [MODULES-3011](https://tickets.puppetlabs.com/browse/MODULES-3011))
 - Cleaned up documentation ([MODULES-3192](https://tickets.puppetlabs.com/browse/MODULES-3192))
-- Removed extra verbose output 
+- Removed extra verbose output
 
 ## [1.0.6] - 2015-12-08
 
@@ -142,7 +153,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [1.0.3] - 2014-08-25
 
-### Fixed 
+### Fixed
 
 - Updated tests to verify that PowerShell continues to function on x64-native ruby
 
