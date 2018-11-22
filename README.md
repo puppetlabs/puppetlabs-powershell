@@ -197,18 +197,7 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 * Experimental support added for Ubuntu 16.04, Ubuntu 14.0.4 and, CentOS 7.
 
-  Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md).
-
-  Note that on non-Windows platforms the `HOME` environment variable is not available and can cause PowerShell to raise a `The type initializer for 'System.Management.Automation.ConfigPropertyAccessor' threw an exception.` error. This is documented in PowerShell [GitHub Issue 1794](https://github.com/PowerShell/PowerShell/issues/1794). To workaround this issue, add an environment variable parameter to the `Exec` resource which specifies the `HOME` environment variable. For example:
-
-  ``` puppet
-  exec { "CreateTestFile":
-    command     => "'puppet' | Set-Content -Path '/tmp/puppet-test'",
-    unless      => 'If (Test-Path -Path "/tmp/puppet-test") { exit 0 } else { exit 1}',
-    environment => [ 'HOME=/home/username'],
-    provider    => powershell,
-  }
-  ```
+  Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux).
 
 * Only supported on Powershell 2.0 and above.
 
