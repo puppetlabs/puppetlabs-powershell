@@ -195,9 +195,7 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 * Only supported on Windows Server 2008 and above, and Windows 7 and above.
 
-* Experimental support added for Ubuntu 16.04, Ubuntu 14.0.4 and, CentOS 7.
-
-  Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux).
+* Experimental support added for Ubuntu 16.04, Ubuntu 14.0.4 and, CentOS 7. Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux).
 
 * Only supported on Powershell 2.0 and above.
 
