@@ -46,7 +46,11 @@ unless ENV['MODULE_provision'] == 'no'
         on(host,'curl https://packages.microsoft.com/config/rhel/7/prod.repo | tee /etc/yum.repos.d/microsoft.repo')
         on(host,'yum install -y powershell')
       when /^windows/
-        # No need to do anything
+        # Install PowerShell 6 if needed
+        if hosts_as('powershell6').map { |item| item.name }.include?(host.name)
+          on(host,'powershell -NoLogo -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v6.1.1/PowerShell-6.1.1-win-x64.msi -OutFile C:\\PS611.msi -UseBasicParsing"')
+          on(host,'msiexec.exe /i C:\\\\PS611.msi /qn ALLUSERS=1 /l*v C:\\\\PS611-install.log')
+        end
       else
         raise("Unable to install PowerShell on host '#{host.name}' with platform '#{host.platform}'")
       end
