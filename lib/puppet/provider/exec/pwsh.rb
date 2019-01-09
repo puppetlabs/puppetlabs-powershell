@@ -1,10 +1,10 @@
 require 'puppet/provider/exec'
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
-  confine :operatingsystem  => [ :windows ]
-
   commands :pwsh =>
-    if File.exists?("#{ENV['ProgramFiles']}\\PowerShell\\6\\pwsh.exe")
+    if !Puppet::Util::Platform.windows?
+      'pwsh'
+    elsif File.exists?("#{ENV['ProgramFiles']}\\PowerShell\\6\\pwsh.exe")
       "#{ENV['ProgramFiles']}\\PowerShell\\6\\pwsh.exe"
     elsif File.exists?("#{ENV['ProgramFiles(x86)']}\\PowerShell\\6\\pwsh.exe")
       "#{ENV['ProgramFiles(x86)']}\\PowerShell\\6\\pwsh.exe"
@@ -35,7 +35,11 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
       # we redirect powershell's stdin to read from the file. Current
       # versions of Windows use per-user temp directories with strong
       # permissions, but I'd rather not make (poor) assumptions.
-      return super("cmd.exe /c \"\"#{native_path(command(:pwsh))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+      if Puppet::Util::Platform.windows?
+        return super("cmd.exe /c \"\"#{native_path(command(:pwsh))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+      else
+        return super("/bin/sh -c \"#{native_path(command(:pwsh))} #{legacy_args} -Command - < #{native_path}\"", check)
+      end
     end
   end
 
