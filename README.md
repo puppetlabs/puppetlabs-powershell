@@ -20,13 +20,25 @@ This module adds a new exec provider capable of executing PowerShell commands.
 
 ## Module Description
 
-Puppet provides a built-in `exec` type that is capable of executing commands. This module adds a `powershell` provider to the `exec` type,  which enables `exec` parameters, listed below. This module is particularly helpful if you need to run PowerShell commands but don't know the details about how PowerShell is executed, because you can run PowerShell commands in Puppet without the module.
+Puppet provides a built-in `exec` type that is capable of executing commands. This module adds a `powershell` and `pwsh` provider to the `exec` type,  which enables `exec` parameters, listed below. This module is particularly helpful if you need to run PowerShell commands but don't know how PowerShell is executed, because you can run PowerShell commands in Puppet without the module.
 
 ## Setup
 
 ### Requirements
 
-This module requires PowerShell to be installed and the `powershell.exe` to be available in the system PATH.
+The `powershell` provider requires [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) and have `powershell.exe` available in the system PATH. Note that most Windows operating systems already have Windows PowerShell installed.
+
+The `pwsh` provider requires you install [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) and make `pwsh` available either in the system PATH or specified in the `path` parameter.
+
+For example, when PowerShell Core is installed in `/usr/alice/pscore` the following manifest is needed:
+
+~~~ puppet
+exec { 'RESOURCENAME':
+  ...
+  path     => '/usr/alice/pscore',
+  provider => pwsh,
+}
+~~~
 
 ### Beginning with powershell
 
@@ -41,7 +53,7 @@ exec { 'RESOURCENAME':
 
 ## Usage
 
-When using `exec` resources with the `powershell` provider, the `command` parameter must be single-quoted to prevent Puppet from interpolating `$(..)`.
+When using `exec` resources with the `powershell` or `pwsh` provider, the `command` parameter must be single-quoted to prevent Puppet from interpolating `$(..)`.
 
 For instance, to rename the Guest account:
 
@@ -129,7 +141,9 @@ However, to produce output from a script, use the `Write-` prefixed cmdlets such
 
 #### Provider
 
-* powershell: Adapts the Puppet `exec` resource to run PowerShell commands.
+* powershell: Adapts the Puppet `exec` resource to run [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) commands.
+
+* pwsh: Adapts the Puppet `exec` resource to run [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) commands.
 
 #### Parameters
 
@@ -163,6 +177,8 @@ Runs the exec only if the command returns 0. Valid options: String. Default: Und
 
 Specifies the search path used for command execution. Valid options: String of the path, an array, or a semicolon-separated list. Default: Undefined.
 
+The `pwsh` provider can also use the path to find the pwsh executable.
+
 ##### `refresh`
 
 Refreshes the command. Valid options: String. Default: Undefined.
@@ -193,11 +209,29 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 ## Limitations
 
-* Only supported on Windows Server 2008 and above, and Windows 7 and above.
+* The `powershell` provider is only supported on Windows Server 2008 and above, and Windows 7 and above.
 
-* Experimental support added for Ubuntu 16.04, Ubuntu 14.0.4 and, CentOS 7. Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux).
+* The `pwsh` provider is supported on:
 
-* Only supported on Powershell 2.0 and above.
+  * CentOS 7
+
+  * Debian 8.7+, Debian 9
+
+  * Fedora 27, 28
+
+  * MacOS 10.12+
+
+  * Red Hat Enterprise Linux 7
+
+  * Ubuntu 14.04, 16.0.4 and 18.04
+
+  * Windows Desktop 7 and above
+
+  * Windows Server 2008 R2 and above
+
+  Note that this module will not install PowerShell on these platforms. For further information see the [Linux installation instructions](https://docs.microsoft.com/en-us/powershell/scripting/setup/installing-powershell-core-on-linux).
+
+* Only supported on Windows PowerShell 2.0 and above, and PowerShell Core 6.1 and above.
 
 * When using here-strings in inline or templated scripts executed by this module, you must use the double-quote style syntax that begins with `@"` and ends with `"@`. The single-quote syntax that begins with `@'` and ends with `'@` is not supported.
 
