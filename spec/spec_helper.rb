@@ -1,7 +1,12 @@
+
 require 'puppetlabs_spec_helper/module_spec_helper'
 require 'rspec-puppet-facts'
 
-require 'spec_helper_local' if File.file?(File.join(File.dirname(__FILE__), 'spec_helper_local.rb'))
+begin
+  require 'spec_helper_local' if File.file?(File.join(File.dirname(__FILE__), 'spec_helper_local.rb'))
+rescue LoadError => loaderror
+  warn "Could not require spec_helper_local: #{loaderror.message}"
+end
 
 include RspecPuppetFacts
 
@@ -10,19 +15,15 @@ default_facts = {
   facterversion: Facter.version,
 }
 
-default_fact_files = [
-  File.expand_path(File.join(File.dirname(__FILE__), 'default_facts.yml')),
-  File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml')),
-]
+default_facts_path = File.expand_path(File.join(File.dirname(__FILE__), 'default_facts.yml'))
+default_module_facts_path = File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml'))
 
-default_fact_files.each do |f|
-  next unless File.exist?(f) && File.readable?(f) && File.size?(f)
+if File.exist?(default_facts_path) && File.readable?(default_facts_path)
+  default_facts.merge!(YAML.safe_load(File.read(default_facts_path)))
+end
 
-  begin
-    default_facts.merge!(YAML.safe_load(File.read(f)))
-  rescue => e
-    RSpec.configuration.reporter.message "WARNING: Unable to load #{f}: #{e}"
-  end
+if File.exist?(default_module_facts_path) && File.readable?(default_module_facts_path)
+  default_facts.merge!(YAML.safe_load(File.read(default_module_facts_path)))
 end
 
 RSpec.configure do |c|
@@ -36,8 +37,8 @@ end
 
 def ensure_module_defined(module_name)
   module_name.split('::').reduce(Object) do |last_module, next_module|
-    last_module.const_set(next_module, Module.new) unless last_module.const_defined?(next_module, false)
-    last_module.const_get(next_module, false)
+    last_module.const_set(next_module, Module.new) unless last_module.const_defined?(next_module)
+    last_module.const_get(next_module)
   end
 end
 
