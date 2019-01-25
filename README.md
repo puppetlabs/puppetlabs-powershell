@@ -14,20 +14,25 @@
 5. [Limitations - OS compatibility, etc.](#limitations)
 6. [Development - Guide for contributing to the module](#development)
 
+<a id="overview"></a>
 ## Overview
 
 This module adds a new exec provider capable of executing PowerShell commands.
 
+<a id="module-description"></a>
 ## Module Description
 
 Puppet provides a built-in `exec` type that is capable of executing commands. This module adds a `powershell` provider to the `exec` type,  which enables `exec` parameters, listed below. This module is particularly helpful if you need to run PowerShell commands but don't know the details about how PowerShell is executed, because you can run PowerShell commands in Puppet without the module.
 
+<a id="setup"></a>
 ## Setup
 
+<a id="setup-requirements"></a>
 ### Requirements
 
 This module requires PowerShell to be installed and the `powershell.exe` to be available in the system PATH.
 
+<a id="beginning-with-powershell"></a>
 ### Beginning with powershell
 
 The powershell module adapts the Puppet [exec](http://docs.puppet.com/references/stable/type.html#exec) resource to run PowerShell commands. To get started, install the module and declare 'powershell' in `provider` with the applicable command.
@@ -39,6 +44,7 @@ exec { 'RESOURCENAME':
 }
 ~~~
 
+<a id="usage"></a>
 ## Usage
 
 When using `exec` resources with the `powershell` provider, the `command` parameter must be single-quoted to prevent Puppet from interpolating `$(..)`.
@@ -79,6 +85,7 @@ $obj.Rename("OtherGuest")
 
 This has the added benefit of not requiring escaping '$' in the PowerShell code. Note that the files must have DOS linefeeds or they will not work as expected. One tool for converting UNIX linefeeds to DOS linefeeds is [unix2dos](http://freecode.com/projects/dos2unix).
 
+<a id="external-files-and-exit-codes"></a>
 ### External files and exit codes
 
 If you are calling external files, such as other PowerShell scripts or executables, be aware that the last executed script's exitcode is used by Puppet to determine whether the command was successful.
@@ -112,6 +119,7 @@ exec { 'test':
 
 This will always succeed because the `Exit 0` statement overrides the exit code from the `C:\fail.ps1` script.
 
+<a id="console-error-output"></a>
 ### Console Error Output
 
 The PowerShell module internally captures output sent to the .NET `[System.Console]::Error` stream like:
@@ -125,6 +133,7 @@ exec { 'test':
 
 However, to produce output from a script, use the `Write-` prefixed cmdlets such as `Write-Output`, `Write-Debug` and `Write-Error`.
 
+<a id="reference"></a>
 ## Reference
 
 #### Provider
@@ -191,6 +200,7 @@ Specifies the time to sleep in seconds between `tries`. Valid options: Number or
 
 Runs the `exec`, unless the command returns 0. Valid options: String. Default: Undefined.
 
+<a id="limitations"></a>
 ## Limitations
 
 * Only supported on Windows Server 2008 and above, and Windows 7 and above.
@@ -209,7 +219,8 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
     provider  => powershell,
   }
   ```
-
+  
+<a id="development"></a>
 ## Development
 
 Puppet modules on the Puppet Forge are open projects, and community contributions are essential for keeping them great. We can’t access the huge number of platforms and myriad hardware, software, and deployment configurations that Puppet is intended to serve. We want to keep it as easy as possible to contribute changes so that our modules work in your environment. There are a few guidelines that we need contributors to follow so that we can have a chance of keeping on top of things. For more information, see our [module contribution guide.](https://docs.puppet.com/forge/contributing.html)
