@@ -83,23 +83,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           provider.run_spec_override(command)
         end
       end
-
-      context "on non-windows", :if => !Puppet.features.microsoft_windows? do
-        it "should call sh -c" do
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
-            .with(regexp_matches(/^sh -c /), anything)
-
-          provider.run_spec_override(command)
-        end
-
-        it "should supply default arguments to supress user interaction" do
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-            with(regexp_matches(/^sh -c ".* #{args} < .*"/), false)
-
-          provider.run_spec_override(command)
-        end
-      end
-
     end
 
     context "actual runs" do
@@ -141,45 +124,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           end
 
           expect(output).to eq(expected)
-          expect(status.exitstatus).to eq(1)
-        end
-      end
-
-      context "on non-Windows", :if => !Puppet.features.microsoft_windows? do
-        # The usage of uname is a little fragile however there is basically nothing
-        # which is universal across all Linux/Unix/Mac distributions; Unlike Well Known SIDS in Windows
-        # The closest is the presence of the uname command and its generic text output
-        let(:command) { '& uname' }
-        let(:uname_regex) { '(Linux|Darwin)' }
-
-        it "returns the output and status" do
-          output, status = provider.run(command)
-
-          expect(output).to match(/#{uname_regex}/)
-          expect(status.exitstatus).to eq(0)
-        end
-
-        it "returns true if the `onlyif` check command succeeds" do
-          resource[:onlyif] = command
-
-          expect(resource.parameter(:onlyif).check(command)).to eq(true)
-        end
-
-        it "returns false if the `unless` check command succeeds" do
-          resource[:unless] = command
-
-          expect(resource.parameter(:unless).check(command)).to eq(false)
-        end
-
-        it "runs commands properly that output to multiple streams" do
-          command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); & foo.exe'
-          output, status = provider.run(command)
-
-          # Collected all streams inside of a single output string
-          expected = "^foo\nbar\n.+The term 'foo\.exe' is not recognized as the name of a cmdlet, function.+"
-
-          # Due to the different behaviour of sh across non-Windows platforms, must use a regex
-          expect(output).to match(expected)
           expect(status.exitstatus).to eq(1)
         end
       end
@@ -264,17 +208,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       transaction.report.finalize_report
 
       transaction
-    end
-
-    it 'does not emit an irrelevant upgrade message when in a non-Windows environment',
-      :if => !Puppet.features.microsoft_windows? do
-
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
-
-      # the upgrade message is not relevant on non-Windows platforms
-      Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
-
-      apply_compiled_manifest(manifest)
     end
 
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment',
