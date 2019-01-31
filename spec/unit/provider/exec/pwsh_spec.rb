@@ -84,6 +84,17 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         provider.run_spec_override(command)
       end
     end
+
+    it "should only attempt to find pwsh once when pwsh exists" do
+      # Need to unstub to force the 'only once' expectation. Otherwise the
+      # previous stub takes over if it's called more than once.
+      provider.unstub(:get_pwsh_command)
+      provider.expects(:get_pwsh_command).once.returns('somepath/pwsh')
+
+      provider.run_spec_override(command)
+      provider.run_spec_override(command)
+      provider.run_spec_override(command)
+    end
   end
 
   describe "#checkexe" do

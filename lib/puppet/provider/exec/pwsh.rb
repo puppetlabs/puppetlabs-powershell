@@ -15,8 +15,8 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   EOT
 
   def run(command, check = false)
-    pwsh = get_pwsh_command
-    self.fail 'pwsh could not be found' if pwsh.nil?
+    @pwsh ||= get_pwsh_command
+    self.fail 'pwsh could not be found' if @pwsh.nil?
     write_script(command) do |native_path|
       # Ideally, we could keep a handle open on the temp file in this
       # process (to prevent TOCTOU attacks), and execute powershell
@@ -27,9 +27,9 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
       # versions of Windows use per-user temp directories with strong
       # permissions, but I'd rather not make (poor) assumptions.
       if Puppet::Util::Platform.windows?
-        return super("cmd.exe /c \"\"#{native_path(pwsh)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
       else
-        return super("/bin/sh -c \"#{native_path(pwsh)} #{legacy_args} -Command - < #{native_path}\"", check)
+        return super("/bin/sh -c \"#{native_path(@pwsh)} #{legacy_args} -Command - < #{native_path}\"", check)
       end
     end
   end
@@ -43,68 +43,41 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
 
   private
 
-  def get_pwsh_command
-    if @resource['path'].nil?
-      pwsh = Puppet::Util.which('pwsh')
-    else
-      pwsh = which_with_custom_env('pwsh', @resource['path'])
-    end
-    return pwsh unless pwsh.nil?
-
-    return nil unless Puppet::Util::Platform.windows?
-    # These paths are Windows only
-    pwsh = "#{ENV['ProgramFiles']}\\PowerShell\\6\\pwsh.exe"
-    return pwsh if File.exists?(pwsh)
-    pwsh = "#{ENV['ProgramFiles(x86)']}\\PowerShell\\6\\pwsh.exe"
-    File.exists?(pwsh) ? pwsh : nil
-  end
-
-  # Based on which command from https://github.com/puppetlabs/puppet/blob/1c14d0a9fdfc31933603e571b616b6cd675e6b71/lib/puppet/util.rb#L241-L286
-  # Resolve a path for an executable to the absolute path. This tries to behave
-  # in the same manner as the unix `which` command and uses the `PATH`
-  # environment variable.
+  # Retrieves the absolute path to pwsh
   #
   # @api private
-  # @param bin [String] the name of the executable to find.
-  # @param custom_paths [String[]] the additional paths to look in first and then the PATH
-  # @return [String] the absolute path to the found executable.
-  def which_with_custom_env(bin, custom_paths = [])
-    if absolute_path?(bin)
-      return bin if FileTest.file? bin and FileTest.executable? bin
+  # @return [String] the absolute path to the found pwsh executable.  Returns nil when it does not exist
+  def get_pwsh_command
+    if Puppet::Util::Platform.windows?
+      # Environment variables on Windows are not case sensitive however ruby hash keys are.
+      # Convert all the key names to upcase so we can be sure to find PATH etc.
+      # Also while ruby can have difficulty changing the case of some UTF8 characters, we're
+      # only going to use plain ASCII names so this is safe.
+      current_env = Hash[Puppet::Util.get_environment.map {|k, v| [k.upcase, v] }]
     else
-      exts = Puppet::Util.get_env('PATHEXT')
-      exts = exts ? exts.split(File::PATH_SEPARATOR) : %w[.COM .EXE .BAT .CMD]
-      (custom_paths + Puppet::Util.get_env('PATH').split(File::PATH_SEPARATOR)).each do |dir|
-        begin
-          dest = File.expand_path(File.join(dir, bin))
-        rescue ArgumentError => e
-          # if the user's PATH contains a literal tilde (~) character and HOME is not set, we may get
-          # an ArgumentError here.  Let's check to see if that is the case; if not, re-raise whatever error
-          # was thrown.
-          if e.to_s =~ /HOME/ and (Puppet::Util.get_env('HOME').nil? || Puppet::Util.get_env('HOME') == "")
-            # if we get here they have a tilde in their PATH.  We'll issue a single warning about this and then
-            # ignore this path element and carry on with our lives.
-            #TRANSLATORS PATH and HOME are environment variables and should not be translated
-            Puppet::Util::Warnings.warnonce(_("PATH contains a ~ character, and HOME is not set; ignoring PATH element '%{dir}'.") % { dir: dir })
-          elsif e.to_s =~ /doesn't exist|can't find user/
-            # ...otherwise, we just skip the non-existent entry, and do nothing.
-            #TRANSLATORS PATH is an environment variable and should not be translated
-            Puppet::Util::Warnings.warnonce(_("Couldn't expand PATH containing a ~ character; ignoring PATH element '%{dir}'.") % { dir: dir })
-          else
-            raise
-          end
-        else
-          if Puppet::Util::Platform.windows? && File.extname(dest).empty?
-            exts.each do |ext|
-              destext = File.expand_path(dest + ext)
-              return destext if FileTest.file? destext and FileTest.executable? destext
-            end
-          end
-          return dest if FileTest.file? dest and FileTest.executable? dest
-        end
-      end
+      # We don't force a case change on non-Windows platforms because it is perfectly
+      # ok to have 'Path' and 'PATH'
+      current_env = Puppet::Util.get_environment
     end
-    nil
+
+    # If the resource specifies a search path use that. Otherwise use the default
+    # PATH from the environment.
+    search_paths = @resource['path'].nil? ?
+      current_env['PATH'] :
+      resource[:path].join(File::PATH_SEPARATOR)
+
+    # If we're on Windows, try the default installation locations as a last resort.
+    # https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-6#msi
+    if Puppet::Util::Platform.windows?
+      search_paths += ";#{current_env['PROGRAMFILES']}\\PowerShell\\6" +
+        ";#{current_env['PROGRAMFILES(X86)']}\\PowerShell\\6"
+    end
+
+    # Note that just like when we run the command in Puppet::Provider::Exec, the
+    # resource[:path] replaces the PATH, it doesn't add to it.
+    Puppet::Util.withenv({'PATH' => search_paths}, Puppet::Util.default_env) do
+      return Puppet::Util.which('pwsh')
+    end
   end
 
   def write_script(content, &block)
