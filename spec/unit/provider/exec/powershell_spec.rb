@@ -143,14 +143,9 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   describe 'when specifying a working directory' do
-    describe 'that does not exist' do
-      let(:work_dir)  {
-        if Puppet.features.microsoft_windows?
-          "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist"
-        else
-          '/some/directory/that/does/not/exist'
-        end
-      }
+    describe 'that does not exist on Windows', :if => Puppet.features.microsoft_windows? do
+      # This working directory error is specific to the PowerShell manager on Windows.
+      let(:work_dir)  { "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" }
       let(:command)  { 'exit 0' }
       let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :cwd => work_dir) }
       let(:provider) { described_class.new(resource) }

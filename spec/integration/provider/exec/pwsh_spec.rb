@@ -55,17 +55,40 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     it "runs commands properly that output to multiple streams" do
       skip('Could not locate pwsh binary') unless pwsh_exist?
       command = Puppet.features.microsoft_windows? ?
+        # Note that `/bin/sh -c` or `cmd.exe /c` is required to return an exit code.
+        # Without this the exitcode is always zero.
         'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe' :
-        'echo "foo"; [System.Console]::Error.WriteLine("bar"); & foo.exe'
-      expected = Puppet.features.microsoft_windows? ?
-        "foo\nbar\n'foo.exe' is not recognized as an internal or external command,\noperable program or batch file.\n" :
-        "^foo\nbar\n.+The term \'foo\.exe\' is not recognized as the name of a cmdlet, function.+"
+        'echo "foo"; [System.Console]::Error.WriteLine("bar"); /bin/sh -c "foo.exe"'
 
+      if PuppetX::PowerShell::PowerShellManager.supported_on_pwsh?
+        expected = Puppet.features.microsoft_windows? ? "foo\r\n" : "^foo\n"
+      else
+        # when PowerShellManager is not used, the legacy style invocation
+        # collects all streams inside of a single output string
+        expected = Puppet.features.microsoft_windows? ?
+          "foo\nbar\n'foo.exe' is not recognized as an internal or external command,\noperable program or batch file.\n" :
+          "^foo\nbar\n.+The term \'foo\.exe\' is not recognized as the name of a cmdlet, function.+"
+      end
       output, status = provider.run(command)
-
-      # Due to the different behaviour of uname across non-Windows platforms, must use a regex
       expect(output).to match(expected)
-      expect(status.exitstatus).to eq(1)
+      expect(status.exitstatus).to_not eq(0) # exit codes for missing files differ across platforms.
+    end
+
+    describe 'when specifying a working directory' do
+      describe 'that does not exist' do
+        let(:work_dir) {
+          Puppet.features.microsoft_windows? ?
+            "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" :
+            '/some/directory/that/does/not/exist'
+        }
+        let(:command) { 'exit 0' }
+
+        it 'emits an error when working directory does not exist' do
+          skip('Could not locate pwsh binary') unless pwsh_exist?
+          resource[:cwd] = work_dir
+          expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/)
+        end
+      end
     end
   end
 end

@@ -49,12 +49,30 @@ module PuppetX
         !win32console_enabled?
       end
 
+      def self.supported_on_pwsh?
+        !win32console_enabled?
+      end
+
       def initialize(cmd, args = [], options = {})
         @usable = true
         @powershell_command = cmd
         @powershell_arguments = args
 
-        named_pipe_name = "#{SecureRandom.uuid}PuppetPsHost"
+        if Puppet::Util::Platform.windows?
+          # Named pipes under Windows will automatically be mounted in \\.\pipe\...
+          # https://github.com/dotnet/corefx/blob/a10890f4ffe0fadf090c922578ba0e606ebdd16c/src/System.IO.Pipes/src/System/IO/Pipes/NamedPipeServerStream.Windows.cs#L34
+          named_pipe_name = "#{SecureRandom.uuid}PuppetPsHost"
+          # This named pipe path is Windows specific.
+          pipe_path = "\\\\.\\pipe\\#{named_pipe_name}"
+        else
+          # .Net implements named pipes under Linux etc. as Unix Sockets in the filesystem
+          # Paths that are rooted are not munged within C# Core.
+          # https://github.com/dotnet/corefx/blob/94e9d02ad70b2224d012ac4a66eaa1f913ae4f29/src/System.IO.Pipes/src/System/IO/Pipes/PipeStream.Unix.cs#L49-L60
+          # https://github.com/dotnet/corefx/blob/a10890f4ffe0fadf090c922578ba0e606ebdd16c/src/System.IO.Pipes/src/System/IO/Pipes/NamedPipeServerStream.Unix.cs#L44
+          # https://github.com/dotnet/corefx/blob/a10890f4ffe0fadf090c922578ba0e606ebdd16c/src/System.IO.Pipes/src/System/IO/Pipes/NamedPipeServerStream.Unix.cs#L298-L299
+          named_pipe_name = File.join(Dir.tmpdir, "#{SecureRandom.uuid}PuppetPsHost")
+          pipe_path = named_pipe_name
+        end
         pipe_timeout = options[:pipe_timeout] || self.class.default_options[:pipe_timeout]
         debug = options[:debug] || self.class.default_options[:debug]
         native_cmd = Puppet::Util::Platform.windows? ? "\"#{cmd}\"" : cmd
@@ -67,17 +85,18 @@ module PuppetX
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
-        pipe_path = "\\\\.\\pipe\\#{named_pipe_name}"
-        # wait for the pipe server to signal ready, and fail if no response in 10 seconds
-
         # wait up to 30 seconds in 0.2 second intervals to be able to open the pipe
         # If the pipe_timeout is ever specified as less than the sleep interval it will
         # never try to connect to a pipe and error out as if a timeout occurred.
         sleep_interval = 0.2
         (pipe_timeout / sleep_interval).to_int.times do
           begin
-            # pipe is opened in binary mode and must always
-            @pipe = File.open(pipe_path, 'r+b')
+            if Puppet::Util::Platform.windows?
+              # pipe is opened in binary mode and must always
+              @pipe = File.open(pipe_path, 'r+b')
+            else
+              @pipe = UNIXSocket.new(pipe_path)
+            end
             break
           rescue
             sleep sleep_interval
@@ -112,8 +131,6 @@ module PuppetX
 
       def execute(powershell_code, timeout_ms = nil, working_dir = nil, environment_variables = [])
         code = make_ps_code(powershell_code, timeout_ms, working_dir, environment_variables)
-
-
         # err is drained stderr pipe (not captured by redirection inside PS)
         # or during a failure, a Ruby callstack array
         out, native_stdout, err = exec_read_result(code)
@@ -417,7 +434,8 @@ Invoke-PowerShellUserCode @params
       # if any pipes are broken, the manager is totally hosed
       # bad file descriptors mean closed stream handles
       # EOFError is a closed pipe (could be as a result of tearing down process)
-      rescue Errno::EPIPE, Errno::EBADF, EOFError => e
+      # Errno::ECONNRESET is a closed unix domain socket (could be as a result of tearing down process)
+      rescue Errno::EPIPE, Errno::EBADF, EOFError, Errno::ECONNRESET => e
         @usable = false
         return nil, nil, [e.inspect, e.backtrace].flatten
       # catch closed stream errors specifically
@@ -426,7 +444,6 @@ Invoke-PowerShellUserCode @params
         @usable = false
         return nil, nil, [ioerror.inspect, ioerror.backtrace].flatten
       end
-
     end
   end
 end
