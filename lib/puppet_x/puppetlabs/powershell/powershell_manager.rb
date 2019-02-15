@@ -394,10 +394,18 @@ Invoke-PowerShellUserCode @params
         pipe_reader = Thread.new(@pipe) do |pipe|
           # read a Little Endian 32-bit integer for length of response
           expected_response_length = pipe.sysread(4).unpack('V').first
-          return nil if expected_response_length == 0
 
-          # reads the expected bytes as a binary string or fails
-          pipe.sysread(expected_response_length)
+          if expected_response_length == 0
+            nil
+          else
+            # reads the expected bytes as a binary string or fails
+            buffer = ""
+            # Reads in the pipe data 8K, or less, at a time
+            while (buffer.length < expected_response_length)
+              buffer << pipe.sysread([expected_response_length - buffer.length, 8192].min)
+            end
+            buffer
+          end
         end
 
         Puppet.debug "Waited #{Time.now - start_time} total seconds."

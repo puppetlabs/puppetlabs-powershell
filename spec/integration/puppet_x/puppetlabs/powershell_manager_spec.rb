@@ -559,7 +559,8 @@ try {
 
     it "should be able to write more than the 64k default buffer size to the managers pipe without deadlocking the Ruby parent process or breaking the pipe" do
       # this was tested successfully up to 5MB of text
-      buffer_string_96k = 'a' * ((1024 * 96) + 1)
+      # we add some additional bytes so it's not always on a 1KB boundary and forces pipe reading in different lengths, not always 1K chunks
+      buffer_string_96k = 'a' * ((1024 * 96) + 11)
       result = manager.execute(<<-CODE
 '#{buffer_string_96k}' | #{output_cmdlet(ps_command, ps_args)}
         CODE
@@ -572,15 +573,16 @@ try {
     end
 
     it "should be able to write more than the 64k default buffer size to child process stdout without deadlocking the Ruby parent process" do
+      # we add some additional bytes so it's not always on a 1KB boundary and forces pipe reading in different lengths, not always 1K chunks
       result = manager.execute(<<-CODE
-$bytes_in_k = (1024 * 64) + 1
+$bytes_in_k = (1024 * 64) + 11
 [Text.Encoding]::UTF8.GetString((New-Object Byte[] ($bytes_in_k))) | #{output_cmdlet(ps_command, ps_args)}
         CODE
         )
 
       expect(result[:errormessage]).to eq(nil)
       expect(result[:exitcode]).to eq(0)
-      expected = "\x0" * (1024 * 64 + 1) + line_end
+      expected = "\x0" * (1024 * 64 + 11) + line_end
       expect(result[:stdout].length).to eq(expected.length)
       expect(result[:stdout]).to eq(expected)
     end
