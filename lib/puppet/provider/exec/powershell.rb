@@ -64,8 +64,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def ps_manager
     debug_output = Puppet::Util::Log.level == :debug
-    manager_args = "#{command(:powershell)} #{self.class.powershell_args().join(' ')}"
-    PuppetX::PowerShell::PowerShellManager.instance(manager_args, debug_output)
+    PuppetX::PowerShell::PowerShellManager.instance(command(:powershell), self.class.powershell_args(), debug: debug_output)
   end
 
   def run(command, check = false)
@@ -84,29 +83,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
           return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
         end
       else
-        working_dir = resource[:cwd]
-        if (!working_dir.nil?)
-          self.fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
-        end
-        timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
-        environment_variables = resource[:environment].nil? ? [] : resource[:environment]
-
-        result = ps_manager.execute(command,timeout_ms,working_dir, environment_variables)
-
-        stdout      = result[:stdout]
-        native_out  = result[:native_stdout]
-        stderr      = result[:stderr]
-        exit_code   = result[:exitcode]
-
-        unless stderr.nil?
-          stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
-        end
-
-        Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
-
-        output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
-
-        return output, output
+        return ps_manager.execute_resource(command, resource)
       end
     else
       write_script(command) do |native_path|

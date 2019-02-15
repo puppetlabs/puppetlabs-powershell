@@ -33,6 +33,9 @@ end
 describe PuppetX::PowerShell::PowerShellManager,
   :if => Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported? do
 
+  let(:ps_command) { Puppet::Type.type(:exec).provider(:powershell).command(:powershell) }
+  let(:ps_args) { Puppet::Type.type(:exec).provider(:powershell).powershell_args }
+
   let (:manager_args) {
     provider = Puppet::Type.type(:exec).provider(:powershell)
     powershell = provider.command(:powershell)
@@ -40,18 +43,18 @@ describe PuppetX::PowerShell::PowerShellManager,
     "#{powershell} #{cli_args.join(' ')}"
   }
 
-  def create_manager()
-    PuppetX::PowerShell::PowerShellManager.instance(manager_args, true)
+  def create_manager(ps_command, ps_args)
+    PuppetX::PowerShell::PowerShellManager.instance(ps_command, ps_args, debug: true)
   end
 
-  let (:manager) { create_manager() }
+  let (:manager) { create_manager(ps_command, ps_args) }
 
   describe "when managing the powershell process" do
     describe "the PowerShellManager::instance method" do
       it "should return the same manager instance / process given the same cmd line" do
         first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
-        manager_2 = create_manager()
+        manager_2 = create_manager(ps_command, ps_args)
         second_pid = manager_2.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
         expect(manager_2).to eq(manager)
@@ -60,13 +63,18 @@ describe PuppetX::PowerShell::PowerShellManager,
 
       it "should fail if the manger is created with a short timeout" do
         expect {
-          PuppetX::PowerShell::PowerShellManager.new(manager_args, false, 0.01)
+          PuppetX::PowerShell::PowerShellManager.new(
+            ps_command,
+            ps_args,
+            debug: false,
+            pipe_timeout: 0.01
+          )
         }.to raise_error do |e|
           expect(e).to be_a(RuntimeError)
           expected_error = /Failure waiting for PowerShell process (\d+) to start pipe server/
           expect(e.message).to match expected_error
           pid = expected_error.match(e.message)[1].to_i
-          
+
           # We want to make sure that enough time has elapsed since the manager called kill
           # for the OS to finish killing the process and doing all of it's cleanup.
           # We have found that without an appropriate wait period, the kill call below
@@ -117,7 +125,7 @@ describe PuppetX::PowerShell::PowerShellManager,
 
       def expect_different_manager_returned_than(manager, pid)
         # acquire another manager instance
-        new_manager = create_manager()
+        new_manager = create_manager(manager.powershell_command, manager.powershell_arguments)
 
         # which should be different than the one passed in
         expect(new_manager).to_not eq(manager)
@@ -580,7 +588,7 @@ $bytes_in_k = (1024 * 64) + 1
     it "Should use the correct correct timeout if a small value is specified" do
 
       # Zero timeout is not supported, and a timeout less than 50ms is not supported.
-      # This test is to ensure that the code that inserts the default timeout when 
+      # This test is to ensure that the code that inserts the default timeout when
       # the user specified zero, does not interfere with the other default of 50ms
       # if the user specifies a value less than that.
 

@@ -7,16 +7,27 @@ require File.join(File.dirname(__FILE__), 'compatible_powershell_version')
 module PuppetX
   module PowerShell
     class PowerShellManager
+      attr_reader :powershell_command
+      attr_reader :powershell_arguments
       @@instances = {}
 
-      def self.instance(cmd, debug = false, pipe_timeout = 30)
-        key = cmd + debug.to_s
+      def self.default_options
+        {
+          debug: false,
+          pipe_timeout: 30
+        }
+      end
+
+      def self.instance(cmd, args, options = {})
+        options = default_options.merge!(options)
+
+        key = instance_key(cmd, args, options)
         manager = @@instances[key]
 
         if manager.nil? || !manager.alive?
           # ignore any errors trying to tear down this unusable instance
           manager.exit if manager rescue nil
-          @@instances[key] = PowerShellManager.new(cmd, debug, pipe_timeout)
+          @@instances[key] = PowerShellManager.new(cmd, args, options)
         end
 
          @@instances[key]
@@ -38,15 +49,20 @@ module PuppetX
         !win32console_enabled?
       end
 
-      def initialize(cmd, debug, pipe_timeout)
+      def initialize(cmd, args = [], options = {})
         @usable = true
+        @powershell_command = cmd
+        @powershell_arguments = args
 
         named_pipe_name = "#{SecureRandom.uuid}PuppetPsHost"
+        pipe_timeout = options[:pipe_timeout] || self.class.default_options[:pipe_timeout]
+        debug = options[:debug] || self.class.default_options[:debug]
+        native_cmd = Puppet::Util::Platform.windows? ? "\"#{cmd}\"" : cmd
 
-        ps_args = ['-File', self.class.init_path, "\"#{named_pipe_name}\""]
+        ps_args = args + ['-File', self.class.init_path, "\"#{named_pipe_name}\""]
         ps_args << '"-EmitDebugOutput"' if debug
         # @stderr should never be written to as PowerShell host redirects output
-        stdin, @stdout, @stderr, @ps_process = Open3.popen3("#{cmd} #{ps_args.join(' ')}")
+        stdin, @stdout, @stderr, @ps_process = Open3.popen3("#{native_cmd} #{ps_args.join(' ')}")
         stdin.close
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
@@ -113,6 +129,32 @@ module PuppetX
         out[:native_stdout] = native_stdout
 
         out
+      end
+
+      # Executes PowerShell code using the settings from a populated Puppet Exec Resource type
+      def execute_resource(powershell_code, resource)
+        working_dir = resource[:cwd]
+        if (!working_dir.nil?)
+          fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
+        end
+        timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
+        environment_variables = resource[:environment].nil? ? [] : resource[:environment]
+
+        result = execute(powershell_code, timeout_ms, working_dir, environment_variables)
+        stdout     = result[:stdout]
+        native_out = result[:native_stdout]
+        stderr     = result[:stderr]
+        exit_code  = result[:exitcode]
+
+        unless stderr.nil?
+          stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
+        end
+
+        Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
+
+        output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
+
+        return output, output
       end
 
       def exit
@@ -183,7 +225,7 @@ module PuppetX
         # Convert the Ruby Hashtable into PowerShell syntax
         exec_environment_variables = '@{'
         environment.each do |name,value|
-          # Powershell escapes single quotes inside a single quoted string by just adding 
+          # Powershell escapes single quotes inside a single quoted string by just adding
           # another single quote i.e. a value of foo'bar turns into 'foo''bar' when single quoted
           ps_name = name.gsub('\'','\'\'')
           ps_value = value.gsub('\'','\'\'')
@@ -207,6 +249,10 @@ Invoke-PowerShellUserCode @params
       end
 
       private
+
+      def self.instance_key(cmd, args, options)
+        cmd + args.join(' ') + options[:debug].to_s
+      end
 
       def self.is_readable?(stream, timeout = 0.5)
         raise Errno::EPIPE if !is_stream_valid?(stream)
