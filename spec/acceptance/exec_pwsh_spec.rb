@@ -4,7 +4,7 @@ def windows_platform?(host)
   !((host.platform =~ /^windows.*$/).nil?)
 end
 
-powershell6_agents = hosts_as('powershell6')
+powershell6_agents = hosts.select { |h| !(h['powershell'].nil?) }
 posix6_agents      = powershell6_agents.select { |a| !windows_platform?(a) }
 windows6_agents    = powershell6_agents.select { |a| windows_platform?(a) }
 
