@@ -22,6 +22,7 @@ unless ENV['MODULE_provision'] == 'no'
 
   # Install PowerShell on hosts that are not a Master, Dashboard or Database
   agents.each do |host|
+    ps_version = host['powershell']
     if not_controller(host)
       case host.platform
       when "ubuntu-14.04-amd64"
@@ -30,25 +31,31 @@ unless ENV['MODULE_provision'] == 'no'
         on(host,'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -')
         on(host,'curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list')
         on(host,'sudo apt-get update')
-        on(host,'sudo apt-get install -y powershell')
+        # e.g. sudo apt-get install -y powershell=6.1.2-1.ubuntu.14.04
+        apt_text = "=#{ps_version}-1.ubuntu.14.04" unless ps_version.nil?
+        on(host,"sudo apt-get install -y powershell#{apt_text}")
       when "ubuntu-16.04-amd64"
         # Instructions for installing on Ubuntu 16 from
         # https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md#ubuntu-1604
         on(host,'curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -')
         on(host,'curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list')
         on(host,'sudo apt-get update')
-        on(host,'sudo apt-get install -y powershell')
+        # e.g. sudo apt-get install -y powershell=6.1.2-1.ubuntu.16.04
+        apt_text = "=#{ps_version}-1.ubuntu.16.04" unless ps_version.nil?
+        on(host,"sudo apt-get install -y powershell#{apt_text}")
       when "el-7-x86_64"
         # Instructions for installing on CentOS 7, Oracle Linux7, RHEL 7 from
         # https://github.com/PowerShell/PowerShell/blob/master/docs/installation/linux.md#centos-7
         # sudo is not required and seems to throw errors when running under beaker `sudo: sorry, you must have a tty to run sudo`
         on(host,'curl https://packages.microsoft.com/config/rhel/7/prod.repo | tee /etc/yum.repos.d/microsoft.repo')
-        on(host,'yum install -y powershell')
+        # e.g. yum install -y powershell-6.1.2
+        yum_text = "-#{ps_version}" unless ps_version.nil?
+        on(host,"sudo apt-get install -y powershell#{yum_text}")
       when /^windows/
         # Install PowerShell 6 if needed
-        if hosts_as('powershell6').map { |item| item.name }.include?(host.name)
-          on(host,'powershell -NoLogo -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v6.1.2/PowerShell-6.1.2-win-x64.msi -OutFile C:\\PS612.msi -UseBasicParsing"')
-          on(host,'msiexec.exe /i C:\\\\PS612.msi /qn ALLUSERS=1 /l*v C:\\\\PS612-install.log')
+        unless ps_version.nil?
+          on(host,"powershell -NoLogo -NoProfile -Command \"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/releases/download/v#{ps_version}/PowerShell-#{ps_version}-win-x64.msi -OutFile C:\\PSPkg.msi -UseBasicParsing\"")
+          on(host,'msiexec.exe /i C:\\\\PSPkg.msi /qn ALLUSERS=1 /l*v C:\\\\PSPkg-install.log')
         end
       else
         raise("Unable to install PowerShell on host '#{host.name}' with platform '#{host.platform}'")
@@ -79,4 +86,3 @@ RSpec.configure do |c|
     apply_manifest_on(posix_agents, absent_files, :catch_failures => true) if posix_agents.count > 0
   end
 end
-

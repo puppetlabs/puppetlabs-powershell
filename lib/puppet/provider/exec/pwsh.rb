@@ -17,19 +17,23 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   def run(command, check = false)
     @pwsh ||= get_pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
-    write_script(command) do |native_path|
-      # Ideally, we could keep a handle open on the temp file in this
-      # process (to prevent TOCTOU attacks), and execute powershell
-      # with -File <path>. But powershell complains that it can't open
-      # the file for exclusive access. If we close the handle, then an
-      # attacker could modify the file before we invoke powershell. So
-      # we redirect powershell's stdin to read from the file. Current
-      # versions of Windows use per-user temp directories with strong
-      # permissions, but I'd rather not make (poor) assumptions.
-      if Puppet::Util::Platform.windows?
-        return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
-      else
-        return super("/bin/sh -c \"#{native_path(@pwsh)} #{legacy_args} -Command - < #{native_path}\"", check)
+    if PuppetX::PowerShell::PowerShellManager.supported_on_pwsh?
+      return ps_manager.execute_resource(command, resource)
+    else
+      write_script(command) do |native_path|
+        # Ideally, we could keep a handle open on the temp file in this
+        # process (to prevent TOCTOU attacks), and execute powershell
+        # with -File <path>. But powershell complains that it can't open
+        # the file for exclusive access. If we close the handle, then an
+        # attacker could modify the file before we invoke powershell. So
+        # we redirect powershell's stdin to read from the file. Current
+        # versions of Windows use per-user temp directories with strong
+        # permissions, but I'd rather not make (poor) assumptions.
+        if Puppet::Util::Platform.windows?
+          return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{pwsh_args.join(' ')} -Command - < \"#{native_path}\"\"", check)
+        else
+          return super("/bin/sh -c \"#{native_path(@pwsh)} #{pwsh_args.join(' ')} -Command - < #{native_path}\"", check)
+        end
       end
     end
   end
@@ -41,11 +45,8 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     true
   end
 
-  private
-
   # Retrieves the absolute path to pwsh
   #
-  # @api private
   # @return [String] the absolute path to the found pwsh executable.  Returns nil when it does not exist
   def get_pwsh_command
     if Puppet::Util::Platform.windows?
@@ -59,10 +60,9 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
       # ok to have 'Path' and 'PATH'
       current_env = Puppet::Util.get_environment
     end
-
     # If the resource specifies a search path use that. Otherwise use the default
     # PATH from the environment.
-    search_paths = @resource['path'].nil? ?
+    search_paths = @resource.nil? || @resource['path'].nil? ?
       current_env['PATH'] :
       resource[:path].join(File::PATH_SEPARATOR)
 
@@ -80,6 +80,21 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     end
   end
 
+  def pwsh_args
+    ['-NoProfile', '-NonInteractive', '-NoLogo', '-ExecutionPolicy', 'Bypass']
+  end
+
+  private
+
+  # Retrieves the PowerShell manager specific to our pwsh binary in this resource
+  #
+  # @api private
+  # @return [PuppetX::PowerShell::PowerShellManager] The PowerShell manager for this resource
+  def ps_manager
+    debug_output = Puppet::Util::Log.level == :debug
+    PuppetX::PowerShell::PowerShellManager.instance(@pwsh, pwsh_args, debug: debug_output)
+  end
+
   def write_script(content, &block)
     Tempfile.open(['puppet-pwsh', '.ps1']) do |file|
       file.puts(content)
@@ -95,9 +110,5 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     else
       path
     end
-  end
-
-  def legacy_args
-    '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass'
   end
 end

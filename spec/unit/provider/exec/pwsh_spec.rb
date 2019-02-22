@@ -3,6 +3,12 @@ require 'spec_helper'
 require 'puppet/util'
 require 'fileutils'
 
+class MockPowerShellManager
+  def execute_resource(*_args)
+    return "", ""
+  end
+end
+
 describe Puppet::Type.type(:exec).provider(:pwsh) do
   # Override the run value so we can test the super call
   # There is no real good way to do this otherwise, previously we were
@@ -26,62 +32,69 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   describe "#run" do
     before :each do
       Puppet::Provider::Exec.any_instance.stubs(:run)
+      PuppetX::PowerShell::PowerShellManager.stubs(:instance).returns(MockPowerShellManager.new)
     end
 
-    let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
+    context 'when the powershell manager is not supported' do
+      before :each do
+        PuppetX::PowerShell::PowerShellManager.stubs(:supported_on_pwsh?).returns(false)
+      end
 
-    it "should call exec run" do
-      Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
+      let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
 
-      provider.run_spec_override(command)
-    end
-
-    it "should call shell command" do
-      Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
-        .with(regexp_matches(/#{shell_command}/), anything)
-
-      provider.run_spec_override(command)
-    end
-
-    it "should quote the path to the temp file", :if => Puppet.features.microsoft_windows? do
-      # Path quoting is only required on Windows
-      path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
-
-      provider.expects(:write_script).with(command).yields(path)
-      Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
-        with(regexp_matches(/^#{shell_command} .* < "#{Regexp.escape(path)}"/), false)
-
-      provider.run_spec_override(command)
-    end
-
-    it "should supply default arguments to supress user interaction" do
-      Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
-        with(regexp_matches(/^#{shell_command} .* #{args} < .*"/), false)
-
-      provider.run_spec_override(command)
-    end
-
-    context 'when specifying a path' do
-      let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
-      let(:pwsh_path) { path + '/pwsh' }
-      let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
-      let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
-
-      let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :path => path) }
-
-      it 'should prefer pwsh in the specified path' do
-        # Pretend that only the test pwsh binary exists.
-        FileTest.stubs(:file?).with() { |value| value == pwsh_path}.returns(true)
-        FileTest.stubs(:file?).with() { |value| value != pwsh_path}.returns(false)
-        FileTest.stubs(:executable?).with() { |value| value == pwsh_path}.returns(true)
-        FileTest.stubs(:executable?).with() { |value| value != pwsh_path}.returns(false)
-        # Remove the global stub here as we're testing this method
-        provider.unstub(:get_pwsh_command)
-
-        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
-          with(regexp_matches(native_pwsh_path_regex), false)
+      it "should call exec run" do
+        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
 
         provider.run_spec_override(command)
+      end
+
+      it "should call shell command" do
+        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
+          .with(regexp_matches(/#{shell_command}/), anything)
+
+        provider.run_spec_override(command)
+      end
+
+      it "should quote the path to the temp file", :if => Puppet.features.microsoft_windows? do
+        # Path quoting is only required on Windows
+        path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
+
+        provider.expects(:write_script).with(command).yields(path)
+        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
+          with(regexp_matches(/^#{shell_command} .* < "#{Regexp.escape(path)}"/), false)
+
+        provider.run_spec_override(command)
+      end
+
+      it "should supply default arguments to supress user interaction" do
+        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
+          with(regexp_matches(/^#{shell_command} .* #{args} < .*"/), false)
+
+        provider.run_spec_override(command)
+      end
+
+      context 'when specifying a path' do
+        let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
+        let(:pwsh_path) { path + '/pwsh' }
+        let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
+        let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
+
+        let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :path => path) }
+
+        it 'should prefer pwsh in the specified path' do
+          # Pretend that only the test pwsh binary exists.
+          FileTest.stubs(:file?).with() { |value| value == pwsh_path}.returns(true)
+          FileTest.stubs(:file?).with() { |value| value != pwsh_path}.returns(false)
+          FileTest.stubs(:executable?).with() { |value| value == pwsh_path}.returns(true)
+          FileTest.stubs(:executable?).with() { |value| value != pwsh_path}.returns(false)
+          # Remove the global stub here as we're testing this method
+          provider.unstub(:get_pwsh_command)
+
+          Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
+            with(regexp_matches(native_pwsh_path_regex), false)
+
+          provider.run_spec_override(command)
+        end
       end
     end
 
@@ -106,25 +119,6 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   describe "#validatecmd" do
     it "should always successfully validate the command to execute" do
       expect(provider.validatecmd(command)).to eq(true)
-    end
-  end
-
-  describe 'when specifying a working directory' do
-    describe 'that does not exist' do
-      let(:work_dir)  {
-        if Puppet.features.microsoft_windows?
-          "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist"
-        else
-          '/some/directory/that/does/not/exist'
-        end
-      }
-      let(:command) { 'exit 0' }
-      let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :cwd => work_dir) }
-      let(:provider) { described_class.new(resource) }
-
-      it 'emits an error when working directory does not exist' do
-        expect { provider.run_spec_override(command) }.to raise_error(/Working directory .+ does not exist/)
-      end
     end
   end
 end
