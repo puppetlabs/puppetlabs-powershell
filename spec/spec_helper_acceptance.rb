@@ -50,7 +50,7 @@ unless ENV['MODULE_provision'] == 'no'
         on(host,'curl https://packages.microsoft.com/config/rhel/7/prod.repo | tee /etc/yum.repos.d/microsoft.repo')
         # e.g. yum install -y powershell-6.1.2
         yum_text = "-#{ps_version}" unless ps_version.nil?
-        on(host,"sudo apt-get install -y powershell#{yum_text}")
+        on(host,"yum install -y powershell#{yum_text}")
       when /^windows/
         # Install PowerShell 6 if needed
         unless ps_version.nil?
