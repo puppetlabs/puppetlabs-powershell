@@ -1,33 +1,19 @@
 require 'spec_helper_acceptance'
 
-describe 'powershell provider:' do
+powershell_agents = agents.select { |a| not_controller(a) }
+windows_agents    = powershell_agents.select { |a| a.platform =~ /^windows.*$/ }
 
-  powershell_agents = agents.select { |a| not_controller(a) }
-  posix_agents      = powershell_agents.select { |a| a.platform =~ /^(?!windows).*$/ }
-  windows_agents    = powershell_agents.select { |a| a.platform =~ /^windows.*$/ }
-
+describe 'powershell provider:', :if => windows_agents.count > 0 do
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   # In this case, it just needs a HOME that has a valid directory, no files get stored there
   # HOME is not used on Windows so it is safe to apply hosts, no matter its platform
   let (:ps_environment) { "environment => ['HOME=/tmp']," }
   ps_environment = "environment => ['HOME=/tmp'],"
 
-  def windows_platform?(host)
-    !((host.platform =~ /^windows.*$/).nil?)
-  end
-
-  def platform_string(host, windows, posix)
-    if windows_platform?(host)
-      windows
-    else
-      posix
-    end
-  end
-
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each do |hut|
+      windows_agents.each do |hut|
         result = execute_manifest_on(hut, manifest, :expect_failures => true)
         unless error_check.nil?
           expect(result.stderr).to match(error_check)
@@ -39,7 +25,7 @@ describe 'powershell provider:' do
   shared_examples 'apply success' do |manifest|
     it 'should succeed' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, manifest, :catch_failures => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, manifest, :catch_failures => true) }
     end
   end
 
@@ -58,27 +44,16 @@ describe 'powershell provider:' do
   end
 
   describe "should run successfully" do
-    powershell_agents.each do |host|
+    windows_agents.each do |host|
       context "on host with platform #{host.platform}" do
         let(:manifest) {
-          if windows_platform?(host)
-            <<-MANIFEST
-              exec{'TestPowershell':
-                command   => 'Get-Process > c:/process.txt',
-                unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
-                provider  => powershell,
-              }
-            MANIFEST
-          else
-            <<-MANIFEST
-              exec{'TestPowershell':
-                command   => 'Get-Process > /process.txt',
-                unless    => 'if(!(test-path "/process.txt")){exit 1}',
-                #{ps_environment}
-                provider  => powershell,
-              }
-            MANIFEST
-          end
+          <<-MANIFEST
+            exec{'TestPowershell':
+              command   => 'Get-Process > c:/process.txt',
+              unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
+              provider  => powershell,
+            }
+          MANIFEST
         }
 
         it 'should not error on first run' do
@@ -94,13 +69,13 @@ describe 'powershell provider:' do
   end
 
   describe 'should handle a try/catch successfully' do
-    powershell_agents.each do |host|
+    windows_agents.each do |host|
       context "on host with platform #{host.platform}" do
 
-        let(:try_successfile) { platform_string(host,'C:\try_success.txt','/try_success.txt') }
-        let(:try_failfile) { platform_string(host,'C:\try_shouldntexist.txt','/try_shouldntexist.txt') }
-        let(:catch_successfile) { platform_string(host,'C:\catch_success.txt','/catch_success.txt') }
-        let(:catch_failfile) { platform_string(host,'C:\catch_shouldntexist.txt','/catch_shouldntexist.txt') }
+        let(:try_successfile) { 'C:\try_success.txt' }
+        let(:try_failfile) { 'C:\try_shouldntexist.txt' }
+        let(:catch_successfile) { 'C:\catch_success.txt' }
+        let(:catch_failfile) { 'C:\catch_shouldntexist.txt' }
         let(:try_content) { 'try_executed' }
         let(:catch_content) { 'catch_executed' }
 
@@ -125,16 +100,12 @@ describe 'powershell provider:' do
 
           execute_manifest_on(host, p1, :catch_failures => true)
 
-          on(host, platform_string(host,"cmd.exe /c \"type #{try_successfile}\"","cat #{try_successfile}")) do |result|
+          on(host, "cmd.exe /c \"type #{try_successfile}\"") do |result|
             assert_match(/#{try_content}/, result.stdout, "Unexpected result for host '#{host}'")
           end
 
-          on(host, platform_string(host,"cmd.exe /c \"type #{catch_failfile}\"","cat #{catch_failfile}"), :acceptable_exit_codes => [1]) do |result|
-            if windows_platform?(host)
-              assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-            else
-              assert_match(/No such file or directory/, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-            end
+          on(host, "cmd.exe /c \"type #{catch_failfile}\"", :acceptable_exit_codes => [1]) do |result|
+            assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
           end
         end
 
@@ -158,16 +129,12 @@ describe 'powershell provider:' do
 
           execute_manifest_on(host, p1, :catch_failures => true)
 
-          on(host, platform_string(host,"cmd.exe /c \"type #{catch_successfile}\"","cat #{catch_successfile}")) do |result|
+          on(host, "cmd.exe /c \"type #{catch_successfile}\"") do |result|
             assert_match(/#{catch_content}/, result.stdout, "Unexpected result for host '#{host}'")
           end
 
-          on(host, platform_string(host,"cmd.exe /c \"type #{try_failfile}\"","cat #{try_failfile}"), :acceptable_exit_codes => [1]) do |result|
-            if windows_platform?(host)
-              assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-            else
-              assert_match(/No such file or directory/, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-            end
+          on(host, "cmd.exe /c \"type #{try_failfile}\"", :acceptable_exit_codes => [1]) do |result|
+            assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
           end
         end
       end
@@ -187,12 +154,12 @@ describe 'powershell provider:' do
 
     it 'should not error on first run' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
     end
 
   end
@@ -210,12 +177,12 @@ describe 'powershell provider:' do
 
     it 'should not error on first run' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
     end
 
   end
@@ -233,12 +200,12 @@ describe 'powershell provider:' do
 
     it 'should not error on first run' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
     end
 
     it 'should run a second time' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
     end
 
   end
@@ -266,11 +233,11 @@ describe 'powershell provider:' do
     it 'should not see variable from previous run' do
       # Setup the variable
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, var_leak_setup_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, var_leak_setup_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the variable
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, var_leak_test_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, var_leak_test_pp, :expect_changes => true) }
     end
 
   end
@@ -306,46 +273,37 @@ describe 'powershell provider:' do
 
     after(:each) do
       # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
-      powershell_agents.each do |host|
-        if windows_platform?(host)
-          on(host, powershell("'Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'"))
-          on(host, powershell("'Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'"))
-        else
-          on(host, 'unset superspecial')
-          on(host, 'unset outside')
-        end
+      windows_agents.each do |host|
+        on(host, powershell("'Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'"))
+        on(host, powershell("'Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'"))
       end
     end
 
     it 'should not see environment variable from previous run' do
       # Setup the environment variable
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_setup_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_setup_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the environment variable
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
     end
 
     it 'should see environment variables set outside of session' do
       # Setup the environment variable outside of Puppet
 
-      powershell_agents.each do |host|
+      windows_agents.each do |host|
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
-        if windows_platform?(host)
-          on(host, powershell("\\$env:outside='1'"))
-        else
-          on(host, 'export outside=1')
-        end
+        on(host, powershell("\\$env:outside='1'"))
       end
 
       # Test to see if initial run sees the environment variable
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
 
       # Test to see if subsequent call sees the environment variable and environment purge
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
     end
   end
 
@@ -373,12 +331,12 @@ describe 'powershell provider:' do
 
     it 'should RUN command if unless is NOT triggered' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, unless_not_triggered_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, unless_not_triggered_pp, :expect_changes => true) }
     end
 
     it 'should NOT run command if unless IS triggered' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, unless_triggered_pp, :catch_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, unless_triggered_pp, :catch_changes => true) }
     end
 
   end
@@ -407,12 +365,12 @@ describe 'powershell provider:' do
 
     it 'should NOT run command if onlyif is NOT triggered' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, onlyif_not_triggered_pp, :catch_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, onlyif_not_triggered_pp, :catch_changes => true) }
     end
 
     it 'should RUN command if onlyif IS triggered' do
       # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      powershell_agents.each { |hut| execute_manifest_on(hut, onlyif_triggered_pp, :expect_changes => true) }
+      windows_agents.each { |hut| execute_manifest_on(hut, onlyif_triggered_pp, :expect_changes => true) }
     end
 
   end
@@ -427,24 +385,12 @@ describe 'powershell provider:' do
     MANIFEST
     }
 
-    describe file('c:/services.txt'), :if => windows_agents.count > 0 do
+    describe file('c:/services.txt') do
       let(:file_path) { 'C:/services.txt' }
 
       it 'should apply the manifest' do
         # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
         windows_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
-      end
-
-      it { should be_file }
-      its(:content) { should match /puppet/ }
-    end
-
-    describe file('/services.txt'), :if => posix_agents.count > 0 do
-      let(:file_path) { '/services.txt' }
-
-      it 'should apply the manifest' do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        posix_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
       end
 
       it { should be_file }
@@ -476,7 +422,7 @@ describe 'powershell provider:' do
   end
 
   describe 'should be able to execute a ps1 file provided' do
-    context 'on Windows platforms', :if => windows_agents.count > 0 do
+    context 'on Windows platforms' do
       p2 = <<-MANIFEST
       file{'c:/services.ps1':
         content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
@@ -494,31 +440,10 @@ describe 'powershell provider:' do
         its(:content) { should match /puppet/ }
       end
     end
-
-    context 'on POSIX platforms', :if => posix_agents.count > 0 do
-      p2 = <<-MANIFEST
-      file{'/external-script.ps1':
-        content => '#{File.open(File.join(File.dirname(__FILE__), 'files/get-command-posix.ps1')).read()}'
-      }
-      exec{"TestPowershellPS1":
-        command   => '/external-script.ps1',
-        #{ps_environment}
-        provider  => powershell,
-        require   => File['/external-script.ps1']
-      }
-      MANIFEST
-
-      describe file('/tmp/commands.csv') do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        posix_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
-        it { should be_file }
-        its(:content) { should match /Get-Command/ }
-      end
-    end
   end
 
   describe 'passing parameters to the ps1 file' do
-    context 'on Windows platforms', :if => windows_agents.count > 0 do
+    context 'on Windows platforms' do
       outfile = 'C:/temp/svchostprocess.txt'
       processName = 'svchost'
       pp = <<-MANIFEST
@@ -540,34 +465,9 @@ describe 'powershell provider:' do
         its(:content) { should match /svchost/ }
       end
     end
-
-    context 'on POSIX platforms', :if => posix_agents.count > 0 do
-      outfile = '/tmp/export-command.txt'
-      commandName = 'Export-Csv'
-      pp = <<-MANIFEST
-        $commandName = '#{commandName}'
-        $outFile = '#{outfile}'
-
-        file{'/param_script.ps1':
-          content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script-posix.ps1')).read()}'
-        }
-        exec{'run this with param':
-          provider => powershell,
-          #{ps_environment}
-          command	 => "/param_script.ps1 -CommandName '$commandName' -FileOut '$outFile'",
-          require  => File['/param_script.ps1'],
-      }
-      MANIFEST
-      describe file(outfile) do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        posix_agents.each { |hut| execute_manifest_on(hut, pp, :catch_failures => true) }
-        it { should be_file }
-        its(:content) { should match /Export-Csv/ }
-      end
-    end
   end
 
-  describe 'should execute using 64 bit powershell', :if => windows_agents.count > 0 do
+  describe 'should execute using 64 bit powershell' do
     # Only applicable to Windows platforms
     p3 = <<-MANIFEST
      $maxArchNumber = $::architecture? {
@@ -584,7 +484,7 @@ describe 'powershell provider:' do
     it_should_behave_like 'apply success', p3, windows_agents
   end
 
-  describe 'test admin rights', :if => windows_agents.count > 0 do
+  describe 'test admin rights' do
     # Only applicable to Windows platforms
     ps1 = <<-PS1
       $id = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -605,6 +505,6 @@ describe 'powershell provider:' do
         Write-Error "Failed to import module ${mods[0].Name}"
       }
     PS1
-    it_should_behave_like 'standard exec', pimport, powershell_agents
+    it_should_behave_like 'standard exec', pimport, windows_agents
   end
 end
