@@ -31,8 +31,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exists?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
-    elsif !Puppet::Util::Platform.windows?
-      'pwsh'
     else
       'powershell.exe'
     end
@@ -156,7 +154,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
 
-  describe 'when applying a catalog' do
+  describe 'when applying a catalog', :if => Puppet.features.microsoft_windows? do
     let(:manifest) { <<-MANIFEST
       exec { 'PS':
         command   => 'exit 0',
@@ -205,8 +203,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       transaction
     end
 
-    it 'does not emit a warning message when PowerShellManager is usable in a Windows environment',
-      :if => Puppet.features.microsoft_windows? do
+    it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
 
       PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(false)
 
@@ -218,8 +215,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       apply_compiled_manifest(manifest)
     end
 
-    it 'emits a warning message when PowerShellManager cannot be used in a Windows environment',
-      :if => Puppet.features.microsoft_windows? do
+    it 'emits a warning message when PowerShellManager cannot be used in a Windows environment' do
 
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
       PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(true)
