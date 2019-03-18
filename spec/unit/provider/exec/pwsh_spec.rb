@@ -55,7 +55,8 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         provider.run_spec_override(command)
       end
 
-      it "should quote the path to the temp file", :if => Puppet.features.microsoft_windows? do
+      it "should quote the path to the temp file" do
+        skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
         # Path quoting is only required on Windows
         path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
