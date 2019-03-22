@@ -723,10 +723,23 @@ function ConvertTo-PipeCommand
 
   # Read blocks until all bytes are read or EOF / broken pipe hit - tested with 5MB and worked fine
   $parsed.RawData = New-Object Byte[] $parsed.Length
-  $read = $Stream.Read($parsed.RawData, 0, $parsed.Length)
-  if ($read -lt $parsed.Length)
+  $readBytes = 0
+  do {
+    $attempt = $attempt + 1
+    # This will block if there's not enough data in the pipe
+    $read = $Stream.Read($parsed.RawData, $readBytes, $parsed.Length - $readBytes)
+    if ($read -eq 0)
+    {
+      throw "Catastrophic failure: Expected $($parsed.Length - $readBytesh) raw bytes, but the pipe reached an end of stream"
+    }
+
+    $readBytes = $readBytes + $read
+    Write-SystemDebugMessage -Message "Read $($read) bytes from the pipe"
+  } while ($readBytes -lt $parsed.Length)
+
+  if ($readBytes -lt $parsed.Length)
   {
-    throw "Catastrophic failure: Expected $($parsed.Length) raw bytes, only received $read"
+    throw "Catastrophic failure: Expected $($parsed.Length) raw bytes, only received $readBytes"
   }
 
   # turn the raw bytes into the expected encoded string!
