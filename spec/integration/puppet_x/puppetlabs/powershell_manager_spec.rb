@@ -42,6 +42,11 @@ describe PuppetX::PowerShell::PowerShellManager do
     Puppet::Util::Platform.windows? ? "\r\n" : "\n"
   end
 
+  def is_osx?
+     # Note this test fails if running in JRuby, but because the unit tests are MRI only, this is ok
+    !RUBY_PLATFORM.match(/darwin/).nil?
+  end
+
   let (:manager) { create_manager(ps_command, ps_args) }
 
   describe "when managing the powershell process" do
@@ -325,6 +330,9 @@ describe PuppetX::PowerShell::PowerShellManager do
       expect(result[:stdout]).to eq(nil)
       if Puppet::Util::Platform.windows?
         expect(result[:stderr]).to eq(["'foo.exe' is not recognized as an internal or external command,\r\noperable program or batch file.\r\n"])
+      elsif is_osx?
+        expect(result[:stderr][0]).to match(/foo\.exe: command not found/)
+        expect(result[:stderr][0]).to match(/bar/)
       else
         expect(result[:stderr][0]).to match(/foo\.exe: not found/)
         expect(result[:stderr][0]).to match(/bar/)
