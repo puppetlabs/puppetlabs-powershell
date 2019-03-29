@@ -11,19 +11,7 @@ language: ruby
 cache: bundler
 before_install:
   # Additional instructions
-  # Install PowerShell Core for Ubuntu 14.04
-  # There's an intermittent minor issue with the public key so just reset it with apt-key ... - https://github.com/git-lfs/git-lfs/issues/3474
-  - if [ $TRAVIS_OS_NAME == "linux" ]; then
-      curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -;
-      curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list;
-      sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 6B05F25D762E3157;
-      sudo apt-get update;
-      sudo apt-get install -y powershell;
-    fi
-  # Install PowerShell Core for Mac
-  - if [ $TRAVIS_OS_NAME == "osx" ]; then
-      brew cask install powershell;
-    fi
+  - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
   # Output the PowerShell Core version information
   - pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable
   - if [ $BUNDLER_VERSION ]; then

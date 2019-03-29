@@ -27,10 +27,9 @@ spec/default_facts.yml:
 .travis.yml:
   unmanaged: true
 
+# Due to https://github.com/puppetlabs/pdk-templates/issues/229 we can't manage Appveyor yet.
 appveyor.yml:
-  test_script:
-  - pwsh -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
-  - powershell -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
+  unmanaged: true
 
 .gitlab-ci.yml:
   delete: true
