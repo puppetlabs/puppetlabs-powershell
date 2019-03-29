@@ -46,6 +46,8 @@ test_script:
   - gem -v
   - bundle -v
   - bundle exec rake %CHECK%
+  - pwsh -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
+  - powershell -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
 notifications:
   - provider: Email
     to:
