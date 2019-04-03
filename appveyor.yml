@@ -39,6 +39,11 @@ install:
   - set PATH=C:\Ruby%RUBY_VERSION%\bin;%PATH%
   - bundle install --jobs 4 --retry 2 --without system_tests
   - type Gemfile.lock
+  - ps: "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/raw/master/tools/install-powershell.ps1 -UseBasicParsing -OutFile install-pwsh.ps1"
+  - ps: "& ./install-pwsh.ps1"
+  - set PATH=%LOCALAPPDATA%\Microsoft\powershell;%PATH%
+  - pwsh -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
+  - powershell -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
 build: off
 test_script:
   - bundle exec puppet -V

@@ -274,7 +274,7 @@ Invoke-PowerShellUserCode @params
       def self.is_readable?(stream, timeout = 0.5)
         raise Errno::EPIPE if !is_stream_valid?(stream)
         read_ready = IO.select([stream], [], [], timeout)
-        read_ready && stream == read_ready[0][0]
+        read_ready && stream == read_ready[0][0] && !stream.eof?
       end
 
       # when a stream has been closed by handle, but Ruby still has a file
@@ -395,17 +395,16 @@ Invoke-PowerShellUserCode @params
           # read a Little Endian 32-bit integer for length of response
           expected_response_length = pipe.sysread(4).unpack('V').first
 
-          if expected_response_length == 0
-            nil
-          else
-            # reads the expected bytes as a binary string or fails
-            buffer = ""
-            # Reads in the pipe data 8K, or less, at a time
-            while (buffer.length < expected_response_length)
-              buffer << pipe.sysread([expected_response_length - buffer.length, 8192].min)
-            end
-            buffer
+          next nil if expected_response_length == 0
+          # reads the expected bytes as a binary string or fails
+          buffer = ""
+          # sysread may not return all of the requested bytes due to buffering or the
+          # underlying IO system. Keep reading from the pipe until all the bytes are read
+          loop do
+            buffer.concat(pipe.sysread(expected_response_length - buffer.length))
+            break if buffer.length >= expected_response_length
           end
+          buffer
         end
 
         Puppet.debug "Waited #{Time.now - start_time} total seconds."
