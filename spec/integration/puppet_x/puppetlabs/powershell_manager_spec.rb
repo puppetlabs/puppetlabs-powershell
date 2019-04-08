@@ -178,8 +178,12 @@ describe PuppetX::PowerShell::PowerShellManager do
         expect_different_manager_returned_than(manager, first_pid)
       end
 
-      context "on Windows", :if => Puppet::Util::Platform.windows? do
+      context "on Windows" do
         # On Windows we're using named pipes so these tests only apply on Windows.
+        before :each do
+          skip('Not on Windows platform') unless Puppet::Util::Platform.windows?   
+        end
+
         it "should create a new PowerShell manager host if the input stream is closed" do
           first_pid = manager.execute('[Diagnostics.Process]::GetCurrentProcess().Id')[:stdout]
 
@@ -655,12 +659,13 @@ $bytes_in_k = (1024 * 64) + 11
       expect(result[:errormessage]).to match(/Working directory .+ does not exist/)
     end
 
-    it "should allow forward slashes in working directory", :if => Puppet::Util::Platform.windows? do
+    it "should allow forward slashes in working directory" do
+      skip('Not on Windows platform') unless Puppet::Util::Platform.windows?
       # Backslashes only apply on Windows filesystems
       work_dir = ENV["WINDIR"]
       forward_work_dir = work_dir.gsub('\\','/')
 
-      result = manager.execute('(Get-Location).Path',nil,work_dir)[:stdout]
+      result = manager.execute('(Get-Location).Path',nil,forward_work_dir)[:stdout]
 
       expect(result).to eq("#{work_dir}#{line_end}")
     end
@@ -810,18 +815,22 @@ $bytes_in_k = (1024 * 64) + 11
 end
 end
 
-if Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?
-  describe "On Windows PowerShell" do
-    it_should_behave_like "a PowerShellManager",
-      Puppet::Type.type(:exec).provider(:powershell).command(:powershell),
-      Puppet::Type.type(:exec).provider(:powershell).powershell_args
+describe "On Windows PowerShell" do
+  before :each do
+    skip unless Puppet::Util::Platform.windows? && PuppetX::PowerShell::PowerShellManager.supported?
   end
+
+  it_should_behave_like "a PowerShellManager",
+    Puppet::Type.type(:exec).provider(:powershell).command(:powershell),
+    Puppet::Type.type(:exec).provider(:powershell).powershell_args
 end
 
-if PuppetX::PowerShell::PowerShellManager.supported_on_pwsh? && !Puppet::Type.type(:exec).provider(:pwsh).new().get_pwsh_command.nil?
-  describe "On PowerShell Core" do
-    it_should_behave_like "a PowerShellManager",
-      Puppet::Type.type(:exec).provider(:pwsh).new().get_pwsh_command,
-      Puppet::Type.type(:exec).provider(:pwsh).new().pwsh_args
+describe "On PowerShell Core" do
+  before :each do
+    skip unless PuppetX::PowerShell::PowerShellManager.supported_on_pwsh? && !Puppet::Type.type(:exec).provider(:pwsh).new().get_pwsh_command.nil?
   end
+
+  it_should_behave_like "a PowerShellManager",
+    Puppet::Type.type(:exec).provider(:pwsh).new().get_pwsh_command,
+    Puppet::Type.type(:exec).provider(:pwsh).new().pwsh_args
 end

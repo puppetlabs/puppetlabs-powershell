@@ -141,7 +141,11 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   describe 'when specifying a working directory' do
-    describe 'that does not exist on Windows', :if => Puppet.features.microsoft_windows? do
+    describe 'that does not exist on Windows' do
+      before :each do
+        skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
+      end
+
       # This working directory error is specific to the PowerShell manager on Windows.
       let(:work_dir)  { "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" }
       let(:command)  { 'exit 0' }
@@ -154,7 +158,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
 
-  describe 'when applying a catalog', :if => Puppet.features.microsoft_windows? do
+  describe 'when applying a catalog' do
     let(:manifest) { <<-MANIFEST
       exec { 'PS':
         command   => 'exit 0',
@@ -165,6 +169,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
 
     before :each do
+      skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
       # a statedir setting must now exist per the new transactionstore code
       # introduced in Puppet 4.6 for corrective changes, as a new YAML file
       # called transactionstore.yaml will be written under this path
