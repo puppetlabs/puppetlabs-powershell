@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 
 ## [Unreleased]
 
+## [2.3.0] - 2019-04-19
+
+### Added
+
+- Metadata for supporting Windows Server 2019 ([FM-7693](https://tickets.puppetlabs.com/browse/FM-7693))
+- Added a 'pwsh' provider for PowerShell Core ([MODULES-8355](https://tickets.puppetlabs.com/browse/MODULES-8355), [MODULES-8356](https://tickets.puppetlabs.com/browse/MODULES-8356), [MODULES-8357](https://tickets.puppetlabs.com/browse/MODULES-8357), [MODULES-8358](https://tickets.puppetlabs.com/browse/MODULES-8358), [MODULES-8359](https://tickets.puppetlabs.com/browse/MODULES-8359))
+- Updated metadata for PowerShell Core support (CentOS, Debian, Fedora, OSX and RedHat) ([MODULES-8356](https://tickets.puppetlabs.com/browse/MODULES-8356))
+
+### Changed
+
+- Only initialise constant when not defined ([MODULES-7067](https://tickets.puppetlabs.com/browse/MODULES-7067))
+
+### Fixed
+
+- Improved pipe reading in the PowerShell Manager ([MODULES-8748](https://tickets.puppetlabs.com/browse/MODULES-8748))
+
 ## [2.2.0] - 2018-10-29
 
 ### Added
@@ -168,3 +184,23 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) a
 ### Fixed
 
 - Fixed issue with metadata and PE version requirement
+
+[Unreleased]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.3.0...master
+[2.3.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.2.0...2.3.0
+[2.2.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.5...2.2.0
+[2.1.5]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.4...2.1.5
+[2.1.4]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.3...2.1.4
+[2.1.3]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.2...2.1.3
+[2.1.2]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.1...2.1.2
+[2.1.1]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.0...2.1.1
+[2.1.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.0.3...2.1.0
+[2.0.3]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.0.2...2.0.3
+[2.0.2]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.0.1...2.0.2
+[2.0.1]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.0.0...2.0.1
+[2.0.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.6...2.0.0
+[1.0.6]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.5...1.0.6
+[1.0.5]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.4...1.0.5
+[1.0.4]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.3...1.0.4
+[1.0.3]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.2...1.0.3
+[1.0.2]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.1...1.0.2
+[1.0.1]: https://github.com/puppetlabs/puppetlabs-powershell/compare/1.0.0...1.0.1
