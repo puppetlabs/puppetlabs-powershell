@@ -26,11 +26,11 @@ Puppet provides a built-in `exec` type that is capable of executing commands. Th
 
 ### Requirements
 
-The `powershell` provider requires [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) and have `powershell.exe` available in the system PATH. Note that most Windows operating systems already have Windows PowerShell installed.
+The `powershell` provider requires you install [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) and have `powershell.exe` available in the system PATH. Note that most Windows operating systems already have Windows PowerShell installed.
 
 The `pwsh` provider requires you install [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) and make `pwsh` available either in the system PATH or specified in the `path` parameter.
 
-For example, when PowerShell Core is installed in `/usr/alice/pscore` the following manifest is needed:
+For example, when you install PowerShell Core in `/usr/alice/pscore`, you need the following manifest:
 
 ~~~ puppet
 exec { 'RESOURCENAME':
@@ -141,9 +141,9 @@ However, to produce output from a script, use the `Write-` prefixed cmdlets such
 
 #### Provider
 
-* powershell: Adapts the Puppet `exec` resource to run [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) commands.
+* `powershell`: Adapts the Puppet `exec` resource to run [Windows PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-5.1) commands.
 
-* pwsh: Adapts the Puppet `exec` resource to run [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) commands.
+* `pwsh`: Adapts the Puppet `exec` resource to run [PowerShell Core](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) commands.
 
 #### Parameters
 
@@ -209,8 +209,12 @@ Runs the `exec`, unless the command returns 0. Valid options: String. Default: U
 
 ## Limitations
 
-* The `powershell` provider is only supported on Windows Server 2008 and above, and Windows 7 and above.
+* The `powershell` provider is only supported on:
 
+  * Windows Server 2008 and above
+  
+  * Windows 7 and above
+   
 * The `pwsh` provider is supported on:
 
   * CentOS 7
