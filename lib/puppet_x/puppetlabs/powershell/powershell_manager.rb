@@ -14,7 +14,7 @@ module PuppetX
       def self.default_options
         {
           debug: false,
-          pipe_timeout: 30
+          pipe_timeout: 180
         }
       end
 
@@ -85,7 +85,7 @@ module PuppetX
 
         Puppet.debug "#{Time.now} #{cmd} is running as pid: #{@ps_process[:pid]}"
 
-        # wait up to 30 seconds in 0.2 second intervals to be able to open the pipe
+        # wait up to 180 seconds in 0.2 second intervals to be able to open the pipe
         # If the pipe_timeout is ever specified as less than the sleep interval it will
         # never try to connect to a pipe and error out as if a timeout occurred.
         sleep_interval = 0.2
