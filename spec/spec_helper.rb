@@ -19,7 +19,7 @@ default_fact_files.each do |f|
   next unless File.exist?(f) && File.readable?(f) && File.size?(f)
 
   begin
-    default_facts.merge!(YAML.safe_load(File.read(f), [], [], true))
+    default_facts.merge!(YAML.safe_load(File.read(f)))
   rescue => e
     RSpec.configuration.reporter.message "WARNING: Unable to load #{f}: #{e}"
   end
@@ -31,9 +31,6 @@ RSpec.configure do |c|
     # set to strictest setting for testing
     # by default Puppet runs at warning level
     Puppet.settings[:strict] = :warning
-  end
-  c.filter_run_excluding(bolt: true) unless ENV['GEM_BOLT']
-  c.after(:suite) do
   end
 end
 
