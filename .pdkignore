@@ -23,7 +23,6 @@
 /update_report.txt
 .DS_Store
 .project
-.vscode/
 .envrc
 /inventory.yaml
 /appveyor.yml
@@ -40,3 +39,4 @@
 /.travis.yml
 /.yardopts
 /spec/
+/.vscode/
