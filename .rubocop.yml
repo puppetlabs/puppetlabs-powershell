@@ -19,6 +19,8 @@ AllCops:
   - "**/Vagrantfile"
   - "**/Guardfile"
 inherit_from: ".rubocop_todo.yml"
+GetText:
+  Enabled: false
 Bundler/DuplicatedGem:
   Enabled: false
 Bundler/OrderedGems:
