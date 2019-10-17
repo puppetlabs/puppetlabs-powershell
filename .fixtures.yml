@@ -1,4 +1,5 @@
 fixtures:
   forge_modules:
+    pwshlib: "puppetlabs/pwshlib"
   symlinks:
     "powershell": "#{source_dir}"
