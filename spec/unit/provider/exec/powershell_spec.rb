@@ -1,7 +1,6 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
-require 'puppet_x/puppetlabs/powershell/powershell_manager'
 require 'fileutils'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
@@ -39,7 +38,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   describe "#run" do
     context "stubbed calls" do
       before :each do
-        PuppetX::PowerShell::PowerShellManager.stubs(:supported?).returns(false)
+        Pwsh::Manager.stubs(:windows_powershell_supported?).returns(false)
         Puppet::Provider::Exec.any_instance.stubs(:run)
       end
 
@@ -108,7 +107,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
           output, status = provider.run(command)
 
-          if PuppetX::PowerShell::PowerShellManager.supported?
+          if Pwsh::Manager.windows_powershell_supported?
             expected = "foo\r\n"
           else
             # when PowerShellManager is not used, the v1 style module collected
@@ -210,9 +209,9 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
 
-      PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(false)
+      Pwsh::Manager.stubs(:win32console_enabled?).returns(false)
 
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(true)
+      expect(Pwsh::Manager.windows_powershell_supported?).to eq(true)
 
       # given PowerShellManager is supported, never emit an upgrade message
       Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
@@ -223,9 +222,9 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     it 'emits a warning message when PowerShellManager cannot be used in a Windows environment' do
 
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
-      PuppetX::PowerShell::PowerShellManager.stubs(:win32console_enabled?).returns(true)
+      Pwsh::Manager.stubs(:win32console_enabled?).returns(true)
 
-      expect(PuppetX::PowerShell::PowerShellManager.supported?).to eq(false)
+      expect(Pwsh::Manager.windows_powershell_supported?).to eq(false)
 
       # given PowerShellManager is NOT supported, emit an upgrade message
       Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).once
