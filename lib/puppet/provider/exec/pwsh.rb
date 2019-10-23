@@ -1,4 +1,5 @@
 require 'puppet/provider/exec'
+require 'ruby-pwsh'
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   desc <<-EOT
@@ -17,8 +18,8 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   def run(command, check = false)
     @pwsh ||= get_pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
-    if PuppetX::PowerShell::PowerShellManager.supported_on_pwsh?
-      return ps_manager.execute_resource(command, resource)
+    if Pwsh::Manager.pwsh_supported?
+      return execute_resource(command, resource)
     else
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
@@ -49,35 +50,11 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   #
   # @return [String] the absolute path to the found pwsh executable.  Returns nil when it does not exist
   def get_pwsh_command
-    if Puppet::Util::Platform.windows?
-      # Environment variables on Windows are not case sensitive however ruby hash keys are.
-      # Convert all the key names to upcase so we can be sure to find PATH etc.
-      # Also while ruby can have difficulty changing the case of some UTF8 characters, we're
-      # only going to use plain ASCII names so this is safe.
-      current_env = Hash[Puppet::Util.get_environment.map {|k, v| [k.upcase, v] }]
-    else
-      # We don't force a case change on non-Windows platforms because it is perfectly
-      # ok to have 'Path' and 'PATH'
-      current_env = Puppet::Util.get_environment
-    end
     # If the resource specifies a search path use that. Otherwise use the default
     # PATH from the environment.
-    search_paths = @resource.nil? || @resource['path'].nil? ?
-      current_env['PATH'] :
-      resource[:path].join(File::PATH_SEPARATOR)
-
-    # If we're on Windows, try the default installation locations as a last resort.
-    # https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell-core-on-windows?view=powershell-6#msi
-    if Puppet::Util::Platform.windows?
-      search_paths += ";#{current_env['PROGRAMFILES']}\\PowerShell\\6" +
-        ";#{current_env['PROGRAMFILES(X86)']}\\PowerShell\\6"
-    end
-
-    # Note that just like when we run the command in Puppet::Provider::Exec, the
-    # resource[:path] replaces the PATH, it doesn't add to it.
-    Puppet::Util.withenv({'PATH' => search_paths}, Puppet::Util.default_env) do
-      return Puppet::Util.which('pwsh')
-    end
+    @resource.nil? || @resource['path'].nil? ?
+      Pwsh::Manager.pwsh_path :
+      Pwsh::Manager.pwsh_path(resource[:path])
   end
 
   def pwsh_args
@@ -89,10 +66,35 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   # Retrieves the PowerShell manager specific to our pwsh binary in this resource
   #
   # @api private
-  # @return [PuppetX::PowerShell::PowerShellManager] The PowerShell manager for this resource
+  # @return [Pwsh::Manager] The PowerShell manager for this resource
   def ps_manager
     debug_output = Puppet::Util::Log.level == :debug
-    PuppetX::PowerShell::PowerShellManager.instance(@pwsh, pwsh_args, debug: debug_output)
+    Pwsh::Manager.instance(@pwsh, pwsh_args, debug: debug_output)
+  end
+
+  def execute_resource(powershell_code, resource)
+    working_dir = resource[:cwd]
+    if (!working_dir.nil?)
+      fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
+    end
+    timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
+    environment_variables = resource[:environment].nil? ? [] : resource[:environment]
+
+    result = ps_manager.execute(powershell_code, timeout_ms, working_dir, environment_variables)
+    stdout     = result[:stdout]
+    native_out = result[:native_stdout]
+    stderr     = result[:stderr]
+    exit_code  = result[:exitcode]
+
+    unless stderr.nil?
+      stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
+    end
+
+    Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
+
+    output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
+
+    return output, output
   end
 
   def write_script(content, &block)

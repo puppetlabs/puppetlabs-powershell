@@ -1,13 +1,6 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
-require 'fileutils'
-
-class MockPowerShellManager
-  def execute_resource(*_args)
-    return "", ""
-  end
-end
 
 describe Puppet::Type.type(:exec).provider(:pwsh) do
   # Override the run value so we can test the super call
@@ -26,18 +19,18 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
   before :each do
     # Always assume the pwsh binary is available
-    provider.stubs(:get_pwsh_command).returns('somepath/pwsh')
+    Pwsh::Manager.stubs(:pwsh_path).returns('somepath/pwsh')
   end
 
   describe "#run" do
     before :each do
       Puppet::Provider::Exec.any_instance.stubs(:run)
-      PuppetX::PowerShell::PowerShellManager.stubs(:instance).returns(MockPowerShellManager.new)
+      provider.stubs(:execute_resource).returns('', '')
     end
 
     context 'when the powershell manager is not supported' do
       before :each do
-        PuppetX::PowerShell::PowerShellManager.stubs(:supported_on_pwsh?).returns(false)
+        Pwsh::Manager.stubs(:pwsh_supported?).returns(false)
       end
 
       let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
@@ -76,7 +69,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
       context 'when specifying a path' do
         let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
-        let(:pwsh_path) { path + '/pwsh' }
+        let(:pwsh_path) { Puppet::Util::Platform.windows? ? path + '/pwsh.exe' : path + '/pwsh' }
         let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
         let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
 
@@ -84,12 +77,11 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
         it 'should prefer pwsh in the specified path' do
           # Pretend that only the test pwsh binary exists.
-          FileTest.stubs(:file?).with() { |value| value == pwsh_path}.returns(true)
-          FileTest.stubs(:file?).with() { |value| value != pwsh_path}.returns(false)
-          FileTest.stubs(:executable?).with() { |value| value == pwsh_path}.returns(true)
-          FileTest.stubs(:executable?).with() { |value| value != pwsh_path}.returns(false)
+          File.stubs(:exist?).with() { |value| value == pwsh_path}.returns(true)
+          File.stubs(:exist?).with() { |value| value != pwsh_path}.returns(false)
+
           # Remove the global stub here as we're testing this method
-          provider.unstub(:get_pwsh_command)
+          Pwsh::Manager.unstub(:pwsh_path)
 
           Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
             with(regexp_matches(native_pwsh_path_regex), false)
@@ -102,8 +94,8 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     it "should only attempt to find pwsh once when pwsh exists" do
       # Need to unstub to force the 'only once' expectation. Otherwise the
       # previous stub takes over if it's called more than once.
-      provider.unstub(:get_pwsh_command)
-      provider.expects(:get_pwsh_command).once.returns('somepath/pwsh')
+      Pwsh::Manager.unstub(:pwsh_path)
+      Pwsh::Manager.expects(:pwsh_path).once.returns('somepath/pwsh')
 
       provider.run_spec_override(command)
       provider.run_spec_override(command)
