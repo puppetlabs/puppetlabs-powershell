@@ -1,7 +1,10 @@
 require 'puppet/provider/exec'
-require 'ruby-pwsh'
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
+  confine :feature => :ruby_pwsh
+
+  include Pwsh if Puppet.features.ruby_pwsh?
+
   desc <<-EOT
     Executes PowerShell Core commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.

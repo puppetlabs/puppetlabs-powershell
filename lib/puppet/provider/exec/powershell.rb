@@ -1,10 +1,12 @@
 require 'puppet/provider/exec'
-require 'ruby-pwsh'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
+  confine :feature => :ruby_pwsh
 
-  commands :powershell => Pwsh::Manager.powershell_path
+  include Pwsh if Puppet.features.ruby_pwsh?
+
+  commands :powershell => defined?(Pwsh::Manager.powershell_path) ? Pwsh::Manager.powershell_path : nil
 
   desc <<-EOT
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
@@ -41,6 +43,10 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   Puppet (including 3.x), or to a Puppet version newer than 3.x and ensure you
   have .NET Framework 3.5 installed.
   UPGRADE
+
+  def self.powershell_command
+    Pwsh::Manager.powershell_path.defined? ? Pwsh::Manager.powershell_path : nil
+  end
 
   def self.upgrade_message
     Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG if !@upgrade_warning_issued
