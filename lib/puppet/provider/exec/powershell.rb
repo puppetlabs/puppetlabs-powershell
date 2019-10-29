@@ -1,12 +1,8 @@
 require 'puppet/provider/exec'
+require 'puppet_x/powershell/util'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
-  confine :feature => :ruby_pwsh
-
-  include Pwsh if Puppet.features.ruby_pwsh?
-
-  commands :powershell => defined?(Pwsh::Manager.powershell_path) ? Pwsh::Manager.powershell_path : nil
 
   desc <<-EOT
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
@@ -44,23 +40,25 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   have .NET Framework 3.5 installed.
   UPGRADE
 
-  def self.powershell_command
-    Pwsh::Manager.powershell_path.defined? ? Pwsh::Manager.powershell_path : nil
+  def get_powershell_command
+    defined?(Pwsh::Manager.powershell_path) ? Pwsh::Manager.powershell_path : nil
   end
 
-  def self.upgrade_message
+  def upgrade_message
     Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG if !@upgrade_warning_issued
     @upgrade_warning_issued = true
   end
 
   def ps_manager
     debug_output = Puppet::Util::Log.level == :debug
-    Pwsh::Manager.instance(command(:powershell), Pwsh::Manager.powershell_args, debug: debug_output)
+    Pwsh::Manager.instance(@powershell_command, Pwsh::Manager.powershell_args, debug: debug_output)
   end
 
   def run(command, check = false)
+    PuppetX::PowerShell::Util.load_lib unless PuppetX::PowerShell::Util.lib_loaded?
+    @powershell_command ||= get_powershell_command
     unless Pwsh::Manager.windows_powershell_supported?
-      self.class.upgrade_message
+      upgrade_message
       write_script(command) do |native_path|
         # Ideally, we could keep a handle open on the temp file in this
         # process (to prevent TOCTOU attacks), and execute powershell
@@ -70,7 +68,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         # we redirect powershell's stdin to read from the file. Current
         # versions of Windows use per-user temp directories with strong
         # permissions, but I'd rather not make (poor) assumptions.
-        return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        return super("cmd.exe /c \"\"#{native_path(@powershell_command)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
       end
     else
       return execute_resource(command, resource)

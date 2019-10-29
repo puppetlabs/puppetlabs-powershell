@@ -2,6 +2,7 @@
 require 'spec_helper'
 require 'puppet/util'
 require 'fileutils'
+require 'ruby-pwsh'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 
@@ -48,6 +49,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
+      it "should raise an upgrade message warning" do
+        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:upgrade_message).once
+
+        provider.run_spec_override(command)
+      end
+
       context "on windows", :if => Puppet.features.microsoft_windows? do
         it "should call cmd.exe /c" do
           Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
@@ -84,6 +91,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
     context "actual runs" do
       context "on Windows", :if => Puppet.features.microsoft_windows? do
+
         it "returns the output and status" do
           output, status = provider.run(command)
 
@@ -154,82 +162,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       it 'emits an error when working directory does not exist' do
         expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/)
       end
-    end
-  end
-
-  describe 'when applying a catalog' do
-    let(:manifest) { <<-MANIFEST
-      exec { 'PS':
-        command   => 'exit 0',
-        provider  => powershell,
-      }
-    MANIFEST
-    }
-    let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
-
-    before :each do
-      skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
-      # a statedir setting must now exist per the new transactionstore code
-      # introduced in Puppet 4.6 for corrective changes, as a new YAML file
-      # called transactionstore.yaml will be written under this path
-      # which defaults to c:\dev\null when not set on Windows
-      Puppet[:statedir] = tmpdir
-    end
-
-    after :each do
-      FileUtils.rm_rf(tmpdir)
-    end
-
-    def compile_to_catalog(string, node = Puppet::Node.new('foonode'))
-      Puppet[:code] = string
-
-      # see lib/puppet/indirector/catalog/compiler.rb#filter
-      Puppet::Parser::Compiler.compile(node).filter { |r| r.virtual? }
-    end
-
-    def compile_to_ral(manifest)
-      catalog = compile_to_catalog(manifest)
-      ral = catalog.to_ral
-      ral.finalize
-      ral
-    end
-
-    def apply_compiled_manifest(manifest)
-      catalog = compile_to_ral(manifest)
-
-      # ensure compilation works from Puppet 3.0.0 forward
-      args = [catalog, Puppet::Transaction::Report.new('apply')]
-      args << Puppet::Graph::SequentialPrioritizer.new if defined?(Puppet::Graph)
-      transaction = Puppet::Transaction.new(*args)
-      transaction.evaluate
-      transaction.report.finalize_report
-
-      transaction
-    end
-
-    it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
-
-      Pwsh::Manager.stubs(:win32console_enabled?).returns(false)
-
-      expect(Pwsh::Manager.windows_powershell_supported?).to eq(true)
-
-      # given PowerShellManager is supported, never emit an upgrade message
-      Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
-
-      apply_compiled_manifest(manifest)
-    end
-
-    it 'emits a warning message when PowerShellManager cannot be used in a Windows environment' do
-
-      # pretend we're Ruby 1.9.3 / Puppet 3.x x86
-      Pwsh::Manager.stubs(:win32console_enabled?).returns(true)
-
-      expect(Pwsh::Manager.windows_powershell_supported?).to eq(false)
-
-      # given PowerShellManager is NOT supported, emit an upgrade message
-      Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).once
-
-      apply_compiled_manifest(manifest)
     end
   end
 end
