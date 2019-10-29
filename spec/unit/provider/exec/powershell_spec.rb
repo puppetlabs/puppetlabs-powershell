@@ -2,7 +2,6 @@
 require 'spec_helper'
 require 'puppet/util'
 require 'fileutils'
-require 'ruby-pwsh'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
 

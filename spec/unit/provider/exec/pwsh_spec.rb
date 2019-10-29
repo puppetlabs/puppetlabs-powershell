@@ -1,7 +1,6 @@
 #! /usr/bin/env ruby
 require 'spec_helper'
 require 'puppet/util'
-require 'ruby-pwsh'
 
 describe Puppet::Type.type(:exec).provider(:pwsh) do
   # Override the run value so we can test the super call

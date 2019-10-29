@@ -1,5 +1,9 @@
 require 'puppet/provider/exec'
-require 'puppet_x/powershell/util'
+begin
+  require 'ruby-pwsh'
+rescue LoadError
+  raise 'Could not load the "ruby-pwsh" library; is the module puppetlabs-pwshlib installed in this environment?'
+end
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
   confine :operatingsystem => :windows
@@ -55,7 +59,6 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def run(command, check = false)
-    PuppetX::PowerShell::Util.load_lib unless PuppetX::PowerShell::Util.lib_loaded?
     @powershell_command ||= get_powershell_command
     unless Pwsh::Manager.windows_powershell_supported?
       upgrade_message

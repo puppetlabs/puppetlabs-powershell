@@ -1,4 +1,9 @@
 require 'puppet/provider/exec'
+begin
+  require 'ruby-pwsh'
+rescue LoadError
+  raise 'Could not load the "ruby-pwsh" library; is the module puppetlabs-pwshlib installed in this environment?'
+end
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   desc <<-EOT
@@ -15,7 +20,6 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   EOT
 
   def run(command, check = false)
-    PuppetX::PowerShell::Util.load_lib unless PuppetX::PowerShell::Util.lib_loaded?
     @pwsh ||= get_pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
     if Pwsh::Manager.pwsh_supported?
