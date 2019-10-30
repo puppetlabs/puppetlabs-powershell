@@ -1,5 +1,9 @@
 require 'puppet/provider/exec'
-require 'ruby-pwsh'
+begin
+  require 'ruby-pwsh'
+rescue LoadError
+  raise 'Could not load the "ruby-pwsh" library; is the dependency module puppetlabs-pwshlib installed in this environment?'
+end
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   desc <<-EOT
