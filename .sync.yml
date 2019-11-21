@@ -26,7 +26,5 @@ Gemfile:
     - gem: master_manipulator
     - gem: puppet-blacksmith
       version: "~> 3.4"
-spec/default_facts.yml:
-  unmanaged: true
 spec/spec_helper.rb:
   coverage_report: true
