@@ -23,6 +23,14 @@ Bundler/DuplicatedGem:
   Enabled: false
 Bundler/OrderedGems:
   Enabled: false
+GetText/DecorateFunctionMessage:
+  Enabled: false
+GetText/DecorateString:
+  Enabled: false
+GetText/DecorateStringFormattingUsingInterpolation:
+  Enabled: false
+GetText/DecorateStringFormattingUsingPercent:
+  Enabled: false
 Layout/AccessModifierIndentation:
   Enabled: false
 Layout/AlignArray:
