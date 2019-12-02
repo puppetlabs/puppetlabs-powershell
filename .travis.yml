@@ -1,22 +1,14 @@
 ---
 os:
   - linux
-  # OSX Only tests on the latest Puppet Gem, not the full matrix as there's no need to double up
-  # testing effort here. We are only concerned about whether the Mac OSX edition of PowerShell Core
-  # will work with our PowerShell manager code.
   - osx
-
 dist: xenial
 language: ruby
 cache: bundler
 before_install:
-  # Additional instructions
   - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
-  # Output the PowerShell Core version information
-  - pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable
-  - if [ $BUNDLER_VERSION ]; then
-      gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri;
-    fi
+  - pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information
+  - if [ $BUNDLER_VERSION ]; then gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri; fi
   - bundle -v
   - rm -f Gemfile.lock
   - gem update --system $RUBYGEMS_VERSION

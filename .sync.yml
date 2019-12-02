@@ -5,7 +5,16 @@
   include_todos: true
   selected_profile: false
 ".travis.yml":
-  unmanaged: true
+  simplecov: true
+  os:
+    - linux
+    - osx
+  before_install_pre:
+    - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
+    - 'pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information'
+    - if [ $BUNDLER_VERSION ]; then
+        gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri;
+      fi
 appveyor.yml:
   unmanaged: true
 Gemfile:
