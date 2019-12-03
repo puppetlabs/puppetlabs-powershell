@@ -30,6 +30,13 @@ group :development do
   gem "puppet-module-win-dev-r#{minor_version}", '~> 0.3',       require: false, platforms: [:mswin, :mingw, :x64_mingw]
   gem "ruby-pwsh",                                               require: false
 end
+group :system_tests do
+  gem "puppet-module-posix-system-r#{minor_version}", require: false, platforms: [:ruby]
+  gem "puppet-module-win-system-r#{minor_version}",   require: false, platforms: [:mswin, :mingw, :x64_mingw]
+  gem "beaker-testmode_switcher", '~> 0.4',           require: false
+  gem "master_manipulator",                           require: false
+  gem "puppet-blacksmith", '~> 3.4',                  require: false
+end
 
 puppet_version = ENV['PUPPET_GEM_VERSION']
 facter_version = ENV['FACTER_GEM_VERSION']

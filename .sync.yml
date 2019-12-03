@@ -12,5 +12,19 @@ Gemfile:
   optional:
     ":development":
     - gem: ruby-pwsh
+  required:	
+    ':system_tests':	
+      - gem: 'puppet-module-posix-system-r#{minor_version}'	
+        platforms: ruby	
+      - gem: 'puppet-module-win-system-r#{minor_version}'	
+        platforms:	
+          - mswin	
+          - mingw	
+          - x64_mingw	
+      - gem: beaker-testmode_switcher	
+        version: '~> 0.4'	
+      - gem: master_manipulator	
+      - gem: puppet-blacksmith	
+        version: '~> 3.4'
 spec/spec_helper.rb:
   coverage_report: true
