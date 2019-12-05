@@ -37,6 +37,11 @@ matrix:
       rvm: 2.4.5
       stage: spec
     -
+      os: osx
+      env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
+      rvm: 2.5.3
+      stage: spec
+    -
       env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
       rvm: 2.5.3
       stage: spec
