@@ -6,15 +6,18 @@
   selected_profile: false
 ".travis.yml":
   simplecov: true
-  os:
-    - linux
-    - 'osx # only tests Mac OSX edition of PowerShell Core'
   before_install_pre:
     - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
     - 'pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information'
     - if [ $BUNDLER_VERSION ]; then
         gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri;
       fi
+  includes:
+    - os: osx
+      comment: test Mac OSX edition of PowerShell Core on a single job
+      env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
+      rvm: 2.5.3
+      stage: acceptance
 appveyor.yml:
   simplecov: true
   install_post:
