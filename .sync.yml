@@ -5,26 +5,44 @@
   include_todos: true
   selected_profile: false
 ".travis.yml":
-  unmanaged: true
+  simplecov: true
+  before_install_pre:
+    - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
+    - 'pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information'
+    - if [ $BUNDLER_VERSION ]; then
+        gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri;
+      fi
+  includes:
+    - os: osx
+      comment: test Mac OSX edition of PowerShell Core on a single job
+      env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
+      rvm: 2.5.3
+      stage: acceptance
 appveyor.yml:
-  unmanaged: true
+  simplecov: true
+  install_post:
+    - 'ps: "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/raw/master/tools/install-powershell.ps1 -UseBasicParsing -OutFile install-pwsh.ps1"'
+    - 'ps: "& ./install-pwsh.ps1"'
+    - set PATH=%LOCALAPPDATA%\Microsoft\powershell;%PATH%
+    - pwsh -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
+    - powershell -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
 Gemfile:
   optional:
     ":development":
     - gem: ruby-pwsh
-  required:	
-    ':system_tests':	
-      - gem: 'puppet-module-posix-system-r#{minor_version}'	
-        platforms: ruby	
-      - gem: 'puppet-module-win-system-r#{minor_version}'	
-        platforms:	
-          - mswin	
-          - mingw	
-          - x64_mingw	
-      - gem: beaker-testmode_switcher	
-        version: '~> 0.4'	
-      - gem: master_manipulator	
-      - gem: puppet-blacksmith	
+  required:
+    ':system_tests':
+      - gem: 'puppet-module-posix-system-r#{minor_version}'
+        platforms: ruby
+      - gem: 'puppet-module-win-system-r#{minor_version}'
+        platforms:
+          - mswin
+          - mingw
+          - x64_mingw
+      - gem: beaker-testmode_switcher
+        version: '~> 0.4'
+      - gem: master_manipulator
+      - gem: puppet-blacksmith
         version: '~> 3.4'
 spec/spec_helper.rb:
   coverage_report: true
