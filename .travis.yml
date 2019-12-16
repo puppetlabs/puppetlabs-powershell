@@ -48,3 +48,5 @@ branches:
     - /^v\d/
 notifications:
   email: false
+  slack:
+    secure: Yqv+S1Bwz19bor4xu3v7i5rLPzQuwTSZhO5wjsrX+jhKDN5/+e7e53x/v3Onjdrn9rjwFAxwzciAte0MO96xLFjyzWyUSziGur8/v3TcbRnnVQMOnIEj0HfmyLbx1cpxGK9V8MPsWQVAoHCklTtZIsRjMw0PcD8+aVKVF3NcBK4=
