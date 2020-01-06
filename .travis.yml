@@ -8,7 +8,9 @@ before_install:
   - if [ $BUNDLER_VERSION ]; then gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri; fi
   - bundle -v
   - rm -f Gemfile.lock
-  - gem update --system $RUBYGEMS_VERSION
+  - "# Update system gems if requested. This is useful to temporarily workaround troubles in the test runner"
+  - "# See https://github.com/puppetlabs/pdk-templates/commit/705154d5c437796b821691b707156e1b056d244f for an example of how this was used"
+  - '[ -z "$RUBYGEMS_VERSION" ] || yes | gem update --system $RUBYGEMS_VERSION'
   - gem --version
   - bundle -v
 script:
