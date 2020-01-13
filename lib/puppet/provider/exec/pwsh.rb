@@ -1,11 +1,8 @@
 require 'puppet/provider/exec'
-begin
-  require 'ruby-pwsh'
-rescue LoadError
-  raise 'Could not load the "ruby-pwsh" library; is the dependency module puppetlabs-pwshlib installed in this environment?'
-end
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
+  confine :feature => :pwshlib
+  
   desc <<-EOT
     Executes PowerShell Core commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.
