@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v3.0.1](https://github.com/puppetlabs/puppetlabs-powershell/tree/v3.0.1) (2020-01-15)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v3.0.0...v3.0.1)
+
+### Fixed
+
+- \(MODULES-10389\) - Safeguard powershell provider loading [\#277](https://github.com/puppetlabs/puppetlabs-powershell/pull/277) ([michaeltlombardi](https://github.com/michaeltlombardi))
+
 ## [v3.0.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v3.0.0) (2020-01-06)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/2.3.0...v3.0.0)
