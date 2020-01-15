@@ -5,6 +5,8 @@
   include_todos: true
   selected_profile: false
 ".travis.yml":
+  deploy_to_forge:
+    enabled: false
   simplecov: true
   before_install_pre:
     - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
