@@ -3,9 +3,6 @@ dist: xenial
 language: ruby
 cache: bundler
 before_install:
-  - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
-  - pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information
-  - if [ $BUNDLER_VERSION ]; then gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri; fi
   - bundle -v
   - rm -f Gemfile.lock
   - "# Update system gems if requested. This is useful to temporarily workaround troubles in the test runner"
@@ -41,11 +38,77 @@ matrix:
       rvm: 2.5.3
       stage: spec
     -
-      comment: test Mac OSX edition of PowerShell Core on a single job
       env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
       os: osx
       rvm: 2.5.3
+      stage: spec
+    -
+      before_script: ["bundle exec rake spec_prep"]
+      bundler_args: 
+      os: osx
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:localhost"]
       stage: acceptance
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_deb]'", "bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'", "bundle exec rake 'litmus:install_agent[puppet5]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=deb_puppet5
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_deb]'", "bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'", "bundle exec rake 'litmus:install_agent[puppet6]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=deb_puppet6
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_ub]'", "bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'", "bundle exec rake 'litmus:install_agent[puppet5]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=ub_puppet5
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_ub]'", "bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'", "bundle exec rake 'litmus:install_agent[puppet6]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=ub_puppet6
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_el7]'", "bundle exec rake 'litmus:install_agent[puppet5]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=el7_puppet5
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
+    -
+      before_script: ["bundle exec rake 'litmus:provision_list[travis_el7]'", "bundle exec rake 'litmus:install_agent[puppet6]'", "bundle exec rake litmus:install_module"]
+      bundler_args: 
+      dist: trusty
+      env: PLATFORMS=el7_puppet6
+      rvm: 2.5.1
+      script: ["bundle exec rake litmus:acceptance:parallel"]
+      services: docker
+      stage: acceptance
+      sudo: required
 branches:
   only:
     - master

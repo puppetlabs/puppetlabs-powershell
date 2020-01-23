@@ -1,9 +1,6 @@
 require 'spec_helper_acceptance'
 
-powershell_agents = agents.select { |a| not_controller(a) }
-windows_agents    = powershell_agents.select { |a| a.platform =~ /^windows.*$/ }
-
-describe 'powershell provider:', :if => windows_agents.count > 0 do
+describe 'powershell provider:', if: (os[:family] == 'windows') do
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   # In this case, it just needs a HOME that has a valid directory, no files get stored there
   # HOME is not used on Windows so it is safe to apply hosts, no matter its platform
@@ -12,24 +9,19 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
 
   shared_examples 'should fail' do |manifest, error_check|
     it 'should throw an error' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each do |hut|
-        result = execute_manifest_on(hut, manifest, :expect_failures => true)
-        unless error_check.nil?
-          expect(result.stderr).to match(error_check)
-        end
+      apply_manifest(manifest, expect_failures: true) do |result|
+        expect(result.stderr).to match(error_check) unless error_check.nil?
       end
     end
   end
 
   shared_examples 'apply success' do |manifest|
     it 'should succeed' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, manifest, :catch_failures => true) }
+      apply_manifest(manifest, catch_failures: true)
     end
   end
 
-  shared_examples 'standard exec' do |powershell_cmd, host_list|
+  shared_examples 'standard exec' do |powershell_cmd|
     padmin = <<-MANIFEST
       exec{'no fail test':
         command  => '#{powershell_cmd}',
@@ -38,111 +30,100 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       }
     MANIFEST
     it 'should not fail' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      host_list.each { |hut| execute_manifest_on(hut, padmin, :catch_failures => true) }
+      apply_manifest(padmin, catch_failures: true)
     end
   end
 
   describe "should run successfully" do
-    windows_agents.each do |host|
-      context "on host with platform #{host.platform}" do
-        let(:manifest) {
-          <<-MANIFEST
-            exec{'TestPowershell':
-              command   => 'Get-Process > c:/process.txt',
-              unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
-              provider  => powershell,
-            }
-          MANIFEST
-        }
+    context "on machine" do
+      let(:manifest) {
+        <<-MANIFEST
+          exec{'TestPowershell':
+            command   => 'Get-Process > c:/process.txt',
+            unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
+            provider  => powershell,
+          }
+        MANIFEST
+      }
 
-        it 'should not error on first run' do
-          # Run it twice and test for idempotency
-          execute_manifest_on(host, manifest, :catch_failures => true)
-        end
-
-        it 'should be idempotent' do
-          execute_manifest_on(host, manifest, :catch_chages => true)
-        end
+      it 'is idempotent' do
+        idempotent_apply(manifest)
       end
     end
   end
 
   describe 'should handle a try/catch successfully' do
-    windows_agents.each do |host|
-      context "on host with platform #{host.platform}" do
+    context "on host with platform #{}" do
 
-        let(:try_successfile) { 'C:\try_success.txt' }
-        let(:try_failfile) { 'C:\try_shouldntexist.txt' }
-        let(:catch_successfile) { 'C:\catch_success.txt' }
-        let(:catch_failfile) { 'C:\catch_shouldntexist.txt' }
-        let(:try_content) { 'try_executed' }
-        let(:catch_content) { 'catch_executed' }
+      let(:try_successfile) { 'C:\try_success.txt' }
+      let(:try_failfile) { 'C:\try_shouldntexist.txt' }
+      let(:catch_successfile) { 'C:\catch_success.txt' }
+      let(:catch_failfile) { 'C:\catch_shouldntexist.txt' }
+      let(:try_content) { 'try_executed' }
+      let(:catch_content) { 'catch_executed' }
 
-        it 'should demonstrably execute PowerShell code inside a try block' do
+      it 'should demonstrably execute PowerShell code inside a try block' do
 
-          powershell_cmd = <<-CMD
-          try {
-          $foo = @(1, 2, 3).count
-          "#{try_content}" | Out-File -FilePath "#{try_successfile}" -Encoding "ASCII"
-          } catch {
-          "catch_executed" | Out-File -FilePath "#{catch_failfile}" -Encoding "ASCII"
-          }
-          CMD
+        powershell_cmd = <<-CMD
+        try {
+        $foo = @(1, 2, 3).count
+        "#{try_content}" | Out-File -FilePath "#{try_successfile}" -Encoding "ASCII"
+        } catch {
+        "catch_executed" | Out-File -FilePath "#{catch_failfile}" -Encoding "ASCII"
+        }
+        CMD
 
-          p1 = <<-MANIFEST
-          exec{'TestPowershell':
-            command  => '#{powershell_cmd}',
-            #{ps_environment}
-            provider => powershell,
-          }
-          MANIFEST
+        p1 = <<-MANIFEST
+        exec{'TestPowershell':
+          command  => '#{powershell_cmd}',
+          #{ps_environment}
+          provider => powershell,
+        }
+        MANIFEST
 
-          execute_manifest_on(host, p1, :catch_failures => true)
+        apply_manifest(p1, catch_failures: true)
 
-          on(host, "cmd.exe /c \"type #{try_successfile}\"") do |result|
-            assert_match(/#{try_content}/, result.stdout, "Unexpected result for host '#{host}'")
-          end
-
-          on(host, "cmd.exe /c \"type #{catch_failfile}\"", :acceptable_exit_codes => [1]) do |result|
-            assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-          end
+        run_shell("cmd.exe /c \"type #{try_successfile}\"") do |result|
+          expect(result.stdout).to match(try_content)
         end
 
-        it 'should demonstrably execute PowerShell code inside a catch block' do
-          powershell_cmd = <<-CMD
-          try {
-          throw "execute catch!"
-          "try_executed" | Out-File -FilePath "#{try_failfile}" -Encoding "ASCII"
-          } catch {
-          "#{catch_content}" | Out-File -FilePath "#{catch_successfile}" -Encoding "ASCII"
-          }
-          CMD
+        run_shell("cmd.exe /c \"type #{catch_failfile}\"", expect_failures: true) do |result|
+          expect(result.stderr).to match(/The system cannot find the file specified/)
+        end
+      end
 
-          p1 = <<-MANIFEST
-          exec{'TestPowershell':
-            command  => '#{powershell_cmd}',
-            #{ps_environment}
-            provider => powershell,
-          }
-          MANIFEST
+      it 'should demonstrably execute PowerShell code inside a catch block' do
+        powershell_cmd = <<-CMD
+        try {
+        throw "execute catch!"
+        "try_executed" | Out-File -FilePath "#{try_failfile}" -Encoding "ASCII"
+        } catch {
+        "#{catch_content}" | Out-File -FilePath "#{catch_successfile}" -Encoding "ASCII"
+        }
+        CMD
 
-          execute_manifest_on(host, p1, :catch_failures => true)
+        p1 = <<-MANIFEST
+        exec{'TestPowershell':
+          command  => '#{powershell_cmd}',
+          #{ps_environment}
+          provider => powershell,
+        }
+        MANIFEST
 
-          on(host, "cmd.exe /c \"type #{catch_successfile}\"") do |result|
-            assert_match(/#{catch_content}/, result.stdout, "Unexpected result for host '#{host}'")
-          end
+        apply_manifest(p1, catch_failures: true)
 
-          on(host, "cmd.exe /c \"type #{try_failfile}\"", :acceptable_exit_codes => [1]) do |result|
-            assert_match(/^The system cannot find the file specified\./, result.stderr, "Unexpected file content #{result.stdout} on host '#{host}'")
-          end
+        run_shell("cmd.exe /c \"type #{catch_successfile}\"") do |result|
+          expect(result.stdout).to match(catch_content)
+        end
+
+        run_shell("cmd.exe /c \"type #{try_failfile}\"", expect_failures: true) do |result|
+          expect(result.stderr).to match(/The system cannot find the file specified/)
         end
       end
     end
   end
 
   describe 'should run commands that exit session' do
-
     let(:exit_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -153,19 +134,16 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     it 'should not error on first run' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
+      apply_manifest(exit_pp, expect_changes: true)
     end
 
     it 'should run a second time' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, exit_pp, :expect_changes => true) }
+      apply_manifest(exit_pp, expect_changes: true)
     end
 
   end
 
   describe 'should run commands that break session' do
-
     let(:break_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Break',
@@ -176,19 +154,16 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     it 'should not error on first run' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
+      apply_manifest(break_pp, expect_changes: true)
     end
 
     it 'should run a second time' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, break_pp, :expect_changes => true) }
+      apply_manifest(break_pp, expect_changes: true)
     end
 
   end
 
   describe 'should run commands that return from session' do
-
     let(:return_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => 'return 0',
@@ -199,13 +174,11 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     it 'should not error on first run' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
+      apply_manifest(return_pp, expect_changes: true)
     end
 
     it 'should run a second time' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, return_pp, :expect_changes => true) }
+      apply_manifest(return_pp, expect_changes: true)
     end
 
   end
@@ -232,12 +205,10 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
 
     it 'should not see variable from previous run' do
       # Setup the variable
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, var_leak_setup_pp, :expect_changes => true) }
+      apply_manifest(var_leak_setup_pp, expect_changes: true)
 
       # Test to see if subsequent call sees the variable
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, var_leak_test_pp, :expect_changes => true) }
+      apply_manifest(var_leak_test_pp, expect_changes: true)
     end
 
   end
@@ -272,38 +243,28 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     after(:each) do
-      # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
-      windows_agents.each do |host|
-        on(host, powershell("'Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'"))
-        on(host, powershell("'Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'"))
-      end
+      run_shell(interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
+      run_shell(interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
     end
 
     it 'should not see environment variable from previous run' do
       # Setup the environment variable
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_setup_pp, :expect_changes => true) }
+      apply_manifest(envar_leak_setup_pp, expect_changes: true)
 
       # Test to see if subsequent call sees the environment variable
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      apply_manifest(envar_leak_test_pp, expect_changes: true)
     end
 
     it 'should see environment variables set outside of session' do
       # Setup the environment variable outside of Puppet
 
-      windows_agents.each do |host|
-        # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
-        on(host, powershell("\\$env:outside='1'"))
-      end
+      run_shell(interpolate_powershell("$env:outside='1'"))
 
       # Test to see if initial run sees the environment variable
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      apply_manifest(envar_leak_test_pp, expect_changes: true)
 
       # Test to see if subsequent call sees the environment variable and environment purge
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, envar_leak_test_pp, :expect_changes => true) }
+      apply_manifest(envar_leak_test_pp, expect_changes: true)
     end
   end
 
@@ -330,13 +291,11 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     it 'should RUN command if unless is NOT triggered' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, unless_not_triggered_pp, :expect_changes => true) }
+      apply_manifest(unless_not_triggered_pp, expect_changes: true)
     end
 
     it 'should NOT run command if unless IS triggered' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, unless_triggered_pp, :catch_changes => true) }
+      apply_manifest(unless_triggered_pp, catch_changes: true)
     end
 
   end
@@ -364,13 +323,11 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
     }
 
     it 'should NOT run command if onlyif is NOT triggered' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, onlyif_not_triggered_pp, :catch_changes => true) }
+      apply_manifest(onlyif_not_triggered_pp, catch_changes: true)
     end
 
     it 'should RUN command if onlyif IS triggered' do
-      # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-      windows_agents.each { |hut| execute_manifest_on(hut, onlyif_triggered_pp, :expect_changes => true) }
+      apply_manifest(onlyif_triggered_pp, expect_changes: true)
     end
 
   end
@@ -389,8 +346,7 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       let(:file_path) { 'C:/services.txt' }
 
       it 'should apply the manifest' do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        windows_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
+        apply_manifest(p2, catch_failures: true)
       end
 
       it { should be_file }
@@ -434,10 +390,11 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       }
       MANIFEST
       describe file('c:/temp/services.csv') do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        windows_agents.each { |hut| execute_manifest_on(hut, p2, :catch_failures => true) }
+        it 'applies' do
+          apply_manifest(p2, catch_failures: true)
+        end
         it { should be_file }
-        its(:content) { should match /puppet/ }
+        its(:content) { should match /WinRM/ }
       end
     end
   end
@@ -459,8 +416,9 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       }
       MANIFEST
       describe file(outfile) do
-        # Due to https://tickets.puppetlabs.com/browse/QA-3461 each host must be done one at a time
-        windows_agents.each { |hut| execute_manifest_on(hut, pp, :catch_failures => true) }
+        it 'applies' do
+          apply_manifest(pp, catch_failures: true)
+        end
         it { should be_file }
         its(:content) { should match /svchost/ }
       end
@@ -481,7 +439,7 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       provider => powershell
     }
     MANIFEST
-    it_should_behave_like 'apply success', p3, windows_agents
+    it_should_behave_like 'apply success', p3
   end
 
   describe 'test admin rights' do
@@ -491,7 +449,7 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
       $pr = New-Object Security.Principal.WindowsPrincipal $id
       if(!($pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))){Write-Error "Not in admin"}
     PS1
-    it_should_behave_like 'standard exec', ps1, windows_agents
+    it_should_behave_like 'standard exec', ps1
   end
 
   describe 'test import-module' do
@@ -505,6 +463,6 @@ describe 'powershell provider:', :if => windows_agents.count > 0 do
         Write-Error "Failed to import module ${mods[0].Name}"
       }
     PS1
-    it_should_behave_like 'standard exec', pimport, windows_agents
+    it_should_behave_like 'standard exec', pimport
   end
 end

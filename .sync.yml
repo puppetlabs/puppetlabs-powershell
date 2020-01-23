@@ -10,32 +10,120 @@
   deploy_to_forge:
     enabled: false
   simplecov: true
-  before_install_pre:
-  - bash <(curl -s https://raw.githubusercontent.com/PowerShell/PowerShell/master/tools/install-powershell.sh) -skip-sudo-check
-  - 'pwsh -NoProfile -NoLogo -NonInteractive -Command \$PSVersionTable # Output the PowerShell Core version information'
-  - if [ $BUNDLER_VERSION ]; then gem install -v $BUNDLER_VERSION bundler --no-rdoc --no-ri; fi
   includes:
   - os: osx
-    comment: test Mac OSX edition of PowerShell Core on a single job
     env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
     rvm: 2.5.3
+    stage: spec
+  - bundler_args: 
+    os: osx
+    rvm: 2.5.1
+    before_script:
+    - brew update
+    - brew install openssl
+    - bundle exec rake spec_prep
+    script:
+    - bundle exec rake litmus:acceptance:localhost
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=deb_puppet5
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_deb]'
+    - bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'
+    - bundle exec rake 'litmus:install_agent[puppet5]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=deb_puppet6
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_deb]'
+    - bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'
+    - bundle exec rake 'litmus:install_agent[puppet6]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=ub_puppet5
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_ub]'
+    - bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'
+    - bundle exec rake 'litmus:install_agent[puppet5]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=ub_puppet6
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_ub]'
+    - bundle exec bolt command run 'apt-get install wget -y' --inventoryfile inventory.yaml --nodes='localhost*'
+    - bundle exec rake 'litmus:install_agent[puppet6]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=el7_puppet5
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_el7]'
+    - bundle exec rake 'litmus:install_agent[puppet5]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
+    stage: acceptance
+  - bundler_args: 
+    dist: trusty
+    env: PLATFORMS=el7_puppet6
+    rvm: 2.5.1
+    before_script:
+    - bundle exec rake 'litmus:provision_list[travis_el7]'
+    - bundle exec rake 'litmus:install_agent[puppet6]'
+    - bundle exec rake litmus:install_module
+    script:
+    - bundle exec rake litmus:acceptance:parallel
+    services: docker
+    sudo: required
     stage: acceptance
   notifications:
     slack:
       secure: Yqv+S1Bwz19bor4xu3v7i5rLPzQuwTSZhO5wjsrX+jhKDN5/+e7e53x/v3Onjdrn9rjwFAxwzciAte0MO96xLFjyzWyUSziGur8/v3TcbRnnVQMOnIEj0HfmyLbx1cpxGK9V8MPsWQVAoHCklTtZIsRjMw0PcD8+aVKVF3NcBK4=
 appveyor.yml:
+  use_litmus: true
+  matrix_extras:
+    - RUBY_VERSION: 25-x64
+      ACCEPTANCE: 'yes'
+      TARGET_HOST: localhost
+    - RUBY_VERSION: 25-x64
+      ACCEPTANCE: 'yes'
+      TARGET_HOST: localhost
+      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
   environment:
     HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
     HONEYCOMB_DATASET: litmus tests
   simplecov: true
-  install_post:
-  - >-
-    ps: "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri https://github.com/PowerShell/PowerShell/raw/master/tools/install-powershell.ps1 -UseBasicParsing
-    -OutFile install-pwsh.ps1"
-  - 'ps: "& ./install-pwsh.ps1"'
-  - set PATH=%LOCALAPPDATA%\Microsoft\powershell;%PATH%
-  - pwsh -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
-  - powershell -NoProfile -NoLogo -NonInteractive -Command $PSVersionTable
 Gemfile:
   optional:
     ":development":
