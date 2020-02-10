@@ -8,7 +8,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     begin
       require 'ruby-pwsh'
       Pwsh::Manager.powershell_path
-    rescue 
+    rescue LoadError
       nil
     end
   end
