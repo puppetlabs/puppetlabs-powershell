@@ -4,16 +4,6 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   confine :operatingsystem => :windows
   confine :feature => :pwshlib
 
-  def self.powershell_path
-    begin
-      require 'ruby-pwsh'
-      Pwsh::Manager.powershell_path
-    rescue
-      nil
-    end
-  end
-  commands :powershell => self.powershell_path
-
   desc <<-EOT
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.
@@ -57,7 +47,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
 
   def ps_manager
     debug_output = Puppet::Util::Log.level == :debug
-    Pwsh::Manager.instance(command(:powershell), Pwsh::Manager.powershell_args, debug: debug_output)
+    Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output)
   end
 
   def run(command, check = false)
@@ -72,7 +62,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
         # we redirect powershell's stdin to read from the file. Current
         # versions of Windows use per-user temp directories with strong
         # permissions, but I'd rather not make (poor) assumptions.
-        return super("cmd.exe /c \"\"#{native_path(command(:powershell))}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
+        return super("cmd.exe /c \"\"#{native_path(Pwsh::Manager.powershell_path)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
       end
     else
       return execute_resource(command, resource)
