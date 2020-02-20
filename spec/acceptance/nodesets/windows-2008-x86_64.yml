@@ -21,4 +21,4 @@ CONFIG:
   folder: Delivery/Quality Assurance/Enterprise/Dynamic
   resourcepool: delivery/Quality Assurance/Enterprise/Dynamic
   pooling_api: http://vcloud.delivery.puppetlabs.net/
-  pe_dir: http://neptune.puppetlabs.lan/3.2/ci-ready/
+  pe_dir: https://artifactory.delivery.puppetlabs.net/artifactory/generic_enterprise__local/2018.1/ci-ready/
