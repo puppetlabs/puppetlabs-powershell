@@ -55,13 +55,32 @@ def interpolate_powershell(command)
   "powershell.exe -NoProfile -EncodedCommand #{encoded_command}"
 end
 
+def relative_folder(relative_path)
+  expanded_path = File.expand_path(File.join(File.dirname(__FILE__), relative_path))
+  Dir.open(expanded_path) if File.exist?(expanded_path)
+end
+
+def remove_pwshlib
+  uninstall_command = 'puppet module uninstall puppetlabs/pwshlib --force'
+  uninstall_command += " --modulepath #{relative_folder('fixtures/modules').path}" if ENV['TARGET_HOST'] == 'localhost'
+  Helper.instance.run_shell(uninstall_command, expect_failures: true) do |result|
+    raise "Failed to uninstall puppetlabs/pwshlib" unless result.stderr =~ /Module 'puppetlabs-pwshlib' is not installed/ || result.exit_code == 0
+  end
+end
+
+def install_pwshlib
+  install_command = 'puppet module install puppetlabs/pwshlib'
+  install_command += " --modulepath #{relative_folder('fixtures/modules').path}" if ENV['TARGET_HOST'] == 'localhost'
+  Helper.instance.run_shell(install_command)
+end
+
 def localhost_windows?
   os[:family] == 'windows' && ENV['TARGET_HOST'] == 'localhost'
 end
 
 RSpec.configure do |c|
   c.before :suite do
-    Helper.instance.run_shell('puppet module install puppetlabs/pwshlib')
+    install_pwshlib
     cleanup_files
   end
 end

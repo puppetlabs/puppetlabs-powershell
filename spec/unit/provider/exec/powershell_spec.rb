@@ -38,6 +38,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   describe "#run" do
     context "stubbed calls" do
       before :each do
+        require 'ruby-pwsh'
         Pwsh::Manager.stubs(:windows_powershell_supported?).returns(false)
         Puppet::Provider::Exec.any_instance.stubs(:run)
       end

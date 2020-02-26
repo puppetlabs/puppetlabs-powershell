@@ -465,4 +465,31 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     PS1
     it_should_behave_like 'standard exec', pimport
   end
+
+  # TODO: For some reason, Puppet still sees the dependent module as available during
+  # a localhost run, but not when testing against a remote target.
+  context 'without pwshlib available', unless: (ENV['TARGET_HOST'] == 'localhost') do
+    before(:all) do
+      remove_pwshlib
+    end
+    after(:all) do
+      install_pwshlib
+    end
+  
+    let(:manifest) {
+      <<-MANIFEST
+        exec{'TestPowershell':
+          command   => 'Get-Process > c:/process.txt',
+          unless    => 'if(!(test-path "c:/process.txt")){exit 1}',
+          provider  => powershell,
+        }
+      MANIFEST
+    }
+  
+    it "Errors predictably" do
+      apply_manifest(manifest, expect_failures: true) do |result|
+        expect(result.stderr).to match(/Provider powershell is not functional on this host/)
+      end
+    end
+  end
 end
