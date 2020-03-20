@@ -89,6 +89,10 @@ jobs:
       stage: acceptance
     -
       before_script:
+      - "echo $TRAVIS_OS_NAME"
+      - "echo $TRAVIS_CPU_ARCH"
+      - "echo $TRAVIS_DIST"
+      - "echo $TRAVIS_OSX_IMAGE"
       - "bundle exec rake 'litmus:provision_list[travis_ub]'"
       - "bundle exec rake 'litmus:install_agent[puppet6]'"
       - "bundle exec rake litmus:install_module"
@@ -116,10 +120,18 @@ jobs:
       rvm: 2.5.3
       stage: spec
     -
-      before_script: ["brew update", "brew install openssl", "bundle exec rake spec_prep"]
+      # before_script: ["brew update", "brew install openssl", "bundle exec rake spec_prep"]
       bundler_args: 
       os: osx
       rvm: 2.5.1
+      before_script:
+      - "echo $TRAVIS_OS_NAME"
+      - "echo $TRAVIS_CPU_ARCH"
+      - "echo $TRAVIS_DIST"
+      - "echo $TRAVIS_OSX_IMAGE"
+      - "brew update"
+      - "brew install openssl"
+      - "bundle exec rake spec_prep"
       script: ["bundle exec rake litmus:acceptance:localhost"]
       stage: acceptance
 branches:

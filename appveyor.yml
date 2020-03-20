@@ -52,6 +52,8 @@ for:
     only:
       - ACCEPTANCE: yes
   install:
+    - echo %APPVEYOR_BUILD_WORKER_IMAGE%
+    - echo %PLATFORM%
     - set PATH=C:\Ruby%RUBY_VERSION%\bin;%PATH%
     - bundle install --jobs 4 --retry 2
     - type Gemfile.lock
