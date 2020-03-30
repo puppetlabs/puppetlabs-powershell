@@ -280,8 +280,8 @@ describe 'pwsh provider:' do
       after(:each) do
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
         if windows_platform?
-          run_shell(interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
-          run_shell(interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
+          run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
+          run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
         else
           run_shell('unset superspecial')
           run_shell('unset outside')
@@ -301,7 +301,7 @@ describe 'pwsh provider:' do
   
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
         if windows_platform?
-          run_shell(interpolate_powershell("\$env:outside='1'"))
+          run_shell(PuppetLitmus::Util.interpolate_powershell("\$env:outside='1'"))
         else
           run_shell('export outside=1')
         end
