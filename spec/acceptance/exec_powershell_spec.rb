@@ -243,8 +243,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     }
 
     after(:each) do
-      run_shell(interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
-      run_shell(interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
+      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
+      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
     end
 
     it 'should not see environment variable from previous run' do
@@ -258,7 +258,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should see environment variables set outside of session' do
       # Setup the environment variable outside of Puppet
 
-      run_shell(interpolate_powershell("$env:outside='1'"))
+      run_shell(PuppetLitmus::Util.interpolate_powershell("$env:outside='1'"))
 
       # Test to see if initial run sees the environment variable
       apply_manifest(envar_leak_test_pp, expect_changes: true)
