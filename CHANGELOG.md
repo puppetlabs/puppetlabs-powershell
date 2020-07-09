@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v4.0.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v4.0.0) (2020-07-07)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v3.0.1...v4.0.0)
+
+### Changed
+
+- Correct supported Puppet lower bound to 5.5.0 [\#282](https://github.com/puppetlabs/puppetlabs-powershell/pull/282) ([michaeltlombardi](https://github.com/michaeltlombardi))
+
+### Added
+
+- \(IAC-835\) Support added for Debian 10 and CentOS/RHEL 8 [\#306](https://github.com/puppetlabs/puppetlabs-powershell/pull/306) ([david22swan](https://github.com/david22swan))
+
+### Fixed
+
+- \(MODULES-10539\) Remove commands idiom from PowerShell provider [\#287](https://github.com/puppetlabs/puppetlabs-powershell/pull/287) ([michaeltlombardi](https://github.com/michaeltlombardi))
+
 ## [v3.0.1](https://github.com/puppetlabs/puppetlabs-powershell/tree/v3.0.1) (2020-01-15)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v3.0.0...v3.0.1)
