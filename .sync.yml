@@ -13,6 +13,7 @@
   use_litmus: true
   litmus:
     provision_list:
+      - ---travis_el
       - travis_deb
       - travis_ub
       - travis_el7
