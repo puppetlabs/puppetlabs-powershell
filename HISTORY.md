@@ -177,7 +177,7 @@
 
 - Fixed issue with metadata and PE version requirement
 
-[Unreleased]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.3.0...master
+[Unreleased]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.3.0...main
 [2.3.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.2.0...2.3.0
 [2.2.0]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.5...2.2.0
 [2.1.5]: https://github.com/puppetlabs/puppetlabs-powershell/compare/2.1.4...2.1.5
