@@ -59,3 +59,7 @@ Gemfile:
       condition: Gem::Version.new(RUBY_VERSION.dup) >= Gem::Version.new('2.2.2')
 spec/spec_helper.rb:
   coverage_report: true
+.gitpod.Dockerfile:
+  unmanaged: false
+.gitpod.yml:
+  unmanaged: false
