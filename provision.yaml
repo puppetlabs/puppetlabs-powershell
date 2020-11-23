@@ -1,22 +1,58 @@
 ---
 default:
   provisioner: docker
-  images: ['waffleimage/ubuntu18.04', 'waffleimage/centos7']
+  images:
+  - waffleimage/ubuntu18.04
+  - waffleimage/centos7
 vagrant:
   provisioner: vagrant
-  images: ['centos/7', 'generic/ubuntu1804', 'generic/debian8', 'gusztavvargadr/windows-server']
+  images:
+  - centos/7
+  - generic/ubuntu1804
+  - generic/debian8
+  - gusztavvargadr/windows-server
 travis_deb:
-  provisioner: docker 
-  images: ['litmusimage/debian:8', 'litmusimage/debian:9', 'litmusimage/debian:10']
+  provisioner: docker
+  images:
+  - litmusimage/debian:8
+  - litmusimage/debian:9
+  - litmusimage/debian:10
 travis_ub:
-  provisioner: docker 
-  images: ['litmusimage/ubuntu:16.04', 'litmusimage/ubuntu:18.04']
+  provisioner: docker
+  images:
+  - litmusimage/ubuntu:16.04
+  - litmusimage/ubuntu:18.04
 travis_el6:
-  provisioner: docker 
+  provisioner: docker
   images: []
 travis_el7:
-  provisioner: docker 
-  images: ['litmusimage/centos:7']
+  provisioner: docker
+  images:
+  - litmusimage/centos:7
 release_checks:
   provisioner: abs
-  images: ['redhat-7-x86_64', 'redhat-8-x86_64', 'centos-7-x86_64',  'centos-8-x86_64', 'debian-8-x86_64', 'debian-9-x86_64',  'debian-10-x86_64', 'ubuntu-1604-x86_64', 'ubuntu-1804-x86_64', 'win-2012r2-x86_64', 'win-2016-core-x86_64', 'win-2019-core-x86_64']
+  images:
+  - redhat-7-x86_64
+  - redhat-8-x86_64
+  - centos-7-x86_64
+  - centos-8-x86_64
+  - debian-8-x86_64
+  - debian-9-x86_64
+  - debian-10-x86_64
+  - ubuntu-1604-x86_64
+  - ubuntu-1804-x86_64
+  - win-2012r2-x86_64
+  - win-2016-core-x86_64
+  - win-2019-core-x86_64
+release_checks_7:
+  provisioner: abs
+  images:
+  - win-2012r2-x86_64
+  - win-10-x86_64
+  - centos-7-x86_64
+  - centos-8-x86_64
+  - debian-9-x86_64
+  - debian-10-x86_64
+  - redhat-7-x86_64
+  - redhat-8-x86_64
+  - ubuntu-18.04-x86_64
