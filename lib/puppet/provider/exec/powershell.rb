@@ -45,9 +45,9 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     @upgrade_warning_issued = true
   end
 
-  def ps_manager
+  def ps_manager(pipe_timeout)
     debug_output = Puppet::Util::Log.level == :debug
-    Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output)
+    Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output, pipe_timeout: pipe_timeout)
   end
 
   def run(command, check = false)
@@ -77,7 +77,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
     environment_variables = resource[:environment].nil? ? [] : resource[:environment]
 
-    result = ps_manager.execute(powershell_code, timeout_ms, working_dir, environment_variables)
+    result = ps_manager(resource[:timeout]).execute(powershell_code, timeout_ms, working_dir, environment_variables)
     stdout     = result[:stdout]
     native_out = result[:native_stdout]
     stderr     = result[:stderr]

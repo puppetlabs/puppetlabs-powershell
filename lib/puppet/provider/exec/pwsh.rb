@@ -68,9 +68,9 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   #
   # @api private
   # @return [Pwsh::Manager] The PowerShell manager for this resource
-  def ps_manager
+  def ps_manager(pipe_timeout)
     debug_output = Puppet::Util::Log.level == :debug
-    Pwsh::Manager.instance(@pwsh, pwsh_args, debug: debug_output)
+    Pwsh::Manager.instance(@pwsh, pwsh_args, debug: debug_output, pipe_timeout: pipe_timeout)
   end
 
   def execute_resource(powershell_code, resource)
@@ -81,7 +81,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
     environment_variables = resource[:environment].nil? ? [] : resource[:environment]
 
-    result = ps_manager.execute(powershell_code, timeout_ms, working_dir, environment_variables)
+    result = ps_manager(resource[:timeout]).execute(powershell_code, timeout_ms, working_dir, environment_variables)
     stdout     = result[:stdout]
     native_out = result[:native_stdout]
     stderr     = result[:stderr]
