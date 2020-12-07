@@ -1,6 +1,6 @@
 {
   "name": "puppetlabs-powershell",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "author": "puppetlabs",
   "summary": "Adds a new exec provider for executing PowerShell commands.",
   "license": "Apache-2.0",
