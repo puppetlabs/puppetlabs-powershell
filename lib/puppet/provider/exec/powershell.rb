@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'puppet/provider/exec'
 
 Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
