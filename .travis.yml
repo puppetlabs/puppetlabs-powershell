@@ -105,9 +105,9 @@ jobs:
       stage: spec
     -
       before_script: ["brew update", "brew install openssl", "bundle exec rake spec_prep"]
-      bundler_args: 
+      bundler_args: --with system_tests
       os: osx
-      rvm: 2.5.1
+      rvm: 2.5.3
       script: ["bundle exec rake litmus:acceptance:localhost"]
       stage: acceptance
 branches:
