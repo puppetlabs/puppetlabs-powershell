@@ -220,8 +220,6 @@ Lint/DeprecatedOpenSSLConstant:
   Enabled: false
 Lint/DisjunctiveAssignmentInConstructor:
   Enabled: false
-Lint/DuplicateBranch:
-  Enabled: false
 Lint/DuplicateCaseCondition:
   Enabled: false
 Lint/DuplicateElsifCondition:
@@ -230,8 +228,6 @@ Lint/DuplicateHashKey:
   Enabled: false
 Lint/DuplicateMethods:
   Enabled: false
-Lint/DuplicateRegexpCharacterClassElement:
-  Enabled: false
 Lint/DuplicateRequire:
   Enabled: false
 Lint/DuplicateRescueException:
@@ -239,10 +235,6 @@ Lint/DuplicateRescueException:
 Lint/EachWithObjectArgument:
   Enabled: false
 Lint/ElseLayout:
-  Enabled: false
-Lint/EmptyBlock:
-  Enabled: false
-Lint/EmptyClass:
   Enabled: false
 Lint/EmptyConditionalBody:
   Enabled: false
@@ -299,8 +291,6 @@ Lint/NestedMethodDefinition:
 Lint/NestedPercentLiteral:
   Enabled: false
 Lint/NextWithoutAccumulator:
-  Enabled: false
-Lint/NoReturnInBeginEndBlocks:
   Enabled: false
 Lint/NonDeterministicRequireOrder:
   Enabled: false
@@ -368,8 +358,6 @@ Lint/StructNewOverride:
   Enabled: false
 Lint/SuppressedException:
   Enabled: false
-Lint/ToEnumArguments:
-  Enabled: false
 Lint/ToJSON:
   Enabled: false
 Lint/TopLevelReturnWithArgument:
@@ -378,11 +366,7 @@ Lint/TrailingCommaInAttributeDeclaration:
   Enabled: false
 Lint/UnderscorePrefixedVariableName:
   Enabled: false
-Lint/UnexpectedBlockArity:
-  Enabled: false
 Lint/UnifiedInteger:
-  Enabled: false
-Lint/UnmodifiedReduceAccumulator:
   Enabled: false
 Lint/UnreachableCode:
   Enabled: false
@@ -461,6 +445,56 @@ Naming/RescuedExceptionsVariableName:
 Naming/VariableName:
   Enabled: false
 Naming/VariableNumber:
+  Enabled: false
+Performance/BindCall:
+  Enabled: false
+Performance/Caller:
+  Enabled: false
+Performance/Casecmp:
+  Enabled: false
+Performance/CompareWithBlock:
+  Enabled: false
+Performance/Count:
+  Enabled: false
+Performance/DeletePrefix:
+  Enabled: false
+Performance/DeleteSuffix:
+  Enabled: false
+Performance/Detect:
+  Enabled: false
+Performance/DoubleStartEndWith:
+  Enabled: false
+Performance/EndWith:
+  Enabled: false
+Performance/FixedSize:
+  Enabled: false
+Performance/FlatMap:
+  Enabled: false
+Performance/InefficientHashSearch:
+  Enabled: false
+Performance/RangeInclude:
+  Enabled: false
+Performance/RedundantBlockCall:
+  Enabled: false
+Performance/RedundantMatch:
+  Enabled: false
+Performance/RedundantMerge:
+  Enabled: false
+Performance/RegexpMatch:
+  Enabled: false
+Performance/ReverseEach:
+  Enabled: false
+Performance/Size:
+  Enabled: false
+Performance/StartWith:
+  Enabled: false
+Performance/StringReplacement:
+  Enabled: false
+Performance/TimesMap:
+  Enabled: false
+Performance/UnfreezeString:
+  Enabled: false
+Performance/UriDefaultParser:
   Enabled: false
 RSpec/AnyInstance:
   Enabled: false
@@ -638,8 +672,6 @@ Style/Alias:
   Enabled: false
 Style/AndOr:
   Enabled: false
-Style/ArgumentsForwarding:
-  Enabled: false
 Style/ArrayJoin:
   Enabled: false
 Style/AsciiComments:
@@ -672,8 +704,6 @@ Style/ClassMethods:
   Enabled: false
 Style/ClassVars:
   Enabled: false
-Style/CollectionCompact:
-  Enabled: false
 Style/ColonMethodCall:
   Enabled: false
 Style/ColonMethodDefinition:
@@ -691,8 +721,6 @@ Style/ConditionalAssignment:
 Style/DefWithParentheses:
   Enabled: false
 Style/Dir:
-  Enabled: false
-Style/DocumentDynamicEvalDefinition:
   Enabled: false
 Style/Documentation:
   Enabled: false
@@ -812,8 +840,6 @@ Style/MutableConstant:
   Enabled: false
 Style/NegatedIf:
   Enabled: false
-Style/NegatedIfElseCondition:
-  Enabled: false
 Style/NegatedUnless:
   Enabled: false
 Style/NegatedWhile:
@@ -827,8 +853,6 @@ Style/NestedTernaryOperator:
 Style/Next:
   Enabled: false
 Style/NilComparison:
-  Enabled: false
-Style/NilLambda:
   Enabled: false
 Style/NonNilCheck:
   Enabled: false
@@ -865,8 +889,6 @@ Style/Proc:
 Style/RaiseArgs:
   Enabled: false
 Style/RandomWithOffset:
-  Enabled: false
-Style/RedundantArgument:
   Enabled: false
 Style/RedundantAssignment:
   Enabled: false
@@ -946,8 +968,6 @@ Style/Strip:
   Enabled: false
 Style/StructInheritance:
   Enabled: false
-Style/SwapValues:
-  Enabled: false
 Style/SymbolArray:
   Enabled: false
 Style/SymbolLiteral:
@@ -991,4 +1011,60 @@ Style/WordArray:
 Style/YodaCondition:
   Enabled: false
 Style/ZeroLengthPredicate:
+  Enabled: false
+Lint/DuplicateBranch:
+  Enabled: false
+Lint/DuplicateRegexpCharacterClassElement:
+  Enabled: false
+Lint/EmptyBlock:
+  Enabled: false
+Lint/EmptyClass:
+  Enabled: false
+Lint/NoReturnInBeginEndBlocks:
+  Enabled: false
+Lint/ToEnumArguments:
+  Enabled: false
+Lint/UnexpectedBlockArity:
+  Enabled: false
+Lint/UnmodifiedReduceAccumulator:
+  Enabled: false
+Performance/AncestorsInclude:
+  Enabled: false
+Performance/BigDecimalWithNumericArgument:
+  Enabled: false
+Performance/BlockGivenWithExplicitBlock:
+  Enabled: false
+Performance/CollectionLiteralInLoop:
+  Enabled: false
+Performance/ConstantRegexp:
+  Enabled: false
+Performance/MethodObjectAsBlock:
+  Enabled: false
+Performance/RedundantSortBlock:
+  Enabled: false
+Performance/RedundantStringChars:
+  Enabled: false
+Performance/ReverseFirst:
+  Enabled: false
+Performance/SortReverse:
+  Enabled: false
+Performance/Squeeze:
+  Enabled: false
+Performance/StringInclude:
+  Enabled: false
+Performance/Sum:
+  Enabled: false
+Style/ArgumentsForwarding:
+  Enabled: false
+Style/CollectionCompact:
+  Enabled: false
+Style/DocumentDynamicEvalDefinition:
+  Enabled: false
+Style/NegatedIfElseCondition:
+  Enabled: false
+Style/NilLambda:
+  Enabled: false
+Style/RedundantArgument:
+  Enabled: false
+Style/SwapValues:
   Enabled: false
