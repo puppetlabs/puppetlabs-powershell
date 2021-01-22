@@ -1,1 +1,1 @@
-brew cask install powershell
+brew install --cask powershell
