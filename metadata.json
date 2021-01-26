@@ -81,6 +81,6 @@
     }
   ],
   "pdk-version": "1.19.0.pre (47)",
-  "template-url": "https://github.com/DavidS/pdk-templates#revert-litmus-protection",
-  "template-ref": "remotes/origin/revert-litmus-protection-0-g5888511"
+  "template-url": "https://github.com/puppetlabs/pdk-templates.git#main",
+  "template-ref": "heads/main-0-g1862b96"
 }
