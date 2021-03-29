@@ -3,51 +3,9 @@
   delete: true
 ".rubocop.yml":
   selected_profile: false
-".travis.yml":
-  global_env:
-    - HONEYCOMB_WRITEKEY="7f3c63a70eecc61d635917de46bea4e6",HONEYCOMB_DATASET="litmus tests"
-  deploy_to_forge:
-    enabled: false
-  simplecov: true
-  use_litmus: true
-  litmus:
-    provision_list:
-      - ---travis_el
-      - travis_deb
-      - travis_ub
-      - travis_el7
-  includes:
-  - os: osx
-    env: PUPPET_GEM_VERSION="~> 6.0" CHECK=parallel_spec
-    rvm: 2.5.3
-    stage: spec
-  - os: osx
-    bundler_args: --with system_tests
-    rvm: 2.5.3
-    before_script:
-    - brew update
-    - brew install openssl
-    - bundle exec rake spec_prep
-    script:
-    - bundle exec rake litmus:acceptance:localhost
-    stage: acceptance
-  notifications:
-    slack:
-      secure: Yqv+S1Bwz19bor4xu3v7i5rLPzQuwTSZhO5wjsrX+jhKDN5/+e7e53x/v3Onjdrn9rjwFAxwzciAte0MO96xLFjyzWyUSziGur8/v3TcbRnnVQMOnIEj0HfmyLbx1cpxGK9V8MPsWQVAoHCklTtZIsRjMw0PcD8+aVKVF3NcBK4=
 appveyor.yml:
-  use_litmus: true
-  matrix_extras:
-    - RUBY_VERSION: 25-x64
-      ACCEPTANCE: 'yes'
-      TARGET_HOST: localhost
-    - RUBY_VERSION: 25-x64
-      ACCEPTANCE: 'yes'
-      TARGET_HOST: localhost
-      APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
-  environment:
-    HONEYCOMB_WRITEKEY: 7f3c63a70eecc61d635917de46bea4e6
-    HONEYCOMB_DATASET: litmus tests
-  simplecov: true
+  delete: true
+
 Gemfile:
   optional:
     ":development":
@@ -65,3 +23,10 @@ spec/spec_helper.rb:
   unmanaged: false
 .github/workflows/auto_release.yml:
   unmanaged: false
+.github/workflows/spec.yml:
+  checks: 'syntax lint metadata_lint check:symlinks check:git_ignore check:dot_underscore check:test_file rubocop'
+  unmanaged: false
+.github/workflows/release.yml:
+  unmanaged: false
+.travis.yml:
+  delete: true
