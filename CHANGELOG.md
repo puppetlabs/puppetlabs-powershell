@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v5.1.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.1.0) (2021-09-18)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v5.0.0...v5.1.0)
+
+### Added
+
+- \(IAC-900\) - Certify Ubuntu 20.04 [\#359](https://github.com/puppetlabs/puppetlabs-powershell/pull/359) ([david22swan](https://github.com/david22swan))
+
 ## [v5.0.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.0.0) (2021-02-27)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v4.1.0...v5.0.0)
