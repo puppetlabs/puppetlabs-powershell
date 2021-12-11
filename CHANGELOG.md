@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v5.1.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.1.0) (2021-12-11)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v5.0.0...v5.1.0)
+
+### Added
+
+- pdksync - \(IAC-1753\) - Add Support for AlmaLinux 8 [\#364](https://github.com/puppetlabs/puppetlabs-powershell/pull/364) ([david22swan](https://github.com/david22swan))
+- pdksync - \(IAC-1751\) - Add Support for Rocky 8 [\#363](https://github.com/puppetlabs/puppetlabs-powershell/pull/363) ([david22swan](https://github.com/david22swan))
+- \(IAC-900\) - Certify Ubuntu 20.04 [\#359](https://github.com/puppetlabs/puppetlabs-powershell/pull/359) ([david22swan](https://github.com/david22swan))
+
+### Fixed
+
+- pdksync - \(IAC-1598\) - Remove Support for Debian 8 [\#361](https://github.com/puppetlabs/puppetlabs-powershell/pull/361) ([david22swan](https://github.com/david22swan))
+
 ## [v5.0.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.0.0) (2021-02-27)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v4.1.0...v5.0.0)
