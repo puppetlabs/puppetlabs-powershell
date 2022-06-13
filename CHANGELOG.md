@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v5.1.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.1.0) (2022-06-13)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v5.0.0...v5.1.0)
+
+### Added
+
+- pdksync - \(GH-cat-12\) Add Support for Redhat 9 [\#379](https://github.com/puppetlabs/puppetlabs-powershell/pull/379) ([david22swan](https://github.com/david22swan))
+- pdksync - \(FM-8922\) - Add Support for Windows 2022 [\#370](https://github.com/puppetlabs/puppetlabs-powershell/pull/370) ([david22swan](https://github.com/david22swan))
+- \(IAC-1734\) - Certify Debian 11 [\#368](https://github.com/puppetlabs/puppetlabs-powershell/pull/368) ([david22swan](https://github.com/david22swan))
+- pdksync - \(IAC-1753\) - Add Support for AlmaLinux 8 [\#364](https://github.com/puppetlabs/puppetlabs-powershell/pull/364) ([david22swan](https://github.com/david22swan))
+- pdksync - \(IAC-1751\) - Add Support for Rocky 8 [\#363](https://github.com/puppetlabs/puppetlabs-powershell/pull/363) ([david22swan](https://github.com/david22swan))
+- \(IAC-900\) - Certify Ubuntu 20.04 [\#359](https://github.com/puppetlabs/puppetlabs-powershell/pull/359) ([david22swan](https://github.com/david22swan))
+
+### Fixed
+
+- pdksync - \(GH-iac-334\) Remove Support for Ubuntu 14.04/16.04 [\#372](https://github.com/puppetlabs/puppetlabs-powershell/pull/372) ([david22swan](https://github.com/david22swan))
+- pdksync - \(IAC-1598\) - Remove Support for Debian 8 [\#361](https://github.com/puppetlabs/puppetlabs-powershell/pull/361) ([david22swan](https://github.com/david22swan))
+
 ## [v5.0.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.0.0) (2021-02-27)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v4.1.0...v5.0.0)
