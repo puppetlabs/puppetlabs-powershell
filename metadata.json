@@ -17,11 +17,7 @@
     {
       "operatingsystem": "Windows",
       "operatingsystemrelease": [
-        "7",
-        "8",
         "10",
-        "2008",
-        "2008 R2",
         "2012",
         "2012 R2",
         "2016",
@@ -42,21 +38,6 @@
         "9",
         "10",
         "11"
-      ]
-    },
-    {
-      "operatingsystem": "Fedora",
-      "operatingsystemrelease": [
-        "27",
-        "28"
-      ]
-    },
-    {
-      "operatingsystem": "OSX ",
-      "operatingsystemrelease": [
-        "10.12",
-        "10.13",
-        "10.14"
       ]
     },
     {
