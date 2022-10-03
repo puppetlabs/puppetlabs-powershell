@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v5.2.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.2.0) (2022-10-03)
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v5.1.0...v5.2.0)
+
+### Added
+
+- pdksync - \(GH-cat-11\) Certify Support for Ubuntu 22.04 [\#381](https://github.com/puppetlabs/puppetlabs-powershell/pull/381) ([david22swan](https://github.com/david22swan))
+
+### Fixed
+
+- \(MAINT\) Dropped support for Windows\(7,8,2008 + 2008 R2\(Server\), Fedora\(27+28\) and OSX OS's\(10.12-.14\) [\#382](https://github.com/puppetlabs/puppetlabs-powershell/pull/382) ([jordanbreen28](https://github.com/jordanbreen28))
+
 ## [v5.1.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v5.1.0) (2022-06-13)
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v5.0.0...v5.1.0)
