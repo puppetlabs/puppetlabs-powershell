@@ -4,6 +4,9 @@
 require 'spec_helper'
 require 'puppet/util'
 require 'ruby-pwsh'
+require 'mocha/test_unit'
+
+include Mocha::ParameterMatchers
 
 describe Puppet::Type.type(:exec).provider(:pwsh) do
   # Override the run value so we can test the super call
@@ -22,31 +25,30 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
   before :each do
     # Always assume the pwsh binary is available
-    Pwsh::Manager.stubs(:pwsh_path).returns('somepath/pwsh')
+    allow(Pwsh::Manager).to receive(:pwsh_path).and_return('somepath/pwsh')
   end
 
   describe "#run" do
     before :each do
-      Puppet::Provider::Exec.any_instance.stubs(:run)
-      provider.stubs(:execute_resource).returns('', '')
+      allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
+      allow(provider).to receive(:execute_resource).and_return('', '')
     end
 
     context 'when the powershell manager is not supported' do
       before :each do
-        Pwsh::Manager.stubs(:pwsh_supported?).returns(false)
+        allow(Pwsh::Manager).to receive(:pwsh_supported?).and_return(false)
       end
 
       let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
 
       it "should call exec run" do
-        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
-
+        allow(Puppet::Type::Exec::ProviderPwsh).to receive(:run)
         provider.run_spec_override(command)
       end
 
       it "should call shell command" do
-        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run)
-          .with(regexp_matches(/#{shell_command}/), anything)
+        allow(Puppet::Type::Exec::ProviderPwsh).to receive(:run)
+        .with(regexp_matches(/#{shell_command}/), anything)
 
         provider.run_spec_override(command)
       end
@@ -57,14 +59,14 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
         provider.expects(:write_script).with(command).yields(path)
-        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
-          with(regexp_matches(/^#{shell_command} .* < "#{Regexp.escape(path)}"/), false)
+        allow(Puppet::Type::Exec::ProviderPwsh).to receive(:run)
+        .with(regexp_matches(/^#{shell_command} .* < "#{Regexp.escape(path)}"/), false)
 
         provider.run_spec_override(command)
       end
 
       it "should supply default arguments to supress user interaction" do
-        Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
+        allow(Puppet::Type::Exec::ProviderPwsh).to receive(:run).
           with(regexp_matches(/^#{shell_command} .* #{args} < .*"/), false)
 
         provider.run_spec_override(command)
@@ -80,14 +82,16 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
         it 'should prefer pwsh in the specified path' do
           # Pretend that only the test pwsh binary exists.
-          File.stubs(:exist?).with() { |value| value == pwsh_path}.returns(true)
-          File.stubs(:exist?).with() { |value| value != pwsh_path}.returns(false)
+          allow(File).to receive(:exist?).with(satisfy { |value| value == pwsh_path })
+          .and_return(true)
+          allow(File).to receive(:exist?).with(satisfy { |value| value != pwsh_path})
+          .and_return(false)
 
           # Remove the global stub here as we're testing this method
-          Pwsh::Manager.unstub(:pwsh_path)
+          allow(Pwsh::Manager).to receive(:pwsh_path).and_call_original
 
-          Puppet::Type::Exec::ProviderPwsh.any_instance.expects(:run).
-            with(regexp_matches(native_pwsh_path_regex), false)
+          allow(Puppet::Type::Exec::ProviderPwsh).to receive(:run)
+          .with(regexp_matches(native_pwsh_path_regex), false)
 
           provider.run_spec_override(command)
         end
@@ -97,8 +101,8 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     it "should only attempt to find pwsh once when pwsh exists" do
       # Need to unstub to force the 'only once' expectation. Otherwise the
       # previous stub takes over if it's called more than once.
-      Pwsh::Manager.unstub(:pwsh_path)
-      Pwsh::Manager.expects(:pwsh_path).once.returns('somepath/pwsh')
+      allow(Pwsh::Manager).to receive(:pwsh_path).and_call_original
+      expect(Pwsh::Manager).to receive(:pwsh_path).once.and_return('somepath/pwsh')
 
       provider.run_spec_override(command)
       provider.run_spec_override(command)
