@@ -32,8 +32,6 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     before :each do
       allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
       allow(provider).to receive(:execute_resource).and_return('','')
-      # Puppet::Provider::Exec.any_instance.stub(:run)
-      # provider.stub(:execute_resource).and_return('', '')
     end
 
     context 'when the powershell manager is not supported' do
@@ -63,7 +61,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         # Path quoting is only required on Windows
         path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
-        expect(provider).to receive(:write_script).with(command).and_return(path)
+        expect(provider).to receive(:write_script).with(command).and_yield(path)
         expect(provider).to receive(:run).with(/#{shell_command} .* #{args} < .*/, false)
 
         provider.run_spec_override(command)
@@ -83,7 +81,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
           # Remove the global stub here as we're testing this method
           allow(Pwsh::Manager).to receive(:pwsh_path).and_call_original
 
-          expect(provider).to receive(:run).with(/#{native_pwsh_path}/, false)
+          expect(provider).to receive(:run).with(native_pwsh_path_regex, false)
           provider.run_spec_override(command)
         end
       end
