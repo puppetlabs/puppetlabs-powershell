@@ -25,7 +25,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   }
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}" ) }
-  let(:provider) { described_class.new(resource) }
+
+
+  subject(:provider) do
+    described_class.new(resource)
+  end
+
 
   let(:powershell) {
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -41,27 +46,27 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     context "stubbed calls" do
       before :each do
         require 'ruby-pwsh'
-        Pwsh::Manager.stubs(:windows_powershell_supported?).returns(false)
-        Puppet::Provider::Exec.any_instance.stubs(:run)
+        allow(Pwsh::Manager).to receive(:windows_powershell_supported?).and_return(false)
+        allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
       end
 
       it "should call exec run" do
-        Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
+        expect(provider).to receive(:run)
 
         provider.run_spec_override(command)
       end
 
       context "on windows", :if => Puppet.features.microsoft_windows? do
         it "should call cmd.exe /c" do
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run)
-            .with(regexp_matches(/^cmd.exe \/c/), anything)
+          expect(provider).to receive(:run)
+            .with(/^cmd.exe \/c/, anything)
 
           provider.run_spec_override(command)
         end
 
         it "should quote powershell.exe path" do
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-            with(regexp_matches(/"#{Regexp.escape(powershell)}"/), false)
+          expect(provider).to receive(:run).
+            with(/"#{Regexp.escape(powershell)}"/, false)
 
           provider.run_spec_override(command)
         end
@@ -69,16 +74,16 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         it "should quote the path to the temp file" do
           path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
-          provider.expects(:write_script).with(command).yields(path)
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-            with(regexp_matches(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/), false)
+          expect(provider).to receive(:write_script).with(command).and_yield(path)
+          expect(provider).to receive(:run)
+            .with(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/, false)
 
           provider.run_spec_override(command)
         end
 
         it "should supply default arguments to supress user interaction" do
-          Puppet::Type::Exec::ProviderPowershell.any_instance.expects(:run).
-            with(regexp_matches(/^cmd.exe \/c ".* #{args} < .*"/), false)
+          expect(provider).to receive(:run)
+            .with(/^cmd.exe \/c ".* #{args} < .*"/, false)
 
           provider.run_spec_override(command)
         end
@@ -212,12 +217,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
 
-      Pwsh::Manager.stubs(:win32console_enabled?).returns(false)
+      allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(false)
 
       expect(Pwsh::Manager.windows_powershell_supported?).to eq(true)
 
       # given PowerShellManager is supported, never emit an upgrade message
-      Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).never
+      expect(provider).to receive(:upgrade_message).never
 
       apply_compiled_manifest(manifest)
     end
@@ -225,12 +230,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     it 'emits a warning message when PowerShellManager cannot be used in a Windows environment' do
 
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
-      Pwsh::Manager.stubs(:win32console_enabled?).returns(true)
+      allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(true)
 
       expect(Pwsh::Manager.windows_powershell_supported?).to eq(false)
 
       # given PowerShellManager is NOT supported, emit an upgrade message
-      Puppet::Type::Exec::ProviderPowershell.expects(:upgrade_message).once
+      expect(Puppet::Type::Exec::ProviderPowershell).to receive(:upgrade_message).once
 
       apply_compiled_manifest(manifest)
     end
