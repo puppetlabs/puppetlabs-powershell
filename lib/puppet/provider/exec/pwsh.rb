@@ -46,6 +46,10 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   end
 
   def validatecmd(command)
+    unless command.is_a?(String) || command.is_a?(Array)
+      raise ArgumentError, _("Command must be an Array<String>, got value of class %{klass}") % { klass: command.class }
+      false
+    end
     true
   end
 
@@ -83,7 +87,16 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
     environment_variables = resource[:environment].nil? ? [] : resource[:environment]
 
-    result = ps_manager(resource[:timeout]).execute(powershell_code, timeout_ms, working_dir, environment_variables)
+    if powershell_code.is_a?(Array)
+      cmd = ''
+      powershell_code.each { |item|
+        cmd += item
+      }
+    else
+      cmd = powershell_code
+    end
+
+    result = ps_manager(resource[:timeout]).execute(cmd, timeout_ms, working_dir, environment_variables)
     stdout     = result[:stdout]
     native_out = result[:native_stdout]
     stderr     = result[:stderr]

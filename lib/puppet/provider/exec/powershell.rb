@@ -41,7 +41,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   Puppet (including 3.x), or to a Puppet version newer than 3.x and ensure you
   have .NET Framework 3.5 installed.
   UPGRADE
-
+ 
   def self.upgrade_message
     Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG if !@upgrade_warning_issued
     @upgrade_warning_issued = true
@@ -78,8 +78,17 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     end
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
     environment_variables = resource[:environment].nil? ? [] : resource[:environment]
+    
+    if powershell_code.is_a?(Array)
+      cmd = ''
+      powershell_code.each { |item|
+        cmd += item
+      }
+    else
+      cmd = powershell_code
+    end
 
-    result = ps_manager(resource[:timeout]).execute(powershell_code, timeout_ms, working_dir, environment_variables)
+    result = ps_manager(resource[:timeout]).execute(cmd, timeout_ms, working_dir, environment_variables)
     stdout     = result[:stdout]
     native_out = result[:native_stdout]
     stderr     = result[:stderr]
@@ -90,7 +99,6 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     end
 
     Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
-
     output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
 
     return output, output
@@ -100,6 +108,10 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def validatecmd(command)
+    unless command.is_a?(String) || command.is_a?(Array)
+      raise ArgumentError, _("Command must be an Array<String>, got value of class %{klass}") % { klass: command.class }
+      false
+    end
     true
   end
 

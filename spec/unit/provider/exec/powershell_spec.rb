@@ -16,6 +16,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
+  let(:command_array) { ['$(Get-WMIObject',' Win32_Account', ' -Filter ', '"SID=\'S-1-5-18\'")', ' | Format-List']}
   let(:args) {
     if Puppet.features.microsoft_windows?
       '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -'
@@ -26,11 +27,9 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}" ) }
 
-
   subject(:provider) do
     described_class.new(resource)
   end
-
 
   let(:powershell) {
     if File.exists?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -81,6 +80,16 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           provider.run_spec_override(command)
         end
 
+        it "should quote the path to the temp file with parameterised command" do
+          path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
+
+          expect(provider).to receive(:write_script).with(command_array).and_yield(path)
+          expect(provider).to receive(:run)
+            .with(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/, false)
+
+          provider.run_spec_override(command_array)
+        end
+
         it "should supply default arguments to supress user interaction" do
           expect(provider).to receive(:run)
             .with(/^cmd.exe \/c ".* #{args} < .*"/, false)
@@ -94,7 +103,12 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       context "on Windows", :if => Puppet.features.microsoft_windows? do
         it "returns the output and status" do
           output, status = provider.run(command)
+          expect(output).to match(/SID\s+:\s+S-1-5-18/)
+          expect(status.exitstatus).to eq(0)
+        end
 
+        it "returns the output and status from parameterised command" do
+          output, status = provider.run(command_array)
           expect(output).to match(/SID\s+:\s+S-1-5-18/)
           expect(status.exitstatus).to eq(0)
         end
@@ -105,15 +119,49 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           expect(resource.parameter(:onlyif).check(command)).to eq(true)
         end
 
+        it "returns true if the `onlyif` check parameterised command succeeds" do
+          resource[:onlyif] = command_array
+
+          expect(resource.parameter(:onlyif).check(command_array)).to eq(true)
+        end
+
         it "returns false if the `unless` check command succeeds" do
           resource[:unless] = command
 
           expect(resource.parameter(:unless).check(command)).to eq(false)
         end
 
+        it "returns false if the `unless` check parameterised command succeeds" do
+          resource[:unless] = command_array
+
+          expect(resource.parameter(:unless).check(command_array)).to eq(false)
+        end
+
         it "runs commands properly that output to multiple streams" do
           command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
           output, status = provider.run(command)
+
+          if Pwsh::Manager.windows_powershell_supported?
+            expected = "foo\r\n"
+          else
+            # when PowerShellManager is not used, the v1 style module collected
+            # all streams inside of a single output string
+            expected = [
+              "foo\n",
+              "bar\n'",
+              "foo.exe' is not recognized as an internal or external command,\n",
+              "operable program or batch file.\n"
+            ].join('')
+          end
+
+          expect(output).to eq(expected)
+          expect(status.exitstatus).to eq(1)
+        end
+
+
+        it "runs parameterised commands properly that output to multiple streams" do
+          command_array = ['echo ', '"foo"; ', '[System.Console]::Error.WriteLine("bar"); ', 'cmd.exe ', '/c ', 'foo.exe']
+          output, status = provider.run(command_array)
 
           if Pwsh::Manager.windows_powershell_supported?
             expected = "foo\r\n"
@@ -139,11 +187,17 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     it "should skip checking the exe" do
       expect(provider.checkexe(command)).to be_nil
     end
+
+    it "should skip checking the exe parameterised command" do
+      expect(provider.checkexe(command_array)).to be_nil
+    end
+
   end
 
   describe "#validatecmd" do
     it "should always successfully validate the command to execute" do
       expect(provider.validatecmd(command)).to eq(true)
+      expect(provider.validatecmd(command_array)).to eq(true)
     end
   end
 
@@ -161,6 +215,9 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
       it 'emits an error when working directory does not exist' do
         expect { provider.run(command) }.to raise_error(/Working directory .+ does not exist/)
+      end
+      it 'emits an error when working directory does not exist - parameterised command' do
+        expect { provider.run(command_array) }.to raise_error(/Working directory .+ does not exist/)
       end
     end
   end

@@ -15,6 +15,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   end
 
   let(:command)  { '$(Get-CIMInstance Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
+  let(:command_array) { ['$(Get-CIMInstance', ' Win32_Account', ' -Filter ', '"SID=\'S-1-5-18\'")', ' | Format-List'] }
   let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
 
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh) }
@@ -23,7 +24,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     described_class.new(resource)
   end
 
-  before :each do
+  before :each do 
     # Always assume the pwsh binary is available
     allow(Pwsh::Manager).to receive(:pwsh_path).and_return('somepath/pwsh')
   end
@@ -67,6 +68,17 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         provider.run_spec_override(command)
       end
 
+      it "should quote the path to the temp file with parameterised command" do
+        skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
+        # Path quoting is only required on Windows
+        path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
+
+        expect(provider).to receive(:write_script).with(command_array).and_yield(path)
+        expect(provider).to receive(:run).with(/#{shell_command} .* #{args} < .*/, false)
+
+        provider.run_spec_override(command_array)
+      end
+
       context 'when specifying a path' do
         let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
         let(:pwsh_path) { Puppet::Util::Platform.windows? ? path + '/pwsh.exe' : path + '/pwsh' }
@@ -102,6 +114,9 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   describe "#checkexe" do
     it "should skip checking the exe" do
       expect(provider.checkexe(command)).to be_nil
+    end
+    it "should skip checking the exe with parameterised command" do
+      expect(provider.checkexe(command_array)).to be_nil
     end
   end
 
