@@ -18,7 +18,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
         }
   DESC
 
-  def run(command, check = false)
+  def run(command, check: false)
     @pwsh ||= pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
     return execute_resource(command, resource) if Pwsh::Manager.pwsh_supported?

@@ -52,7 +52,7 @@ Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
     Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output, pipe_timeout: pipe_timeout)
   end
 
-  def run(command, check = false)
+  def run(command, check: false)
     return execute_resource(command, resource) if Pwsh::Manager.windows_powershell_supported?
 
     self.class.upgrade_message

@@ -11,7 +11,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   # testing Puppet internals that changed in 3.4.0 and made the specs
   # no longer work the way they were originally specified.
   Puppet::Type::Exec::ProviderPowershell.instance_eval do
-    alias run_spec_override run
+    alias_method :run_spec_override, :run
   end
 
   subject(:provider) do
