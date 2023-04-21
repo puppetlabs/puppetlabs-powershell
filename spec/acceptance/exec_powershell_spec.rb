@@ -434,7 +434,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   describe 'should execute using 64 bit powershell' do
     # Only applicable to Windows platforms
     p3 = <<-MANIFEST
-     $maxArchNumber = $::architecture? {
+     $maxArchNumber = $facts['os']['architecture']? {
       /(?i)(i386|i686|x86)$/	=> 4,
       /(?i)(x64|x86_64)/=> 8,
       default => 0
