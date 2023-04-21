@@ -540,6 +540,7 @@ describe 'pwsh provider:' do
       before(:all) do
         remove_pwshlib
       end
+
       after(:all) do
         install_pwshlib
       end

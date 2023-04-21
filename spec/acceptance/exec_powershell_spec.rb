@@ -478,6 +478,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     before(:all) do
       remove_pwshlib
     end
+
     after(:all) do
       install_pwshlib
     end
