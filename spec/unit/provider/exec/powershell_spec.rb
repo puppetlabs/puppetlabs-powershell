@@ -14,7 +14,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     alias_method :run_spec_override, :run
   end
 
-  let(:command)  { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
+  let(:command) { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) {
     if Puppet.features.microsoft_windows?
       '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -'
@@ -151,7 +151,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       end
 
       # This working directory error is specific to the PowerShell manager on Windows.
-      let(:work_dir)  { "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" }
+      let(:work_dir) { "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" }
       let(:command)  { 'exit 0' }
       let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :cwd => work_dir) }
       let(:provider) { described_class.new(resource) }
