@@ -70,10 +70,6 @@ RSpec/ExampleLength:
 RSpec/MessageSpies:
   EnforcedStyle: receive
 
-# Offense count: 10
-RSpec/MultipleExpectations:
-  Max: 3
-
 # Offense count: 5
 # Configuration parameters: AllowSubject.
 RSpec/MultipleMemoizedHelpers:
@@ -91,12 +87,6 @@ RSpec/NoExpectationExample:
   Exclude:
     - 'spec/acceptance/exec_powershell_spec.rb'
     - 'spec/acceptance/exec_pwsh_spec.rb'
-
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ReceiveNever:
-  Exclude:
-    - 'spec/unit/provider/exec/powershell_spec.rb'
 
 # Offense count: 12
 RSpec/RepeatedExample:

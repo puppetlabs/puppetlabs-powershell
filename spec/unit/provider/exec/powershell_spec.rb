@@ -219,7 +219,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       expect(Pwsh::Manager.windows_powershell_supported?).to be(true)
 
       # given PowerShellManager is supported, never emit an upgrade message
-      expect(provider).to receive(:upgrade_message).never
+      expect(provider).not_to receive(:upgrade_message)
 
       apply_compiled_manifest(manifest)
     end

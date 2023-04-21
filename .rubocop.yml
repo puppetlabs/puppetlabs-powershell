@@ -23,3 +23,5 @@ AllCops:
   - "**/Puppetfile"
   - "**/Vagrantfile"
   - "**/Guardfile"
+RSpec/MultipleExpectations:
+  Max: 3
