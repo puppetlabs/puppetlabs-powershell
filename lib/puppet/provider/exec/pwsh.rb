@@ -32,9 +32,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
       # we redirect powershell's stdin to read from the file. Current
       # versions of Windows use per-user temp directories with strong
       # permissions, but I'd rather not make (poor) assumptions.
-      if Puppet::Util::Platform.windows?
-        return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{pwsh_args.join(' ')} -Command - < \"#{native_path}\"\"", check)
-      end
+      return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{pwsh_args.join(' ')} -Command - < \"#{native_path}\"\"", check) if Puppet::Util::Platform.windows?
 
       return super("/bin/sh -c \"#{native_path(@pwsh)} #{pwsh_args.join(' ')} -Command - < #{native_path}\"", check)
     end
