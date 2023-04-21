@@ -2,9 +2,9 @@
 
 require 'puppet/provider/exec'
 
-Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec do
-  confine :operatingsystem => :windows
-  confine :feature => :pwshlib
+Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
+  confine operatingsystem: :windows
+  confine feature: :pwshlib
 
   desc <<-DESC
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`

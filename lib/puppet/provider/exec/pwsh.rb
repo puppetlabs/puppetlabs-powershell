@@ -2,8 +2,8 @@
 
 require 'puppet/provider/exec'
 
-Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
-  confine :feature => :pwshlib
+Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
+  confine feature: :pwshlib
 
   desc <<-DESC
     Executes PowerShell Core commands. One of the `onlyif`, `unless`, or `creates`

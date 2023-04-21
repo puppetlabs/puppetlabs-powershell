@@ -27,7 +27,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
-  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{Dir.home}") }
+  let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :powershell, environment: "HOME=#{Dir.home}") }
 
   let(:powershell) do
     if File.exist?("#{ENV.fetch('SYSTEMROOT', nil)}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -53,7 +53,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
-      context "when on windows", :if => Puppet.features.microsoft_windows? do
+      context "when on windows", if: Puppet.features.microsoft_windows? do
         it "calls cmd.exe /c" do
           expect(provider).to receive(:run)
             .with(/^cmd.exe \/c/, anything)
@@ -88,7 +88,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     context "with actual runs" do
-      context "when on Windows", :if => Puppet.features.microsoft_windows? do
+      context "when on Windows", if: Puppet.features.microsoft_windows? do
         it "returns the output and status" do
           output, status = provider.run(command)
 
@@ -153,7 +153,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       # This working directory error is specific to the PowerShell manager on Windows.
       let(:work_dir) { "#{ENV.fetch('SYSTEMROOT', nil)}\\some\\directory\\that\\does\\not\\exist" }
       let(:command)  { 'exit 0' }
-      let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :cwd => work_dir) }
+      let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :powershell, cwd: work_dir) }
       let(:provider) { described_class.new(resource) }
 
       it 'emits an error when working directory does not exist' do

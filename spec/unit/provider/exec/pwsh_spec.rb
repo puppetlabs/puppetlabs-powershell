@@ -21,7 +21,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   let(:command) { '$(Get-CIMInstance Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
 
-  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh) }
+  let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :pwsh) }
 
   before do
     # Always assume the pwsh binary is available
@@ -73,7 +73,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
         let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
         let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
 
-        let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :path => path) }
+        let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :pwsh, path: path) }
 
         it 'prefers pwsh in the specified path' do
           # Pretend that only the test pwsh binary exists.
