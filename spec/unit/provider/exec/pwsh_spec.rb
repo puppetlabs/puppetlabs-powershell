@@ -69,7 +69,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
       context 'when specifying a path' do
         let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
-        let(:pwsh_path) { Puppet::Util::Platform.windows? ? path + '/pwsh.exe' : path + '/pwsh' }
+        let(:pwsh_path) { Puppet::Util::Platform.windows? ? "#{path}/pwsh.exe" : "#{path}/pwsh" }
         let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
         let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
 
