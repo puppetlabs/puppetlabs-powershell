@@ -101,10 +101,10 @@ describe 'pwsh provider:' do
   
     describe 'should handle a try/catch successfully' do
       context "on #{os[:family]}" do
-        let(:try_successfile) { platform_string('C:\try_success.txt','/tmp/try_success.txt') }
-        let(:try_failfile) { platform_string('C:\try_shouldntexist.txt','/tmp/try_shouldntexist.txt') }
-        let(:catch_successfile) { platform_string('C:\catch_success.txt','/tmp/catch_success.txt') }
-        let(:catch_failfile) { platform_string('C:\catch_shouldntexist.txt','/tmp/catch_shouldntexist.txt') }
+        let(:try_successfile) { platform_string('C:\try_success.txt', '/tmp/try_success.txt') }
+        let(:try_failfile) { platform_string('C:\try_shouldntexist.txt', '/tmp/try_shouldntexist.txt') }
+        let(:catch_successfile) { platform_string('C:\catch_success.txt', '/tmp/catch_success.txt') }
+        let(:catch_failfile) { platform_string('C:\catch_shouldntexist.txt', '/tmp/catch_shouldntexist.txt') }
         let(:try_content) { 'try_executed' }
         let(:catch_content) { 'catch_executed' }
   
@@ -127,11 +127,11 @@ describe 'pwsh provider:' do
   
           apply_manifest(manifest, catch_failures: true)
   
-          run_shell(platform_string("cmd.exe /c \"type #{try_successfile}\"","cat #{try_successfile}")) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{try_successfile}\"", "cat #{try_successfile}")) do |result|
             expect(result.stdout).to match(/#{try_content}/)
           end
   
-          run_shell(platform_string("cmd.exe /c \"type #{catch_failfile}\"","cat #{catch_failfile}"), expect_failures: true) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{catch_failfile}\"", "cat #{catch_failfile}"), expect_failures: true) do |result|
             if windows_platform?
               expect(result.stderr).to match(/The system cannot find the file specified\./)
             else
@@ -159,11 +159,11 @@ describe 'pwsh provider:' do
   
           apply_manifest(p1, catch_failures: true)
   
-          run_shell(platform_string("cmd.exe /c \"type #{catch_successfile}\"","cat #{catch_successfile}")) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{catch_successfile}\"", "cat #{catch_successfile}")) do |result|
             expect(result.stdout).to match(/#{catch_content}/)
           end
   
-          run_shell(platform_string("cmd.exe /c \"type #{try_failfile}\"","cat #{try_failfile}"), expect_failures: true) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{try_failfile}\"", "cat #{try_failfile}"), expect_failures: true) do |result|
             if windows_platform?
               expect(result.stderr).to match(/The system cannot find the file specified\./)
             else

@@ -31,7 +31,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   describe "#run" do
     before :each do
       allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
-      allow(provider).to receive(:execute_resource).and_return('','')
+      allow(provider).to receive(:execute_resource).and_return('', '')
     end
 
     context 'when the powershell manager is not supported' do
