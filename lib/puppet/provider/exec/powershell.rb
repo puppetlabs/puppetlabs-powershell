@@ -104,6 +104,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   private
+
   def write_script(content, &block)
     Tempfile.open(['puppet-powershell', '.ps1']) do |file|
       file.puts(content)
