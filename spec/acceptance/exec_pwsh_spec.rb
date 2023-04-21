@@ -47,9 +47,7 @@ describe 'pwsh provider:' do
     shared_examples 'should fail' do |manifest, error_check|
       it 'throws an error' do
         result = apply_manifest(manifest, expect_failures: true)
-        unless error_check.nil?
-          expect(result.stderr).to match(error_check)
-        end
+        expect(result.stderr).to match(error_check) unless error_check.nil?
       end
     end
 

@@ -106,12 +106,6 @@ RSpec/SubjectStub:
     - 'spec/unit/provider/exec/powershell_spec.rb'
     - 'spec/unit/provider/exec/pwsh_spec.rb'
 
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-Style/IfUnlessModifier:
-  Exclude:
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-
 # Offense count: 7
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: AllowedMethods, AllowedPatterns.
