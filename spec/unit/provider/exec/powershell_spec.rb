@@ -65,8 +65,8 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         end
 
         it "should quote powershell.exe path" do
-          expect(provider).to receive(:run).
-            with(/"#{Regexp.escape(powershell)}"/, false)
+          expect(provider).to receive(:run)
+            .with(/"#{Regexp.escape(powershell)}"/, false)
 
           provider.run_spec_override(command)
         end
