@@ -4,7 +4,7 @@ require 'puppet/provider/exec'
 
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   confine :feature => :pwshlib
-  
+
   desc <<-EOT
     Executes PowerShell Core commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.

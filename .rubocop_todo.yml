@@ -1,12 +1,3 @@
-# Offense count: 74
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowInHeredoc.
-Layout/TrailingWhitespace:
-  Exclude:
-    - 'lib/puppet/provider/exec/pwsh.rb'
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-
 # Offense count: 6
 # This cop supports safe autocorrection (--autocorrect).
 Lint/AmbiguousRegexpLiteral:

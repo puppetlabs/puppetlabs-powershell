@@ -124,7 +124,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that exit session' do
-    let(:exit_pp) { 
+    let(:exit_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -144,7 +144,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that break session' do
-    let(:break_pp) { 
+    let(:break_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Break',
@@ -164,7 +164,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that return from session' do
-    let(:return_pp) { 
+    let(:return_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'return 0',
@@ -184,7 +184,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should not leak variables across calls to single session' do
-    let(:var_leak_setup_pp) { 
+    let(:var_leak_setup_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => '$special=1',
@@ -194,7 +194,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    let(:var_leak_test_pp) { 
+    let(:var_leak_test_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
@@ -214,7 +214,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should not leak environment variables across calls to single session' do
-    let(:envar_leak_setup_pp) { 
+    let(:envar_leak_setup_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => "\\$env:superspecial='1'",
@@ -224,7 +224,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    let(:envar_leak_test_pp) { 
+    let(:envar_leak_test_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
@@ -234,7 +234,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    let(:envar_ext_test_pp) { 
+    let(:envar_ext_test_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
@@ -271,7 +271,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from unless' do
-    let(:unless_not_triggered_pp) { 
+    let(:unless_not_triggered_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -282,7 +282,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    let(:unless_triggered_pp) { 
+    let(:unless_triggered_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -303,7 +303,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from onlyif' do
-    let(:onlyif_not_triggered_pp) { 
+    let(:onlyif_not_triggered_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -314,7 +314,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    let(:onlyif_triggered_pp) { 
+    let(:onlyif_triggered_pp) {
       <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -335,7 +335,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should be able to access the files after execution' do
-    let(:p2) { 
+    let(:p2) {
       <<-MANIFEST
       exec{"TestPowershell":
         command   => ' "puppet" | Out-File -FilePath #{file_path} -Encoding UTF8',
@@ -478,7 +478,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     after(:all) do
       install_pwshlib
     end
-  
+
     let(:manifest) {
       <<-MANIFEST
         exec{'TestPowershell':
@@ -488,7 +488,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         }
       MANIFEST
     }
-  
+
     it "Errors predictably" do
       apply_manifest(manifest, expect_failures: true) do |result|
         expect(result.stderr).to match(/Provider powershell is not functional on this host/)
