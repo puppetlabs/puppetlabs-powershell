@@ -17,7 +17,7 @@ describe 'pwsh provider:' do
       raise 'failed to remove pwsh' if pwsh_installed?
     end
 
-    let(:manifest) {
+    let(:manifest) do
       <<-MANIFEST
         exec{'TestPowershell':
           command   => 'Get-Process > /process.txt',
@@ -25,7 +25,7 @@ describe 'pwsh provider:' do
           provider  => pwsh,
         }
       MANIFEST
-    }
+    end
 
     it 'errors because pwsh is not in the path' do
       fail 'pwsh not discovered in the path' unless pwsh_installed? == false
@@ -73,7 +73,7 @@ describe 'pwsh provider:' do
 
     describe "should run successfully" do
       context "when on #{os[:family]}" do
-        let(:manifest) {
+        let(:manifest) do
           if windows_platform?
             <<-MANIFEST
               exec{'TestPowershell':
@@ -91,7 +91,7 @@ describe 'pwsh provider:' do
               }
             MANIFEST
           end
-        }
+        end
 
         it 'is idempotent' do
           idempotent_apply(manifest)
@@ -175,14 +175,14 @@ describe 'pwsh provider:' do
     end
 
     describe 'should run commands that exit session' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
@@ -194,14 +194,14 @@ describe 'pwsh provider:' do
     end
 
     describe 'should run commands that break session' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'Break',
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
@@ -213,14 +213,14 @@ describe 'pwsh provider:' do
     end
 
     describe 'should run commands that return from session' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'return 0',
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
@@ -232,23 +232,23 @@ describe 'pwsh provider:' do
     end
 
     describe 'should not leak variables across calls to single session' do
-      let(:var_leak_setup) {
+      let(:var_leak_setup) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => '$special=1',
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
-      let(:var_leak_test) {
+      let(:var_leak_test) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'does not see variable from previous run' do
         # Setup the variable
@@ -260,32 +260,32 @@ describe 'pwsh provider:' do
     end
 
     describe 'should not leak environment variables across calls to single session' do
-      let(:envar_leak_setup) {
+      let(:envar_leak_setup) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => "\\$env:superspecial='1'",
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
-      let(:envar_leak_test) {
+      let(:envar_leak_test) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
-      let(:envar_ext_test) {
+      let(:envar_ext_test) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       after do
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
@@ -325,7 +325,7 @@ describe 'pwsh provider:' do
     end
 
     describe 'should allow exit from unless' do
-      let(:unless_not_triggered) {
+      let(:unless_not_triggered) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
@@ -333,9 +333,9 @@ describe 'pwsh provider:' do
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
-      let(:unless_triggered) {
+      let(:unless_triggered) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
@@ -343,7 +343,7 @@ describe 'pwsh provider:' do
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'RUNS command if unless is NOT triggered' do
         apply_manifest(unless_not_triggered, expect_changes: true)
@@ -355,7 +355,7 @@ describe 'pwsh provider:' do
     end
 
     describe 'should allow exit from onlyif' do
-      let(:onlyif_not_triggered) {
+      let(:onlyif_not_triggered) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
@@ -363,9 +363,9 @@ describe 'pwsh provider:' do
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
-      let(:onlyif_triggered) {
+      let(:onlyif_triggered) do
         <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
@@ -373,7 +373,7 @@ describe 'pwsh provider:' do
           provider  => pwsh,
         }
         MANIFEST
-      }
+      end
 
       it 'does not run command if onlyif is NOT triggered' do
         apply_manifest(onlyif_not_triggered, catch_changes: true)
@@ -385,14 +385,14 @@ describe 'pwsh provider:' do
     end
 
     describe 'should be able to access the files after execution' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
         exec{"TestPowershell":
           command   => ' "puppet" | Out-File -FilePath #{file_path} -Encoding UTF8',
           provider  => pwsh
         }
         MANIFEST
-      }
+      end
 
       win_file = 'C:/services.txt'
       posix_file = '/tmp/services.txt'
@@ -431,7 +431,7 @@ describe 'pwsh provider:' do
     end
 
     describe 'should be able to execute a ps1 file provided' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
       file{'#{external_script}':
         content => '#{File.open(File.join(File.dirname(__FILE__), external_fixture)).read()}'
@@ -442,7 +442,7 @@ describe 'pwsh provider:' do
         require   => File['#{external_script}']
       }
         MANIFEST
-      }
+      end
 
       win_file = 'c:/temp/commands.csv'
       posix_file = '/tmp/commands.csv'
@@ -461,7 +461,7 @@ describe 'pwsh provider:' do
     end
 
     describe 'passing parameters to the ps1 file' do
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
         $commandName = '#{command_name}'
         $outFile = '#{outfile}'
@@ -475,7 +475,7 @@ describe 'pwsh provider:' do
           require  => File['#{external_script}'],
       }
         MANIFEST
-      }
+      end
 
       win_file = 'c:/temp/params.csv'
       posix_file = '/tmp/params.csv'
@@ -545,7 +545,7 @@ describe 'pwsh provider:' do
         install_pwshlib
       end
 
-      let(:manifest) {
+      let(:manifest) do
         <<-MANIFEST
           exec{'TestPowershell':
             command   => 'Get-Process > /process.txt',
@@ -553,7 +553,7 @@ describe 'pwsh provider:' do
             provider  => pwsh,
           }
         MANIFEST
-      }
+      end
 
       it "Errors predictably" do
         apply_manifest(manifest, expect_failures: true) do |result|

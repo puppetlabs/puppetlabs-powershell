@@ -19,17 +19,17 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   let(:command) { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
-  let(:args) {
+  let(:args) do
     if Puppet.features.microsoft_windows?
       '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -'
     else
       '-NoProfile -NonInteractive -NoLogo -Command -'
     end
-  }
+  end
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}") }
 
-  let(:powershell) {
+  let(:powershell) do
     if File.exist?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
       "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
     elsif File.exist?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
@@ -37,7 +37,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     else
       'powershell.exe'
     end
-  }
+  end
 
   describe "#run" do
     context "with stubbed calls" do
@@ -163,14 +163,14 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   describe 'when applying a catalog' do
-    let(:manifest) {
+    let(:manifest) do
       <<-MANIFEST
       exec { 'PS':
         command   => 'exit 0',
         provider  => powershell,
       }
       MANIFEST
-    }
+    end
     let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
 
     before do
