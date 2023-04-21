@@ -49,7 +49,8 @@ Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
 
   def ps_manager(pipe_timeout)
     debug_output = Puppet::Util::Log.level == :debug
-    Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output, pipe_timeout: pipe_timeout)
+    Pwsh::Manager.instance(Pwsh::Manager.powershell_path, Pwsh::Manager.powershell_args, debug: debug_output,
+                                                                                         pipe_timeout: pipe_timeout)
   end
 
   def run(command, check = false)

@@ -129,7 +129,8 @@ describe 'pwsh provider:' do
             expect(result.stdout).to match(/#{try_content}/)
           end
 
-          run_shell(platform_string("cmd.exe /c \"type #{catch_failfile}\"", "cat #{catch_failfile}"), expect_failures: true) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{catch_failfile}\"", "cat #{catch_failfile}"),
+                    expect_failures: true) do |result|
             if windows_platform?
               expect(result.stderr).to match(/The system cannot find the file specified\./)
             else
@@ -161,7 +162,8 @@ describe 'pwsh provider:' do
             expect(result.stdout).to match(/#{catch_content}/)
           end
 
-          run_shell(platform_string("cmd.exe /c \"type #{try_failfile}\"", "cat #{try_failfile}"), expect_failures: true) do |result|
+          run_shell(platform_string("cmd.exe /c \"type #{try_failfile}\"", "cat #{try_failfile}"),
+                    expect_failures: true) do |result|
             if windows_platform?
               expect(result.stderr).to match(/The system cannot find the file specified\./)
             else
