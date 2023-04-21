@@ -64,13 +64,6 @@ RSpec/DescribeClass:
 RSpec/ExampleLength:
   Max: 25
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/LeadingSubject:
-  Exclude:
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-    - 'spec/unit/provider/exec/pwsh_spec.rb'
-
 # Offense count: 15
 # Configuration parameters: .
 # SupportedStyles: have_received, receive

@@ -14,14 +14,14 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     alias_method :run_spec_override, :run
   end
 
+  subject(:provider) do
+    described_class.new(resource)
+  end
+
   let(:command) { '$(Get-CIMInstance Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
 
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh) }
-
-  subject(:provider) do
-    described_class.new(resource)
-  end
 
   before do
     # Always assume the pwsh binary is available

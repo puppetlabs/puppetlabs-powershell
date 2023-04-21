@@ -14,6 +14,10 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     alias_method :run_spec_override, :run
   end
 
+  subject(:provider) do
+    described_class.new(resource)
+  end
+
   let(:command) { '$(Get-WMIObject Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
   let(:args) {
     if Puppet.features.microsoft_windows?
@@ -24,10 +28,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   }
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}") }
-
-  subject(:provider) do
-    described_class.new(resource)
-  end
 
   let(:powershell) {
     if File.exist?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
