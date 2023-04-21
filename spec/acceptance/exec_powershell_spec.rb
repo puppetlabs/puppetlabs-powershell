@@ -366,7 +366,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         command   => 'throw "We are writing an error"',
       }
     MANIFEST
-    it_should_behave_like 'should fail', pexception, /We are writing an error/i
+    it_behaves_like 'should fail', pexception, /We are writing an error/i
   end
 
   describe 'should error if timeout is exceeded' do
@@ -378,7 +378,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         provider => powershell,
       }
     MANIFEST
-    it_should_behave_like 'should fail', ptimeoutexception
+    it_behaves_like 'should fail', ptimeoutexception
   end
 
   describe 'should be able to execute a ps1 file provided' do
@@ -445,7 +445,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       provider => powershell
     }
     MANIFEST
-    it_should_behave_like 'apply success', p3
+    it_behaves_like 'apply success', p3
   end
 
   describe 'test admin rights' do
@@ -455,7 +455,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       $pr = New-Object Security.Principal.WindowsPrincipal $id
       if(!($pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))){Write-Error "Not in admin"}
     PS1
-    it_should_behave_like 'standard exec', ps1
+    it_behaves_like 'standard exec', ps1
   end
 
   describe 'test import-module' do
@@ -469,7 +469,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         Write-Error "Failed to import module ${mods[0].Name}"
       }
     PS1
-    it_should_behave_like 'standard exec', pimport
+    it_behaves_like 'standard exec', pimport
   end
 
   # TODO: For some reason, Puppet still sees the dependent module as available during

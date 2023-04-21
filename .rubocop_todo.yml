@@ -63,14 +63,6 @@ RSpec/DescribeClass:
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
   Max: 25
-# Offense count: 10
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: it_behaves_like, it_should_behave_like
-RSpec/ItBehavesLike:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
 
 # Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).
