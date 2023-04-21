@@ -7,6 +7,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   # In this case, it just needs a HOME that has a valid directory, no files get stored there
   # HOME is not used on Windows so it is safe to apply hosts, no matter its platform
   let(:ps_environment) { "environment => ['HOME=/tmp']," }
+
   ps_environment = "environment => ['HOME=/tmp'],"
 
   shared_examples 'should fail' do |manifest, error_check|
