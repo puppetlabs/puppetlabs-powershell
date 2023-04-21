@@ -112,18 +112,18 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
           output, status = provider.run(command)
 
-          if Pwsh::Manager.windows_powershell_supported?
-            expected = "foo\r\n"
-          else
-            # when PowerShellManager is not used, the v1 style module collected
-            # all streams inside of a single output string
-            expected = [
-              "foo\n",
-              "bar\n'",
-              "foo.exe' is not recognized as an internal or external command,\n",
-              "operable program or batch file.\n"
-            ].join('')
-          end
+          expected = if Pwsh::Manager.windows_powershell_supported?
+                       "foo\r\n"
+                     else
+                       # when PowerShellManager is not used, the v1 style module collected
+                       # all streams inside of a single output string
+                       [
+                         "foo\n",
+                         "bar\n'",
+                         "foo.exe' is not recognized as an internal or external command,\n",
+                         "operable program or batch file.\n"
+                       ].join('')
+                     end
 
           expect(output).to eq(expected)
           expect(status.exitstatus).to eq(1)
