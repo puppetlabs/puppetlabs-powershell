@@ -122,7 +122,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
                          "bar\n'",
                          "foo.exe' is not recognized as an internal or external command,\n",
                          "operable program or batch file.\n"
-                       ].join('')
+                       ].join
                      end
 
           expect(output).to eq(expected)
