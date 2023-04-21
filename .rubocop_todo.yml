@@ -94,12 +94,6 @@ RSpec/RepeatedExample:
     - 'spec/acceptance/exec_powershell_spec.rb'
     - 'spec/acceptance/exec_pwsh_spec.rb'
 
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-RSpec/ScatteredLet:
-  Exclude:
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-
 # Offense count: 2
 RSpec/StubbedMock:
   Exclude:
@@ -111,13 +105,6 @@ RSpec/SubjectStub:
   Exclude:
     - 'spec/unit/provider/exec/powershell_spec.rb'
     - 'spec/unit/provider/exec/pwsh_spec.rb'
-
-# Offense count: 1
-# Configuration parameters: EnforcedStyle, AllowedPatterns.
-# SupportedStyles: snake_case, camelCase
-RSpec/VariableName:
-  Exclude:
-    - 'spec/acceptance/exec_pwsh_spec.rb'
 
 # Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).

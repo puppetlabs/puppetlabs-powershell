@@ -463,7 +463,7 @@ describe 'pwsh provider:' do
     describe 'passing parameters to the ps1 file' do
       let(:manifest) {
         <<-MANIFEST
-        $commandName = '#{commandName}'
+        $commandName = '#{command_name}'
         $outFile = '#{outfile}'
 
         file{'#{external_script}':
@@ -483,14 +483,14 @@ describe 'pwsh provider:' do
       describe file(windows_platform? ? win_file : posix_file) do
         let(:external_script) { windows_platform? ? 'C:\\param_script.ps1' : '/tmp/param_script.ps1' }
         let(:outfile) { windows_platform? ? win_file : posix_file }
-        let(:commandName) { 'Export-Csv' }
+        let(:command_name) { 'Export-Csv' }
 
         it 'applies the manifest' do
           apply_manifest(manifest, catch_failures: true)
         end
 
         it { is_expected.to be_file }
-        its(:content) { is_expected.to match(/#{commandName}/) }
+        its(:content) { is_expected.to match(/#{command_name}/) }
       end
     end
 
