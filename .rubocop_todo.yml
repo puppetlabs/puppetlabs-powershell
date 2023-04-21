@@ -1,13 +1,3 @@
-# Offense count: 15
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: empty_lines, no_empty_lines
-Layout/EmptyLinesAroundBlockBody:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-
-# Offense count: 3
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: AllowForAlignment, AllowBeforeTrailingComments, ForceEqualSignAlignment.
 Layout/ExtraSpacing:

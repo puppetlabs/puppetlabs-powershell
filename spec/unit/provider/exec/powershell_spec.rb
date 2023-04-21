@@ -6,7 +6,6 @@ require 'puppet/util'
 require 'fileutils'
 
 describe Puppet::Type.type(:exec).provider(:powershell) do
-
   # Override the run value so we can test the super call
   # There is no real good way to do this otherwise, previously we were
   # testing Puppet internals that changed in 3.4.0 and made the specs
@@ -214,7 +213,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
-
       allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(false)
 
       expect(Pwsh::Manager.windows_powershell_supported?).to eq(true)
@@ -226,7 +224,6 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
 
     it 'emits a warning message when PowerShellManager cannot be used in a Windows environment' do
-
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
       allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(true)
 

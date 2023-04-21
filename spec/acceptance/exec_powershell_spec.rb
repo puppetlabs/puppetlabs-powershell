@@ -56,7 +56,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
 
   describe 'should handle a try/catch successfully' do
     context "on host with platform #{}" do
-
       let(:try_successfile) { 'C:\try_success.txt' }
       let(:try_failfile) { 'C:\try_shouldntexist.txt' }
       let(:catch_successfile) { 'C:\catch_success.txt' }
@@ -65,7 +64,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       let(:catch_content) { 'catch_executed' }
 
       it 'should demonstrably execute PowerShell code inside a try block' do
-
         powershell_cmd = <<-CMD
         try {
         $foo = @(1, 2, 3).count
@@ -142,7 +140,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should run a second time' do
       apply_manifest(exit_pp, expect_changes: true)
     end
-
   end
 
   describe 'should run commands that break session' do
@@ -162,7 +159,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should run a second time' do
       apply_manifest(break_pp, expect_changes: true)
     end
-
   end
 
   describe 'should run commands that return from session' do
@@ -182,11 +178,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should run a second time' do
       apply_manifest(return_pp, expect_changes: true)
     end
-
   end
 
   describe 'should not leak variables across calls to single session' do
-
     let(:var_leak_setup_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => '$special=1',
@@ -212,11 +206,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       # Test to see if subsequent call sees the variable
       apply_manifest(var_leak_test_pp, expect_changes: true)
     end
-
   end
 
   describe 'should not leak environment variables across calls to single session' do
-
     let(:envar_leak_setup_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => "\\$env:superspecial='1'",
@@ -271,7 +263,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from unless' do
-
     let(:unless_not_triggered_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -299,11 +290,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should NOT run command if unless IS triggered' do
       apply_manifest(unless_triggered_pp, catch_changes: true)
     end
-
   end
 
   describe 'should allow exit from onlyif' do
-
     let(:onlyif_not_triggered_pp) { <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
@@ -331,7 +320,6 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     it 'should RUN command if onlyif IS triggered' do
       apply_manifest(onlyif_triggered_pp, expect_changes: true)
     end
-
   end
 
   describe 'should be able to access the files after execution' do
