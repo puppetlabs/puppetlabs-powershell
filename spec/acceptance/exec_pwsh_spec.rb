@@ -175,12 +175,13 @@ describe 'pwsh provider:' do
     end
   
     describe 'should run commands that exit session' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should not error on first run' do
@@ -193,12 +194,13 @@ describe 'pwsh provider:' do
     end
   
     describe 'should run commands that break session' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'Break',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should not error on first run' do
@@ -211,12 +213,13 @@ describe 'pwsh provider:' do
     end
   
     describe 'should run commands that return from session' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'return 0',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should not error on first run' do
@@ -230,20 +233,22 @@ describe 'pwsh provider:' do
     end
   
     describe 'should not leak variables across calls to single session' do
-      let(:var_leak_setup) { <<-MANIFEST
+      let(:var_leak_setup) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => '$special=1',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
-      let(:var_leak_test) { <<-MANIFEST
+      let(:var_leak_test) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should not see variable from previous run' do
@@ -256,28 +261,31 @@ describe 'pwsh provider:' do
     end
   
     describe 'should not leak environment variables across calls to single session' do
-      let(:envar_leak_setup) { <<-MANIFEST
+      let(:envar_leak_setup) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => "\\$env:superspecial='1'",
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
-      let(:envar_leak_test) { <<-MANIFEST
+      let(:envar_leak_test) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
-      let(:envar_ext_test) { <<-MANIFEST
+      let(:envar_ext_test) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       after(:each) do
@@ -318,22 +326,24 @@ describe 'pwsh provider:' do
     end
   
     describe 'should allow exit from unless' do
-      let(:unless_not_triggered) { <<-MANIFEST
+      let(:unless_not_triggered) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           unless    => 'exit 1',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
-      let(:unless_triggered) { <<-MANIFEST
+      let(:unless_triggered) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           unless    => 'exit 0',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should RUN command if unless is NOT triggered' do
@@ -346,22 +356,24 @@ describe 'pwsh provider:' do
     end
   
     describe 'should allow exit from onlyif' do
-      let(:onlyif_not_triggered) { <<-MANIFEST
+      let(:onlyif_not_triggered) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           onlyif    => 'exit 1',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
-      let(:onlyif_triggered) { <<-MANIFEST
+      let(:onlyif_triggered) { 
+        <<-MANIFEST
         exec{'TestPowershell':
           command   => 'exit 0',
           onlyif    => 'exit 0',
           provider  => pwsh,
         }
-      MANIFEST
+        MANIFEST
       }
   
       it 'should NOT run command if onlyif is NOT triggered' do
@@ -374,12 +386,13 @@ describe 'pwsh provider:' do
     end
   
     describe 'should be able to access the files after execution' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
         exec{"TestPowershell":
           command   => ' "puppet" | Out-File -FilePath #{file_path} -Encoding UTF8',
           provider  => pwsh
         }
-      MANIFEST
+        MANIFEST
       }
   
       win_file = 'C:/services.txt'
@@ -419,7 +432,8 @@ describe 'pwsh provider:' do
     end
   
     describe 'should be able to execute a ps1 file provided' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
       file{'#{external_script}':
         content => '#{File.open(File.join(File.dirname(__FILE__), external_fixture)).read()}'
       }
@@ -428,7 +442,7 @@ describe 'pwsh provider:' do
         provider  => pwsh,
         require   => File['#{external_script}']
       }
-      MANIFEST
+        MANIFEST
       }
   
       win_file = 'c:/temp/commands.csv'
@@ -448,7 +462,8 @@ describe 'pwsh provider:' do
     end
   
     describe 'passing parameters to the ps1 file' do
-      let(:manifest) { <<-MANIFEST
+      let(:manifest) { 
+        <<-MANIFEST
         $commandName = '#{commandName}'
         $outFile = '#{outfile}'
   
@@ -460,7 +475,7 @@ describe 'pwsh provider:' do
           command	 => "#{external_script} -CommandName '$commandName' -FileOut '$outFile'",
           require  => File['#{external_script}'],
       }
-      MANIFEST
+        MANIFEST
       }
   
       win_file = 'c:/temp/params.csv'

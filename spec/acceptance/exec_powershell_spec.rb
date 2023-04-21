@@ -124,13 +124,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that exit session' do
-    let(:exit_pp) { <<-MANIFEST
+    let(:exit_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should not error on first run' do
@@ -143,13 +144,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that break session' do
-    let(:break_pp) { <<-MANIFEST
+    let(:break_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Break',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should not error on first run' do
@@ -162,13 +164,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that return from session' do
-    let(:return_pp) { <<-MANIFEST
+    let(:return_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'return 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should not error on first run' do
@@ -181,22 +184,24 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should not leak variables across calls to single session' do
-    let(:var_leak_setup_pp) { <<-MANIFEST
+    let(:var_leak_setup_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => '$special=1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
-    let(:var_leak_test_pp) { <<-MANIFEST
+    let(:var_leak_test_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should not see variable from previous run' do
@@ -209,31 +214,34 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should not leak environment variables across calls to single session' do
-    let(:envar_leak_setup_pp) { <<-MANIFEST
+    let(:envar_leak_setup_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "\\$env:superspecial='1'",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
-    let(:envar_leak_test_pp) { <<-MANIFEST
+    let(:envar_leak_test_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
-    let(:envar_ext_test_pp) { <<-MANIFEST
+    let(:envar_ext_test_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     after(:each) do
@@ -263,24 +271,26 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from unless' do
-    let(:unless_not_triggered_pp) { <<-MANIFEST
+    let(:unless_not_triggered_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         unless    => 'exit 1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
-    let(:unless_triggered_pp) { <<-MANIFEST
+    let(:unless_triggered_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         unless    => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should RUN command if unless is NOT triggered' do
@@ -293,24 +303,26 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from onlyif' do
-    let(:onlyif_not_triggered_pp) { <<-MANIFEST
+    let(:onlyif_not_triggered_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         onlyif    => 'exit 1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
-    let(:onlyif_triggered_pp) { <<-MANIFEST
+    let(:onlyif_triggered_pp) { 
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         onlyif    => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
 
     it 'should NOT run command if onlyif is NOT triggered' do
@@ -323,13 +335,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should be able to access the files after execution' do
-    let(:p2) { <<-MANIFEST
+    let(:p2) { 
+      <<-MANIFEST
       exec{"TestPowershell":
         command   => ' "puppet" | Out-File -FilePath #{file_path} -Encoding UTF8',
         #{ps_environment}
         provider  => powershell
       }
-    MANIFEST
+      MANIFEST
     }
 
     describe file('c:/services.txt') do

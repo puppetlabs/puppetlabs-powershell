@@ -163,12 +163,13 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   describe 'when applying a catalog' do
-    let(:manifest) { <<-MANIFEST
+    let(:manifest) {
+      <<-MANIFEST
       exec { 'PS':
         command   => 'exit 0',
         provider  => powershell,
       }
-    MANIFEST
+      MANIFEST
     }
     let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
 
