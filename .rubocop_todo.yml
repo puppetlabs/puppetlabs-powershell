@@ -1,20 +1,8 @@
 # Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-Lint/EmptyInterpolation:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-
-# Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
 Lint/OrAssignmentToConstant:
   Exclude:
     - 'lib/puppet/provider/exec/powershell.rb'
-
-# Offense count: 1
-# This cop supports safe autocorrection (--autocorrect).
-Lint/ParenthesesAsGroupedExpression:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
 
 # Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).

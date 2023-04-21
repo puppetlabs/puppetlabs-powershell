@@ -6,7 +6,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   # In this case, it just needs a HOME that has a valid directory, no files get stored there
   # HOME is not used on Windows so it is safe to apply hosts, no matter its platform
-  let (:ps_environment) { "environment => ['HOME=/tmp']," }
+  let(:ps_environment) { "environment => ['HOME=/tmp']," }
   ps_environment = "environment => ['HOME=/tmp'],"
 
   shared_examples 'should fail' do |manifest, error_check|
