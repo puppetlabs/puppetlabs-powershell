@@ -23,19 +23,19 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     described_class.new(resource)
   end
 
-  before :each do
+  before do
     # Always assume the pwsh binary is available
     allow(Pwsh::Manager).to receive(:pwsh_path).and_return('somepath/pwsh')
   end
 
   describe "#run" do
-    before :each do
+    before do
       allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
       allow(provider).to receive(:execute_resource).and_return('', '')
     end
 
     context 'when the powershell manager is not supported' do
-      before :each do
+      before do
         Pwsh::Manager.stub(:pwsh_supported?).and_return(false)
       end
 

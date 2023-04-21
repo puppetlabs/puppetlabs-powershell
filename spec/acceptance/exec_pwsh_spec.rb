@@ -287,7 +287,7 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      after(:each) do
+      after do
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
         if windows_platform?
           run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))

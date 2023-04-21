@@ -41,7 +41,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
   describe "#run" do
     context "with stubbed calls" do
-      before :each do
+      before do
         require 'ruby-pwsh'
         allow(Pwsh::Manager).to receive(:windows_powershell_supported?).and_return(false)
         allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
@@ -146,7 +146,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
   describe 'when specifying a working directory' do
     describe 'that does not exist on Windows' do
-      before :each do
+      before do
         skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
       end
 
@@ -173,7 +173,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     }
     let(:tmpdir) { Dir.mktmpdir('statetmp').encode!(Encoding::UTF_8) }
 
-    before :each do
+    before do
       skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
       # a statedir setting must now exist per the new transactionstore code
       # introduced in Puppet 4.6 for corrective changes, as a new YAML file
@@ -182,7 +182,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       Puppet[:statedir] = tmpdir
     end
 
-    after :each do
+    after do
       FileUtils.rm_rf(tmpdir)
     end
 

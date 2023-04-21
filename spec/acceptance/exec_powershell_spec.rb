@@ -245,7 +245,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    after(:each) do
+    after do
       run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
       run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
     end
