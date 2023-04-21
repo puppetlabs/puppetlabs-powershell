@@ -385,7 +385,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     context 'when on Windows platforms' do
       p2 = <<-MANIFEST
       file{'c:/services.ps1':
-        content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
+        content => '#{File.read(File.join(File.dirname(__FILE__), 'files/services.ps1'))}'
       }
       exec{"TestPowershellPS1":
         command   => 'c:/services.ps1',
@@ -412,7 +412,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         $process = '#{process_name}'
         $outFile = '#{outfile}'
       file{'c:/param_script.ps1':
-        content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script.ps1')).read()}'
+        content => '#{File.read(File.join(File.dirname(__FILE__), 'files/param_script.ps1'))}'
       }
       exec{'run this with param':
         provider => powershell,

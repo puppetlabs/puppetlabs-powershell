@@ -434,7 +434,7 @@ describe 'pwsh provider:' do
       let(:manifest) do
         <<-MANIFEST
       file{'#{external_script}':
-        content => '#{File.open(File.join(File.dirname(__FILE__), external_fixture)).read()}'
+        content => '#{File.read(File.join(File.dirname(__FILE__), external_fixture))}'
       }
       exec{"TestPowershellPS1":
         command   => '#{external_script}',
@@ -467,7 +467,7 @@ describe 'pwsh provider:' do
         $outFile = '#{outfile}'
 
         file{'#{external_script}':
-          content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script-posix.ps1')).read()}'
+          content => '#{File.read(File.join(File.dirname(__FILE__), 'files/param_script-posix.ps1'))}'
         }
         exec{'run this with param':
           provider => pwsh,
