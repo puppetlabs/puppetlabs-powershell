@@ -56,7 +56,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       context "when on windows", if: Puppet.features.microsoft_windows? do
         it "calls cmd.exe /c" do
           expect(provider).to receive(:run)
-            .with(/^cmd.exe \/c/, anything)
+            .with(%r{^cmd.exe /c}, anything)
 
           provider.run_spec_override(command)
         end
@@ -73,14 +73,14 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
           expect(provider).to receive(:write_script).with(command).and_yield(path)
           expect(provider).to receive(:run)
-            .with(/^cmd.exe \/c ".* < "#{Regexp.escape(path)}""/, false)
+            .with(%r{^cmd.exe /c ".* < "#{Regexp.escape(path)}""}, false)
 
           provider.run_spec_override(command)
         end
 
         it "supplies default arguments to supress user interaction" do
           expect(provider).to receive(:run)
-            .with(/^cmd.exe \/c ".* #{args} < .*"/, false)
+            .with(%r{^cmd.exe /c ".* #{args} < .*"}, false)
 
           provider.run_spec_override(command)
         end

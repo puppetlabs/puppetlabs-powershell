@@ -31,7 +31,7 @@ describe 'pwsh provider:' do
       fail 'pwsh not discovered in the path' unless pwsh_installed? == false
 
       apply_manifest(manifest, expect_failures: true) do |result|
-        expect(result.stderr).to match(%r{Could not evaluate: No pwsh discovered!})
+        expect(result.stderr).to match(/Could not evaluate: No pwsh discovered!/)
       end
     end
   end
