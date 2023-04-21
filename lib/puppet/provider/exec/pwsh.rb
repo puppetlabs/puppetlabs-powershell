@@ -19,7 +19,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   EOT
 
   def run(command, check = false)
-    @pwsh ||= get_pwsh_command
+    @pwsh ||= pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
     if Pwsh::Manager.pwsh_supported?
       return execute_resource(command, resource)
@@ -52,7 +52,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   # Retrieves the absolute path to pwsh
   #
   # @return [String] the absolute path to the found pwsh executable.  Returns nil when it does not exist
-  def get_pwsh_command
+  def pwsh_command
     # If the resource specifies a search path use that. Otherwise use the default
     # PATH from the environment.
     @resource.nil? || @resource['path'].nil? ?
