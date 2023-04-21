@@ -43,7 +43,7 @@ Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
   UPGRADE
 
   def self.upgrade_message
-    Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG if !@upgrade_warning_issued
+    Puppet.warning POWERSHELL_MODULE_UPGRADE_MSG unless @upgrade_warning_issued
     @upgrade_warning_issued = true
   end
 
@@ -71,7 +71,7 @@ Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
 
   def execute_resource(powershell_code, resource)
     working_dir = resource[:cwd]
-    if (!working_dir.nil?)
+    unless (working_dir.nil?)
       fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
     end
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000
