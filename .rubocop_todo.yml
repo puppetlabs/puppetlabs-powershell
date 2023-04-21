@@ -1,11 +1,3 @@
-# Offense count: 6
-# This cop supports safe autocorrection (--autocorrect).
-Lint/AmbiguousRegexpLiteral:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-
-# Offense count: 2
 # This cop supports safe autocorrection (--autocorrect).
 Lint/DeprecatedClassMethods:
   Exclude:

@@ -405,7 +405,7 @@ describe 'pwsh provider:' do
         end
 
         it { should be_file() }
-        its(:content) { should match /puppet/ }
+        its(:content) { should match(/puppet/) }
       end
     end
 
@@ -456,7 +456,7 @@ describe 'pwsh provider:' do
         end
 
         it { should be_file }
-        its(:content) { should match /Get-Command/ }
+        its(:content) { should match(/Get-Command/) }
       end
     end
 
@@ -490,7 +490,7 @@ describe 'pwsh provider:' do
         end
 
         it { should be_file }
-        its(:content) { should match /#{commandName}/ }
+        its(:content) { should match(/#{commandName}/) }
       end
     end
 
