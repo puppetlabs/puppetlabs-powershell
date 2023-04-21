@@ -105,7 +105,7 @@ Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
   def write_script(content)
     Tempfile.open(['puppet-powershell', '.ps1']) do |file|
       file.puts(content)
-      file.puts()
+      file.puts
       file.flush
       yield native_path(file.path)
     end

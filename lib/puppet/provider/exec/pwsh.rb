@@ -98,7 +98,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
   def write_script(content)
     Tempfile.open(['puppet-pwsh', '.ps1']) do |file|
       file.puts(content)
-      file.puts()
+      file.puts
       file.flush
       yield native_path(file.path)
     end

@@ -402,7 +402,7 @@ describe 'pwsh provider:' do
           apply_manifest(manifest, catch_failures: true)
         end
 
-        it { is_expected.to be_file() }
+        it { is_expected.to be_file }
         its(:content) { is_expected.to match(/puppet/) }
       end
     end
