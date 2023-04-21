@@ -11,7 +11,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   ps_environment = "environment => ['HOME=/tmp'],"
 
   shared_examples 'should fail' do |manifest, error_check|
-    it 'should throw an error' do
+    it 'throws an error' do
       apply_manifest(manifest, expect_failures: true) do |result|
         expect(result.stderr).to match(error_check) unless error_check.nil?
       end
@@ -19,7 +19,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   shared_examples 'apply success' do |manifest|
-    it 'should succeed' do
+    it 'succeeds' do
       apply_manifest(manifest, catch_failures: true)
     end
   end
@@ -32,7 +32,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         provider => powershell,
       }
     MANIFEST
-    it 'should not fail' do
+    it 'does not fail' do
       apply_manifest(padmin, catch_failures: true)
     end
   end
@@ -64,7 +64,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       let(:try_content) { 'try_executed' }
       let(:catch_content) { 'catch_executed' }
 
-      it 'should demonstrably execute PowerShell code inside a try block' do
+      it 'demonstrablies execute PowerShell code inside a try block' do
         powershell_cmd = <<-CMD
         try {
         $foo = @(1, 2, 3).count
@@ -93,7 +93,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         end
       end
 
-      it 'should demonstrably execute PowerShell code inside a catch block' do
+      it 'demonstrablies execute PowerShell code inside a catch block' do
         powershell_cmd = <<-CMD
         try {
         throw "execute catch!"
@@ -135,11 +135,11 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(exit_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(exit_pp, expect_changes: true)
     end
   end
@@ -155,11 +155,11 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(break_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(break_pp, expect_changes: true)
     end
   end
@@ -175,11 +175,11 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(return_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(return_pp, expect_changes: true)
     end
   end
@@ -205,7 +205,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should not see variable from previous run' do
+    it 'does not see variable from previous run' do
       # Setup the variable
       apply_manifest(var_leak_setup_pp, expect_changes: true)
 
@@ -250,7 +250,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
     end
 
-    it 'should not see environment variable from previous run' do
+    it 'does not see environment variable from previous run' do
       # Setup the environment variable
       apply_manifest(envar_leak_setup_pp, expect_changes: true)
 
@@ -258,7 +258,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       apply_manifest(envar_leak_test_pp, expect_changes: true)
     end
 
-    it 'should see environment variables set outside of session' do
+    it 'sees environment variables set outside of session' do
       # Setup the environment variable outside of Puppet
 
       run_shell(PuppetLitmus::Util.interpolate_powershell("$env:outside='1'"))
@@ -294,11 +294,11 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should RUN command if unless is NOT triggered' do
+    it 'RUNS command if unless is NOT triggered' do
       apply_manifest(unless_not_triggered_pp, expect_changes: true)
     end
 
-    it 'should NOT run command if unless IS triggered' do
+    it 'does not run command if unless IS triggered' do
       apply_manifest(unless_triggered_pp, catch_changes: true)
     end
   end
@@ -326,11 +326,11 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     }
 
-    it 'should NOT run command if onlyif is NOT triggered' do
+    it 'does not run command if onlyif is NOT triggered' do
       apply_manifest(onlyif_not_triggered_pp, catch_changes: true)
     end
 
-    it 'should RUN command if onlyif IS triggered' do
+    it 'RUNS command if onlyif IS triggered' do
       apply_manifest(onlyif_triggered_pp, expect_changes: true)
     end
   end
@@ -349,7 +349,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     describe file('c:/services.txt') do
       let(:file_path) { 'C:/services.txt' }
 
-      it 'should apply the manifest' do
+      it 'applies the manifest' do
         apply_manifest(p2, catch_failures: true)
       end
 

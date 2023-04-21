@@ -45,7 +45,7 @@ describe 'pwsh provider:' do
     end
 
     shared_examples 'should fail' do |manifest, error_check|
-      it 'should throw an error' do
+      it 'throws an error' do
         result = apply_manifest(manifest, expect_failures: true)
         unless error_check.nil?
           expect(result.stderr).to match(error_check)
@@ -54,7 +54,7 @@ describe 'pwsh provider:' do
     end
 
     shared_examples 'apply success' do |manifest|
-      it 'should succeed' do
+      it 'succeeds' do
         apply_manifest(manifest, catch_failures: true)
       end
     end
@@ -66,7 +66,7 @@ describe 'pwsh provider:' do
           provider => pwsh,
         }
       MANIFEST
-      it 'should not fail' do
+      it 'does not fail' do
         apply_manifest(padmin, catch_failures: true)
       end
     end
@@ -108,7 +108,7 @@ describe 'pwsh provider:' do
         let(:try_content) { 'try_executed' }
         let(:catch_content) { 'catch_executed' }
 
-        it 'should demonstrably execute PowerShell code inside a try block' do
+        it 'demonstrablies execute PowerShell code inside a try block' do
           powershell_cmd = <<-CMD
           try {
           $foo = @(1, 2, 3).count
@@ -140,7 +140,7 @@ describe 'pwsh provider:' do
           end
         end
 
-        it 'should demonstrably execute PowerShell code inside a catch block' do
+        it 'demonstrablies execute PowerShell code inside a catch block' do
           powershell_cmd = <<-CMD
           try {
           throw "execute catch!"
@@ -184,11 +184,11 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should not error on first run' do
+      it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
       end
 
-      it 'should run a second time' do
+      it 'runs a second time' do
         apply_manifest(manifest, expect_changes: true)
       end
     end
@@ -203,11 +203,11 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should not error on first run' do
+      it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
       end
 
-      it 'should run a second time' do
+      it 'runs a second time' do
         apply_manifest(manifest, expect_changes: true)
       end
     end
@@ -222,11 +222,11 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should not error on first run' do
+      it 'does not error on first run' do
         apply_manifest(manifest, expect_changes: true)
       end
 
-      it 'should run a second time' do
+      it 'runs a second time' do
         apply_manifest(manifest, expect_changes: true)
       end
     end
@@ -250,7 +250,7 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should not see variable from previous run' do
+      it 'does not see variable from previous run' do
         # Setup the variable
         apply_manifest(var_leak_setup, expect_changes: true)
 
@@ -298,7 +298,7 @@ describe 'pwsh provider:' do
         end
       end
 
-      it 'should not see environment variable from previous run' do
+      it 'does not see environment variable from previous run' do
         # Setup the environment variable
         apply_manifest(envar_leak_setup, expect_changes: true)
 
@@ -306,7 +306,7 @@ describe 'pwsh provider:' do
         apply_manifest(envar_leak_test, expect_changes: true)
       end
 
-      it 'should see environment variables set outside of session' do
+      it 'sees environment variables set outside of session' do
         # Setup the environment variable outside of Puppet
 
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
@@ -345,11 +345,11 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should RUN command if unless is NOT triggered' do
+      it 'RUNS command if unless is NOT triggered' do
         apply_manifest(unless_not_triggered, expect_changes: true)
       end
 
-      it 'should NOT run command if unless IS triggered' do
+      it 'does not run command if unless IS triggered' do
         apply_manifest(unless_triggered, catch_changes: true)
       end
     end
@@ -375,11 +375,11 @@ describe 'pwsh provider:' do
         MANIFEST
       }
 
-      it 'should NOT run command if onlyif is NOT triggered' do
+      it 'does not run command if onlyif is NOT triggered' do
         apply_manifest(onlyif_not_triggered, catch_changes: true)
       end
 
-      it 'should RUN command if onlyif IS triggered' do
+      it 'RUNS command if onlyif IS triggered' do
         apply_manifest(onlyif_triggered, expect_changes: true)
       end
     end
@@ -400,7 +400,7 @@ describe 'pwsh provider:' do
       describe file(windows_platform? ? win_file : posix_file) do
         let(:file_path) { windows_platform? ? win_file : posix_file }
 
-        it 'should apply the manifest' do
+        it 'applies the manifest' do
           apply_manifest(manifest, catch_failures: true)
         end
 
@@ -451,7 +451,7 @@ describe 'pwsh provider:' do
         let(:external_script) { windows_platform? ? 'c:/external-script.ps1' : '/tmp/external-script.ps1' }
         let(:external_fixture) { "files/get-command-#{platform_string('win', 'posix')}.ps1" }
 
-        it 'should apply the manifest' do
+        it 'applies the manifest' do
           apply_manifest(manifest, catch_failures: true)
         end
 
@@ -485,7 +485,7 @@ describe 'pwsh provider:' do
         let(:outfile) { windows_platform? ? win_file : posix_file }
         let(:commandName) { 'Export-Csv' }
 
-        it 'should apply the manifest' do
+        it 'applies the manifest' do
           apply_manifest(manifest, catch_failures: true)
         end
 

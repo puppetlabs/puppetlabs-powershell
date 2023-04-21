@@ -47,28 +47,28 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
       end
 
-      it "should call exec run" do
+      it "calls exec run" do
         expect(provider).to receive(:run)
 
         provider.run_spec_override(command)
       end
 
       context "when on windows", :if => Puppet.features.microsoft_windows? do
-        it "should call cmd.exe /c" do
+        it "calls cmd.exe /c" do
           expect(provider).to receive(:run)
             .with(/^cmd.exe \/c/, anything)
 
           provider.run_spec_override(command)
         end
 
-        it "should quote powershell.exe path" do
+        it "quotes powershell.exe path" do
           expect(provider).to receive(:run)
             .with(/"#{Regexp.escape(powershell)}"/, false)
 
           provider.run_spec_override(command)
         end
 
-        it "should quote the path to the temp file" do
+        it "quotes the path to the temp file" do
           path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
           expect(provider).to receive(:write_script).with(command).and_yield(path)
@@ -78,7 +78,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           provider.run_spec_override(command)
         end
 
-        it "should supply default arguments to supress user interaction" do
+        it "supplies default arguments to supress user interaction" do
           expect(provider).to receive(:run)
             .with(/^cmd.exe \/c ".* #{args} < .*"/, false)
 
@@ -133,13 +133,13 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   end
 
   describe "#checkexe" do
-    it "should skip checking the exe" do
+    it "skips checking the exe" do
       expect(provider.checkexe(command)).to be_nil
     end
   end
 
   describe "#validatecmd" do
-    it "should always successfully validate the command to execute" do
+    it "alwayses successfully validate the command to execute" do
       expect(provider.validatecmd(command)).to be(true)
     end
   end

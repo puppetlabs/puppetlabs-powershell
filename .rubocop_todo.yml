@@ -64,17 +64,6 @@ RSpec/DescribeClass:
 RSpec/ExampleLength:
   Max: 25
 
-# Offense count: 55
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: CustomTransform, IgnoredWords, DisallowedExamples.
-# DisallowedExamples: works
-RSpec/ExampleWording:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-    - 'spec/unit/provider/exec/pwsh_spec.rb'
-
 # Offense count: 10
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: .

@@ -41,22 +41,22 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
       let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
 
-      it "should call exec run" do
+      it "calls exec run" do
         expect(provider).to receive(:run)
         provider.run_spec_override(command)
       end
 
-      it "should call shell command" do
+      it "calls shell command" do
         expect(provider).to receive(:run).with(/#{shell_command}/, anything)
         provider.run_spec_override(command)
       end
 
-      it "should supply default arguments to supress user interaction" do
+      it "supplies default arguments to supress user interaction" do
         expect(provider).to receive(:run).with(/#{shell_command} .* #{args} < .*/, false)
         provider.run_spec_override(command)
       end
 
-      it "should quote the path to the temp file" do
+      it "quotes the path to the temp file" do
         skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
         # Path quoting is only required on Windows
         path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
@@ -75,7 +75,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
         let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :path => path) }
 
-        it 'should prefer pwsh in the specified path' do
+        it 'prefers pwsh in the specified path' do
           # Pretend that only the test pwsh binary exists.
           allow(File).to receive(:exist?).and_return(true)
           # Remove the global stub here as we're testing this method
@@ -87,7 +87,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
       end
     end
 
-    it "should only attempt to find pwsh once when pwsh exists" do
+    it "onlies attempt to find pwsh once when pwsh exists" do
       # Need to unstub to force the 'only once' expectation. Otherwise the
       # previous stub takes over if it's called more than once.
       allow(Pwsh::Manager).to receive(:pwsh_path).and_call_original
@@ -100,13 +100,13 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
   end
 
   describe "#checkexe" do
-    it "should skip checking the exe" do
+    it "skips checking the exe" do
       expect(provider.checkexe(command)).to be_nil
     end
   end
 
   describe "#validatecmd" do
-    it "should always successfully validate the command to execute" do
+    it "alwayses successfully validate the command to execute" do
       expect(provider.validatecmd(command)).to be(true)
     end
   end
