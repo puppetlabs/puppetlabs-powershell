@@ -190,7 +190,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       Puppet[:code] = string
 
       # see lib/puppet/indirector/catalog/compiler.rb#filter
-      Puppet::Parser::Compiler.compile(node).filter { |r| r.virtual? }
+      Puppet::Parser::Compiler.compile(node).filter(&:virtual?)
     end
 
     def compile_to_ral(manifest)
