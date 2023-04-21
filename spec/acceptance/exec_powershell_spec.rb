@@ -396,6 +396,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         it 'applies' do
           apply_manifest(p2, catch_failures: true)
         end
+
         it { should be_file }
         its(:content) { should match(/WinRM/) }
       end
@@ -422,6 +423,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         it 'applies' do
           apply_manifest(pp, catch_failures: true)
         end
+
         it { should be_file }
         its(:content) { should match(/svchost/) }
       end
