@@ -94,7 +94,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
 
     output = Puppet::Util::Execution::ProcessOutput.new(stdout.to_s + native_out.to_s, exit_code)
 
-    return output, output
+    [output, output]
   end
 
   def write_script(content)

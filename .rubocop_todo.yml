@@ -109,21 +109,6 @@ RSpec/SubjectStub:
 Style/Alias:
   Enabled: false
 
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-Style/RedundantParentheses:
-  Exclude:
-    - 'lib/puppet/provider/exec/powershell.rb'
-    - 'lib/puppet/provider/exec/pwsh.rb'
-
-# Offense count: 4
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowMultipleReturnValues.
-Style/RedundantReturn:
-  Exclude:
-    - 'lib/puppet/provider/exec/powershell.rb'
-    - 'lib/puppet/provider/exec/pwsh.rb'
-
 # Offense count: 9
 # This cop supports safe autocorrection (--autocorrect).
 Style/RedundantStringEscape:
