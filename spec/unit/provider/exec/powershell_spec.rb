@@ -27,7 +27,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
-  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{ENV['HOME']}") }
+  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{Dir.home}") }
 
   let(:powershell) do
     if File.exist?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
