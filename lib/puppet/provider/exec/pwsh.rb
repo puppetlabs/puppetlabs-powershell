@@ -5,7 +5,7 @@ require 'puppet/provider/exec'
 Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   confine :feature => :pwshlib
 
-  desc <<-EOT
+  desc <<-DESC
     Executes PowerShell Core commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.
 
@@ -16,7 +16,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
           unless    => 'if (Get-CIMInstance Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
           provider  => pwsh,
         }
-  EOT
+  DESC
 
   def run(command, check = false)
     @pwsh ||= pwsh_command

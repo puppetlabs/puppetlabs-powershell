@@ -6,7 +6,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   confine :operatingsystem => :windows
   confine :feature => :pwshlib
 
-  desc <<-EOT
+  desc <<-DESC
     Executes Powershell commands. One of the `onlyif`, `unless`, or `creates`
     parameters should be specified to ensure the command is idempotent.
 
@@ -17,7 +17,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
           unless    => 'if (Get-WmiObject Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
           provider  => powershell,
         }
-  EOT
+  DESC
 
   POWERSHELL_MODULE_UPGRADE_MSG ||= <<-UPGRADE
   Currently, the PowerShell module has reduced v1 functionality on this agent
