@@ -106,11 +106,6 @@ RSpec/SubjectStub:
     - 'spec/unit/provider/exec/powershell_spec.rb'
     - 'spec/unit/provider/exec/pwsh_spec.rb'
 
-# Offense count: 1
-Style/MixinUsage:
-  Exclude:
-    - 'spec/spec_helper.rb'
-
 # Offense count: 2
 # Configuration parameters: AllowedMethods.
 # AllowedMethods: respond_to_missing?
