@@ -45,7 +45,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   def checkexe(command)
   end
 
-  def validatecmd(command)
+  def validatecmd(_command)
     true
   end
 
@@ -100,7 +100,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     return output, output
   end
 
-  def write_script(content, &block)
+  def write_script(content)
     Tempfile.open(['puppet-pwsh', '.ps1']) do |file|
       file.puts(content)
       file.puts()

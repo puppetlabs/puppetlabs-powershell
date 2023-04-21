@@ -99,13 +99,13 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   def checkexe(command)
   end
 
-  def validatecmd(command)
+  def validatecmd(_command)
     true
   end
 
   private
 
-  def write_script(content, &block)
+  def write_script(content)
     Tempfile.open(['puppet-powershell', '.ps1']) do |file|
       file.puts(content)
       file.puts()
