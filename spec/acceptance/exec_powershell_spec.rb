@@ -353,8 +353,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         apply_manifest(p2, catch_failures: true)
       end
 
-      it { should be_file }
-      its(:content) { should match(/puppet/) }
+      it { is_expected.to be_file }
+      its(:content) { is_expected.to match(/puppet/) }
     end
   end
 
@@ -398,8 +398,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
           apply_manifest(p2, catch_failures: true)
         end
 
-        it { should be_file }
-        its(:content) { should match(/WinRM/) }
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/WinRM/) }
       end
     end
   end
@@ -425,8 +425,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
           apply_manifest(pp, catch_failures: true)
         end
 
-        it { should be_file }
-        its(:content) { should match(/svchost/) }
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/svchost/) }
       end
     end
   end

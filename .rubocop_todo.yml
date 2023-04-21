@@ -63,13 +63,6 @@ RSpec/DescribeClass:
 # Configuration parameters: CountAsOne.
 RSpec/ExampleLength:
   Max: 25
-# Offense count: 12
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: .
-# SupportedStyles: is_expected, should
-RSpec/ImplicitExpect:
-  EnforcedStyle: should
-
 # Offense count: 10
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: EnforcedStyle.

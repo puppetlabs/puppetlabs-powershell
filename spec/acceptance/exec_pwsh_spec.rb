@@ -404,8 +404,8 @@ describe 'pwsh provider:' do
           apply_manifest(manifest, catch_failures: true)
         end
 
-        it { should be_file() }
-        its(:content) { should match(/puppet/) }
+        it { is_expected.to be_file() }
+        its(:content) { is_expected.to match(/puppet/) }
       end
     end
 
@@ -455,8 +455,8 @@ describe 'pwsh provider:' do
           apply_manifest(manifest, catch_failures: true)
         end
 
-        it { should be_file }
-        its(:content) { should match(/Get-Command/) }
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/Get-Command/) }
       end
     end
 
@@ -489,8 +489,8 @@ describe 'pwsh provider:' do
           apply_manifest(manifest, catch_failures: true)
         end
 
-        it { should be_file }
-        its(:content) { should match(/#{commandName}/) }
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/#{commandName}/) }
       end
     end
 
