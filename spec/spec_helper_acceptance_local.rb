@@ -62,7 +62,7 @@ def remove_pwshlib
   uninstall_command = 'puppet module uninstall puppetlabs/pwshlib --force'
   uninstall_command += " --modulepath #{relative_folder('fixtures/modules').path}" if ENV['TARGET_HOST'] == 'localhost'
   Helper.instance.run_shell(uninstall_command, expect_failures: true) do |result|
-    raise "Failed to uninstall puppetlabs/pwshlib" unless result.stderr =~ /Module 'puppetlabs-pwshlib' is not installed/ || result.exit_code == 0
+    raise "Failed to uninstall puppetlabs/pwshlib" unless result.stderr.include?("Module 'puppetlabs-pwshlib' is not installed") || result.exit_code == 0
   end
 end
 

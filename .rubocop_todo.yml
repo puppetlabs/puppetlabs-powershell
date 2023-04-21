@@ -30,13 +30,6 @@ Metrics/MethodLength:
 Metrics/PerceivedComplexity:
   Max: 9
 
-
-# Offense count: 1
-# This cop supports unsafe autocorrection (--autocorrect-all).
-Performance/StringInclude:
-  Exclude:
-    - 'spec/spec_helper_acceptance_local.rb'
-
 # Offense count: 2
 RSpec/AnyInstance:
   Exclude:
