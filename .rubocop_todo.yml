@@ -108,15 +108,6 @@ RSpec/SubjectStub:
 
 Style/Alias:
   Enabled: false
-# Offense count: 2
-# This cop supports unsafe autocorrection (--autocorrect-all).
-# Configuration parameters: ConvertCodeThatCanStartToReturnNil, AllowedMethods, MaxChainLength.
-# AllowedMethods: present?, blank?, presence, try, try!
-Style/SafeNavigation:
-  Exclude:
-    - 'lib/puppet/provider/exec/powershell.rb'
-    - 'lib/puppet/provider/exec/pwsh.rb'
-
 # Offense count: 3
 # This cop supports safe autocorrection (--autocorrect).
 # Configuration parameters: EnforcedStyle.

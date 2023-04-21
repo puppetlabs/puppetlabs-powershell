@@ -86,9 +86,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
     stderr     = result[:stderr]
     exit_code  = result[:exitcode]
 
-    unless stderr.nil?
-      stderr.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
-    end
+    stderr&.each { |e| Puppet.debug "STDERR: #{e.chop}" unless e.empty? }
 
     Puppet.debug "STDERR: #{result[:errormessage]}" unless result[:errormessage].nil?
 
