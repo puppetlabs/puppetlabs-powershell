@@ -105,14 +105,6 @@ RSpec/SubjectStub:
   Exclude:
     - 'spec/unit/provider/exec/powershell_spec.rb'
     - 'spec/unit/provider/exec/pwsh_spec.rb'
-
-# Offense count: 6
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowedVars.
-Style/FetchEnvVar:
-  Exclude:
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-
 # Offense count: 4
 # This cop supports safe autocorrection (--autocorrect).
 Style/FileRead:

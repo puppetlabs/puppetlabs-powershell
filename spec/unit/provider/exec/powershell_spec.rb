@@ -30,10 +30,10 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :environment => "HOME=#{Dir.home}") }
 
   let(:powershell) do
-    if File.exist?("#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
-      "#{ENV['SYSTEMROOT']}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
-    elsif File.exist?("#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
-      "#{ENV['SYSTEMROOT']}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
+    if File.exist?("#{ENV.fetch('SYSTEMROOT', nil)}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe")
+      "#{ENV.fetch('SYSTEMROOT', nil)}\\sysnative\\WindowsPowershell\\v1.0\\powershell.exe"
+    elsif File.exist?("#{ENV.fetch('SYSTEMROOT', nil)}\\system32\\WindowsPowershell\\v1.0\\powershell.exe")
+      "#{ENV.fetch('SYSTEMROOT', nil)}\\system32\\WindowsPowershell\\v1.0\\powershell.exe"
     else
       'powershell.exe'
     end
@@ -151,7 +151,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       end
 
       # This working directory error is specific to the PowerShell manager on Windows.
-      let(:work_dir) { "#{ENV['SYSTEMROOT']}\\some\\directory\\that\\does\\not\\exist" }
+      let(:work_dir) { "#{ENV.fetch('SYSTEMROOT', nil)}\\some\\directory\\that\\does\\not\\exist" }
       let(:command)  { 'exit 0' }
       let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :powershell, :cwd => work_dir) }
       let(:provider) { described_class.new(resource) }
