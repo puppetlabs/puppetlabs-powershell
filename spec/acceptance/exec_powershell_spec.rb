@@ -405,9 +405,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   describe 'passing parameters to the ps1 file' do
     context 'on Windows platforms' do
       outfile = 'C:/temp/svchostprocess.txt'
-      processName = 'svchost'
+      process_name = 'svchost'
       pp = <<-MANIFEST
-        $process = '#{processName}'
+        $process = '#{process_name}'
         $outFile = '#{outfile}'
       file{'c:/param_script.ps1':
         content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script.ps1')).read()}'

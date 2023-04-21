@@ -30,20 +30,6 @@ Metrics/MethodLength:
 Metrics/PerceivedComplexity:
   Max: 9
 
-# # Offense count: 2
-# # Configuration parameters: ForbiddenDelimiters.
-# # ForbiddenDelimiters: (?i-mx:(^|\s)(EO[A-Z]{1}|END)(\s|$))
-# Naming/HeredocDelimiterNaming:
-#   Exclude:
-#     - 'lib/puppet/provider/exec/powershell.rb'
-#     - 'lib/puppet/provider/exec/pwsh.rb'
-
-# Offense count: 2
-# Configuration parameters: EnforcedStyle, AllowedIdentifiers, AllowedPatterns.
-# SupportedStyles: snake_case, camelCase
-Naming/VariableName:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
