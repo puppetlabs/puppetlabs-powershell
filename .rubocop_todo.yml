@@ -109,6 +109,8 @@ RSpec/SubjectStub:
 Style/Alias:
   Enabled: false
 
+Style/OptionalBooleanParameter:
+  Enabled: false
 
 # Offense count: 41
 # This cop supports safe autocorrection (--autocorrect).
