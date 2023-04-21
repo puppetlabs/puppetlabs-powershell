@@ -107,7 +107,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
   describe "#validatecmd" do
     it "should always successfully validate the command to execute" do
-      expect(provider.validatecmd(command)).to eq(true)
+      expect(provider.validatecmd(command)).to be(true)
     end
   end
 end

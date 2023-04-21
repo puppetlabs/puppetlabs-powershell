@@ -37,13 +37,6 @@ RSpec/AnyInstance:
     - 'spec/unit/provider/exec/pwsh_spec.rb'
 
 # Offense count: 6
-# This cop supports unsafe autocorrection (--autocorrect-all).
-RSpec/BeEq:
-  Exclude:
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-    - 'spec/unit/provider/exec/pwsh_spec.rb'
-
-# Offense count: 6
 RSpec/BeforeAfterAll:
   Exclude:
     - 'spec/spec_helper.rb'

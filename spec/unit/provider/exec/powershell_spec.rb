@@ -99,13 +99,13 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         it "returns true if the `onlyif` check command succeeds" do
           resource[:onlyif] = command
 
-          expect(resource.parameter(:onlyif).check(command)).to eq(true)
+          expect(resource.parameter(:onlyif).check(command)).to be(true)
         end
 
         it "returns false if the `unless` check command succeeds" do
           resource[:unless] = command
 
-          expect(resource.parameter(:unless).check(command)).to eq(false)
+          expect(resource.parameter(:unless).check(command)).to be(false)
         end
 
         it "runs commands properly that output to multiple streams" do
@@ -140,7 +140,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
 
   describe "#validatecmd" do
     it "should always successfully validate the command to execute" do
-      expect(provider.validatecmd(command)).to eq(true)
+      expect(provider.validatecmd(command)).to be(true)
     end
   end
 
@@ -216,7 +216,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     it 'does not emit a warning message when PowerShellManager is usable in a Windows environment' do
       allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(false)
 
-      expect(Pwsh::Manager.windows_powershell_supported?).to eq(true)
+      expect(Pwsh::Manager.windows_powershell_supported?).to be(true)
 
       # given PowerShellManager is supported, never emit an upgrade message
       expect(provider).to receive(:upgrade_message).never
@@ -228,7 +228,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       # pretend we're Ruby 1.9.3 / Puppet 3.x x86
       allow(Pwsh::Manager).to receive(:win32console_enabled?).and_return(true)
 
-      expect(Pwsh::Manager.windows_powershell_supported?).to eq(false)
+      expect(Pwsh::Manager.windows_powershell_supported?).to be(false)
 
       # given PowerShellManager is NOT supported, emit an upgrade message
       expect(Puppet::Type::Exec::ProviderPowershell).to receive(:upgrade_message).once
