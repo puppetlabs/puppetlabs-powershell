@@ -1,9 +1,4 @@
 # Offense count: 1
-Lint/EmptyExpression:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-
-# Offense count: 1
 # This cop supports safe autocorrection (--autocorrect).
 Lint/EmptyInterpolation:
   Exclude:

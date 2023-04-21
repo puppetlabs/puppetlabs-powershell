@@ -55,7 +55,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should handle a try/catch successfully' do
-    context "on host with platform #{}" do
+    context "on host with platform" do
       let(:try_successfile) { 'C:\try_success.txt' }
       let(:try_failfile) { 'C:\try_shouldntexist.txt' }
       let(:catch_successfile) { 'C:\catch_success.txt' }
