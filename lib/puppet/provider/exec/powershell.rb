@@ -96,8 +96,7 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
     return output, output
   end
 
-  def checkexe(command)
-  end
+  def checkexe(command); end
 
   def validatecmd(_command)
     true

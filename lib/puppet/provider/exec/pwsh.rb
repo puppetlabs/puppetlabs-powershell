@@ -42,8 +42,7 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
     end
   end
 
-  def checkexe(command)
-  end
+  def checkexe(command); end
 
   def validatecmd(_command)
     true

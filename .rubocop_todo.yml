@@ -105,14 +105,7 @@ RSpec/SubjectStub:
   Exclude:
     - 'spec/unit/provider/exec/powershell_spec.rb'
     - 'spec/unit/provider/exec/pwsh_spec.rb'
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle.
-# SupportedStyles: compact, expanded
-Style/EmptyMethod:
-  Exclude:
-    - 'lib/puppet/provider/exec/powershell.rb'
-    - 'lib/puppet/provider/exec/pwsh.rb'
+
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
