@@ -21,24 +21,20 @@ Puppet::Type.type(:exec).provide :pwsh, :parent => Puppet::Provider::Exec do
   def run(command, check = false)
     @pwsh ||= pwsh_command
     self.fail 'pwsh could not be found' if @pwsh.nil?
-    if Pwsh::Manager.pwsh_supported?
-      return execute_resource(command, resource)
-    else
-      write_script(command) do |native_path|
-        # Ideally, we could keep a handle open on the temp file in this
-        # process (to prevent TOCTOU attacks), and execute powershell
-        # with -File <path>. But powershell complains that it can't open
-        # the file for exclusive access. If we close the handle, then an
-        # attacker could modify the file before we invoke powershell. So
-        # we redirect powershell's stdin to read from the file. Current
-        # versions of Windows use per-user temp directories with strong
-        # permissions, but I'd rather not make (poor) assumptions.
-        if Puppet::Util::Platform.windows?
-          return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{pwsh_args.join(' ')} -Command - < \"#{native_path}\"\"", check)
-        else
-          return super("/bin/sh -c \"#{native_path(@pwsh)} #{pwsh_args.join(' ')} -Command - < #{native_path}\"", check)
-        end
-      end
+    return execute_resource(command, resource) if Pwsh::Manager.pwsh_supported?
+
+    write_script(command) do |native_path|
+      # Ideally, we could keep a handle open on the temp file in this
+      # process (to prevent TOCTOU attacks), and execute powershell
+      # with -File <path>. But powershell complains that it can't open
+      # the file for exclusive access. If we close the handle, then an
+      # attacker could modify the file before we invoke powershell. So
+      # we redirect powershell's stdin to read from the file. Current
+      # versions of Windows use per-user temp directories with strong
+      # permissions, but I'd rather not make (poor) assumptions.
+      return super("cmd.exe /c \"\"#{native_path(@pwsh)}\" #{pwsh_args.join(' ')} -Command - < \"#{native_path}\"\"", check) if Puppet::Util::Platform.windows?
+
+      return super("/bin/sh -c \"#{native_path(@pwsh)} #{pwsh_args.join(' ')} -Command - < #{native_path}\"", check)
     end
   end
 

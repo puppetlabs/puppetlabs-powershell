@@ -53,21 +53,19 @@ Puppet::Type.type(:exec).provide :powershell, :parent => Puppet::Provider::Exec 
   end
 
   def run(command, check = false)
-    unless Pwsh::Manager.windows_powershell_supported?
-      self.class.upgrade_message
-      write_script(command) do |native_path|
-        # Ideally, we could keep a handle open on the temp file in this
-        # process (to prevent TOCTOU attacks), and execute powershell
-        # with -File <path>. But powershell complains that it can't open
-        # the file for exclusive access. If we close the handle, then an
-        # attacker could modify the file before we invoke powershell. So
-        # we redirect powershell's stdin to read from the file. Current
-        # versions of Windows use per-user temp directories with strong
-        # permissions, but I'd rather not make (poor) assumptions.
-        return super("cmd.exe /c \"\"#{native_path(Pwsh::Manager.powershell_path)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
-      end
-    else
-      return execute_resource(command, resource)
+    return execute_resource(command, resource) if Pwsh::Manager.windows_powershell_supported?
+
+    self.class.upgrade_message
+    write_script(command) do |native_path|
+      # Ideally, we could keep a handle open on the temp file in this
+      # process (to prevent TOCTOU attacks), and execute powershell
+      # with -File <path>. But powershell complains that it can't open
+      # the file for exclusive access. If we close the handle, then an
+      # attacker could modify the file before we invoke powershell. So
+      # we redirect powershell's stdin to read from the file. Current
+      # versions of Windows use per-user temp directories with strong
+      # permissions, but I'd rather not make (poor) assumptions.
+      return super("cmd.exe /c \"\"#{native_path(Pwsh::Manager.powershell_path)}\" #{legacy_args} -Command - < \"#{native_path}\"\"", check)
     end
   end
 
