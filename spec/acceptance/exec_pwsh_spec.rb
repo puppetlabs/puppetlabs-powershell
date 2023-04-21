@@ -309,7 +309,7 @@ describe 'pwsh provider:' do
 
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
         if windows_platform?
-          run_shell(PuppetLitmus::Util.interpolate_powershell("\$env:outside='1'"))
+          run_shell(PuppetLitmus::Util.interpolate_powershell("$env:outside='1'"))
         else
           run_shell('export outside=1')
         end

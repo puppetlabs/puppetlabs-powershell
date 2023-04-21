@@ -12,8 +12,8 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
     Example:
         # Rename the Guest account
         exec { 'rename-guest':
-          command   => '$(Get-CIMInstance Win32_UserAccount -Filter "Name=\'guest\'").Rename("new-guest")',
-          unless    => 'if (Get-CIMInstance Win32_UserAccount -Filter "Name=\'guest\'") { exit 1 }',
+          command   => '$(Get-CIMInstance Win32_UserAccount -Filter "Name='guest'").Rename("new-guest")',
+          unless    => 'if (Get-CIMInstance Win32_UserAccount -Filter "Name='guest'") { exit 1 }',
           provider  => pwsh,
         }
   DESC
