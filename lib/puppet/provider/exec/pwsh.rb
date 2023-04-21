@@ -50,9 +50,11 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
   def pwsh_command
     # If the resource specifies a search path use that. Otherwise use the default
     # PATH from the environment.
-    @resource.nil? || @resource['path'].nil? ?
-      Pwsh::Manager.pwsh_path :
+    if @resource.nil? || @resource['path'].nil?
+      Pwsh::Manager.pwsh_path
+    else
       Pwsh::Manager.pwsh_path(resource[:path])
+    end
   end
 
   def pwsh_args
