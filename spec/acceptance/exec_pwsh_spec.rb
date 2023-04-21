@@ -72,7 +72,7 @@ describe 'pwsh provider:' do
     end
 
     describe "should run successfully" do
-      context "on #{os[:family]}" do
+      context "when on #{os[:family]}" do
         let(:manifest) {
           if windows_platform?
             <<-MANIFEST
@@ -100,7 +100,7 @@ describe 'pwsh provider:' do
     end
 
     describe 'should handle a try/catch successfully' do
-      context "on #{os[:family]}" do
+      context "when on #{os[:family]}" do
         let(:try_successfile) { platform_string('C:\try_success.txt', '/tmp/try_success.txt') }
         let(:try_failfile) { platform_string('C:\try_shouldntexist.txt', '/tmp/try_shouldntexist.txt') }
         let(:catch_successfile) { platform_string('C:\catch_success.txt', '/tmp/catch_success.txt') }

@@ -40,7 +40,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
   }
 
   describe "#run" do
-    context "stubbed calls" do
+    context "with stubbed calls" do
       before :each do
         require 'ruby-pwsh'
         allow(Pwsh::Manager).to receive(:windows_powershell_supported?).and_return(false)
@@ -53,7 +53,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
         provider.run_spec_override(command)
       end
 
-      context "on windows", :if => Puppet.features.microsoft_windows? do
+      context "when on windows", :if => Puppet.features.microsoft_windows? do
         it "should call cmd.exe /c" do
           expect(provider).to receive(:run)
             .with(/^cmd.exe \/c/, anything)
@@ -87,8 +87,8 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       end
     end
 
-    context "actual runs" do
-      context "on Windows", :if => Puppet.features.microsoft_windows? do
+    context "with actual runs" do
+      context "when on Windows", :if => Puppet.features.microsoft_windows? do
         it "returns the output and status" do
           output, status = provider.run(command)
 

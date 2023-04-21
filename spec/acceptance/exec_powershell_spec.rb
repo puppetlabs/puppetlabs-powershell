@@ -37,7 +37,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe "should run successfully" do
-    context "on machine" do
+    context "when on machine" do
       let(:manifest) {
         <<-MANIFEST
           exec{'TestPowershell':
@@ -55,7 +55,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should handle a try/catch successfully' do
-    context "on host with platform" do
+    context "when on host with platform" do
       let(:try_successfile) { 'C:\try_success.txt' }
       let(:try_failfile) { 'C:\try_shouldntexist.txt' }
       let(:catch_successfile) { 'C:\catch_success.txt' }
@@ -381,7 +381,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should be able to execute a ps1 file provided' do
-    context 'on Windows platforms' do
+    context 'when on Windows platforms' do
       p2 = <<-MANIFEST
       file{'c:/services.ps1':
         content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
@@ -403,7 +403,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'passing parameters to the ps1 file' do
-    context 'on Windows platforms' do
+    context 'when on Windows platforms' do
       outfile = 'C:/temp/svchostprocess.txt'
       process_name = 'svchost'
       pp = <<-MANIFEST

@@ -45,14 +45,14 @@ RSpec/BeforeAfterAll:
     - 'spec/acceptance/exec_powershell_spec.rb'
     - 'spec/acceptance/exec_pwsh_spec.rb'
 
-# Offense count: 10
-# Configuration parameters: Prefixes, AllowedPatterns.
-# Prefixes: when, with, without
-RSpec/ContextWording:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-    - 'spec/unit/provider/exec/powershell_spec.rb'
+# # Offense count: 10
+# # Configuration parameters: Prefixes, AllowedPatterns.
+# # Prefixes: when, with, without
+# RSpec/ContextWording:
+#   Exclude:
+#     - 'spec/acceptance/exec_powershell_spec.rb'
+#     - 'spec/acceptance/exec_pwsh_spec.rb'
+#     - 'spec/unit/provider/exec/powershell_spec.rb'
 
 # Offense count: 4
 # Configuration parameters: IgnoredMetadata.
