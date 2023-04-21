@@ -39,36 +39,36 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
 
-  describe "#run" do
-    context "with stubbed calls" do
+  describe '#run' do
+    context 'with stubbed calls' do
       before do
         require 'ruby-pwsh'
         allow(Pwsh::Manager).to receive(:windows_powershell_supported?).and_return(false)
         allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
       end
 
-      it "calls exec run" do
+      it 'calls exec run' do
         expect(provider).to receive(:run)
 
         provider.run_spec_override(command)
       end
 
-      context "when on windows", if: Puppet.features.microsoft_windows? do
-        it "calls cmd.exe /c" do
+      context 'when on windows', if: Puppet.features.microsoft_windows? do
+        it 'calls cmd.exe /c' do
           expect(provider).to receive(:run)
             .with(%r{^cmd.exe /c}, anything)
 
           provider.run_spec_override(command)
         end
 
-        it "quotes powershell.exe path" do
+        it 'quotes powershell.exe path' do
           expect(provider).to receive(:run)
             .with(/"#{Regexp.escape(powershell)}"/, false)
 
           provider.run_spec_override(command)
         end
 
-        it "quotes the path to the temp file" do
+        it 'quotes the path to the temp file' do
           path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
 
           expect(provider).to receive(:write_script).with(command).and_yield(path)
@@ -78,7 +78,7 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
           provider.run_spec_override(command)
         end
 
-        it "supplies default arguments to supress user interaction" do
+        it 'supplies default arguments to supress user interaction' do
           expect(provider).to receive(:run)
             .with(%r{^cmd.exe /c ".* #{args} < .*"}, false)
 
@@ -87,28 +87,28 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
       end
     end
 
-    context "with actual runs" do
-      context "when on Windows", if: Puppet.features.microsoft_windows? do
-        it "returns the output and status" do
+    context 'with actual runs' do
+      context 'when on Windows', if: Puppet.features.microsoft_windows? do
+        it 'returns the output and status' do
           output, status = provider.run(command)
 
           expect(output).to match(/SID\s+:\s+S-1-5-18/)
           expect(status.exitstatus).to eq(0)
         end
 
-        it "returns true if the `onlyif` check command succeeds" do
+        it 'returns true if the `onlyif` check command succeeds' do
           resource[:onlyif] = command
 
           expect(resource.parameter(:onlyif).check(command)).to be(true)
         end
 
-        it "returns false if the `unless` check command succeeds" do
+        it 'returns false if the `unless` check command succeeds' do
           resource[:unless] = command
 
           expect(resource.parameter(:unless).check(command)).to be(false)
         end
 
-        it "runs commands properly that output to multiple streams" do
+        it 'runs commands properly that output to multiple streams' do
           command = 'echo "foo"; [System.Console]::Error.WriteLine("bar"); cmd.exe /c foo.exe'
           output, status = provider.run(command)
 
@@ -132,14 +132,14 @@ describe Puppet::Type.type(:exec).provider(:powershell) do
     end
   end
 
-  describe "#checkexe" do
-    it "skips checking the exe" do
+  describe '#checkexe' do
+    it 'skips checking the exe' do
       expect(provider.checkexe(command)).to be_nil
     end
   end
 
-  describe "#validatecmd" do
-    it "alwayses successfully validate the command to execute" do
+  describe '#validatecmd' do
+    it 'alwayses successfully validate the command to execute' do
       expect(provider.validatecmd(command)).to be(true)
     end
   end

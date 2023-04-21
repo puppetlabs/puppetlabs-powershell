@@ -15,13 +15,13 @@ def install_pwsh
                 when 'ubuntu'
                   File.join(script_folder, "ubuntu_#{os[:release].to_f}.sh")
                 when 'redhat'
-                  File.join(script_folder, "rhel.sh")
+                  File.join(script_folder, 'rhel.sh')
                 when 'debian'
                   File.join(script_folder, "debian_#{os[:release].to_i}.sh")
                 when 'darwin'
-                  File.join(script_folder, "darwin.sh")
+                  File.join(script_folder, 'darwin.sh')
                 when 'windows'
-                  File.join(script_folder, "windows.ps1")
+                  File.join(script_folder, 'windows.ps1')
                 end
   Helper.instance.bolt_run_script(script_path)
 end
@@ -62,7 +62,7 @@ def remove_pwshlib
   uninstall_command = 'puppet module uninstall puppetlabs/pwshlib --force'
   uninstall_command += " --modulepath #{relative_folder('fixtures/modules').path}" if ENV['TARGET_HOST'] == 'localhost'
   Helper.instance.run_shell(uninstall_command, expect_failures: true) do |result|
-    raise "Failed to uninstall puppetlabs/pwshlib" unless result.stderr.include?("Module 'puppetlabs-pwshlib' is not installed") || result.exit_code == 0
+    raise 'Failed to uninstall puppetlabs/pwshlib' unless result.stderr.include?("Module 'puppetlabs-pwshlib' is not installed") || result.exit_code == 0
   end
 end
 

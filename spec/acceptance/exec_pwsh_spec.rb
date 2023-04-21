@@ -69,7 +69,7 @@ describe 'pwsh provider:' do
       end
     end
 
-    describe "should run successfully" do
+    describe 'should run successfully' do
       context "when on #{os[:family]}" do
         let(:manifest) do
           if windows_platform?
@@ -288,8 +288,8 @@ describe 'pwsh provider:' do
       after do
         # Due to https://tickets.puppetlabs.com/browse/BKR-1088, need to use different commands
         if windows_platform?
-          run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
-          run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
+          run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'))
+          run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'))
         else
           run_shell('unset superspecial')
           run_shell('unset outside')
@@ -553,7 +553,7 @@ describe 'pwsh provider:' do
         MANIFEST
       end
 
-      it "Errors predictably" do
+      it 'Errors predictably' do
         apply_manifest(manifest, expect_failures: true) do |result|
           expect(result.stderr).to match(/Provider pwsh is not functional on this host/)
         end

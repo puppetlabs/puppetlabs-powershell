@@ -37,8 +37,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     end
   end
 
-  describe "should run successfully" do
-    context "when on machine" do
+  describe 'should run successfully' do
+    context 'when on machine' do
       let(:manifest) do
         <<-MANIFEST
           exec{'TestPowershell':
@@ -56,7 +56,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should handle a try/catch successfully' do
-    context "when on host with platform" do
+    context 'when on host with platform' do
       let(:try_successfile) { 'C:\try_success.txt' }
       let(:try_failfile) { 'C:\try_shouldntexist.txt' }
       let(:catch_successfile) { 'C:\catch_success.txt' }
@@ -246,8 +246,8 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     end
 
     after do
-      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
-      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
+      run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'))
+      run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'))
     end
 
     it 'does not see environment variable from previous run' do
@@ -493,7 +493,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       MANIFEST
     end
 
-    it "Errors predictably" do
+    it 'Errors predictably' do
       apply_manifest(manifest, expect_failures: true) do |result|
         expect(result.stderr).to match(/Provider powershell is not functional on this host/)
       end

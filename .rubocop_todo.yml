@@ -112,17 +112,6 @@ Style/Alias:
 Style/OptionalBooleanParameter:
   Enabled: false
 
-# Offense count: 41
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: EnforcedStyle, ConsistentQuotesInMultiline.
-# SupportedStyles: single_quotes, double_quotes
-Style/StringLiterals:
-  Exclude:
-    - 'spec/acceptance/exec_powershell_spec.rb'
-    - 'spec/acceptance/exec_pwsh_spec.rb'
-    - 'spec/spec_helper_acceptance_local.rb'
-    - 'spec/unit/provider/exec/powershell_spec.rb'
-    - 'spec/unit/provider/exec/pwsh_spec.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
