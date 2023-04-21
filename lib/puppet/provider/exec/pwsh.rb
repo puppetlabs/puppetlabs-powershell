@@ -74,7 +74,7 @@ Puppet::Type.type(:exec).provide :pwsh, parent: Puppet::Provider::Exec do
 
   def execute_resource(powershell_code, resource)
     working_dir = resource[:cwd]
-    unless (working_dir.nil?)
+    unless working_dir.nil?
       fail "Working directory '#{working_dir}' does not exist" unless File.directory?(working_dir)
     end
     timeout_ms = resource[:timeout].nil? ? nil : resource[:timeout] * 1000

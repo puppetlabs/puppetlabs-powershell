@@ -108,13 +108,6 @@ RSpec/SubjectStub:
 
 Style/Alias:
   Enabled: false
-# Offense count: 2
-# This cop supports safe autocorrection (--autocorrect).
-# Configuration parameters: AllowSafeAssignment, AllowInMultilineConditions.
-Style/ParenthesesAroundCondition:
-  Exclude:
-    - 'lib/puppet/provider/exec/powershell.rb'
-    - 'lib/puppet/provider/exec/pwsh.rb'
 
 # Offense count: 1
 # This cop supports unsafe autocorrection (--autocorrect-all).
