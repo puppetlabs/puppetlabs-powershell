@@ -1,4 +1,4 @@
-#! /usr/bin/env ruby
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require 'spec_helper'
@@ -14,49 +14,49 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     alias_method :run_spec_override, :run
   end
 
-  let(:command)  { '$(Get-CIMInstance Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
-  let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
-
-  let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh) }
-
   subject(:provider) do
     described_class.new(resource)
   end
 
-  before :each do
+  let(:command) { '$(Get-CIMInstance Win32_Account -Filter "SID=\'S-1-5-18\'") | Format-List' }
+  let(:args) { '-NoProfile -NonInteractive -NoLogo -ExecutionPolicy Bypass -Command -' }
+
+  let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :pwsh) }
+
+  before do
     # Always assume the pwsh binary is available
     allow(Pwsh::Manager).to receive(:pwsh_path).and_return('somepath/pwsh')
   end
 
-  describe "#run" do
-    before :each do
+  describe '#run' do
+    before do
       allow_any_instance_of(Puppet::Provider::Exec).to receive(:run)
-      allow(provider).to receive(:execute_resource).and_return('','')
+      allow(provider).to receive(:execute_resource).and_return('', '')
     end
 
     context 'when the powershell manager is not supported' do
-      before :each do
+      before do
         Pwsh::Manager.stub(:pwsh_supported?).and_return(false)
       end
 
       let(:shell_command) { Puppet.features.microsoft_windows? ? 'cmd.exe /c' : '/bin/sh -c' }
 
-      it "should call exec run" do
+      it 'calls exec run' do
         expect(provider).to receive(:run)
         provider.run_spec_override(command)
       end
 
-      it "should call shell command" do
+      it 'calls shell command' do
         expect(provider).to receive(:run).with(/#{shell_command}/, anything)
         provider.run_spec_override(command)
       end
 
-      it "should supply default arguments to supress user interaction" do
+      it 'supplies default arguments to supress user interaction' do
         expect(provider).to receive(:run).with(/#{shell_command} .* #{args} < .*/, false)
         provider.run_spec_override(command)
       end
 
-      it "should quote the path to the temp file" do
+      it 'quotes the path to the temp file' do
         skip('Not on Windows platform') unless Puppet.features.microsoft_windows?
         # Path quoting is only required on Windows
         path = 'C:\Users\albert\AppData\Local\Temp\puppet-powershell20130715-788-1n66f2j.ps1'
@@ -69,13 +69,15 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
 
       context 'when specifying a path' do
         let(:path) { Puppet::Util::Platform.windows? ? 'C:/pwsh-test' : '/pwsh-test' }
-        let(:pwsh_path) { Puppet::Util::Platform.windows? ? path + '/pwsh.exe' : path + '/pwsh' }
-        let(:native_pwsh_path) { Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path }
+        let(:pwsh_path) { Puppet::Util::Platform.windows? ? "#{path}/pwsh.exe" : "#{path}/pwsh" }
+        let(:native_pwsh_path) do
+          Puppet::Util::Platform.windows? ? pwsh_path.gsub(File::SEPARATOR, File::ALT_SEPARATOR) : pwsh_path
+        end
         let(:native_pwsh_path_regex) { /#{Regexp.escape(native_pwsh_path)}/ }
 
-        let(:resource) { Puppet::Type.type(:exec).new(:command => command, :provider => :pwsh, :path => path) }
+        let(:resource) { Puppet::Type.type(:exec).new(command: command, provider: :pwsh, path: path) }
 
-        it 'should prefer pwsh in the specified path' do
+        it 'prefers pwsh in the specified path' do
           # Pretend that only the test pwsh binary exists.
           allow(File).to receive(:exist?).and_return(true)
           # Remove the global stub here as we're testing this method
@@ -87,7 +89,7 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
       end
     end
 
-    it "should only attempt to find pwsh once when pwsh exists" do
+    it 'onlies attempt to find pwsh once when pwsh exists' do
       # Need to unstub to force the 'only once' expectation. Otherwise the
       # previous stub takes over if it's called more than once.
       allow(Pwsh::Manager).to receive(:pwsh_path).and_call_original
@@ -99,15 +101,15 @@ describe Puppet::Type.type(:exec).provider(:pwsh) do
     end
   end
 
-  describe "#checkexe" do
-    it "should skip checking the exe" do
+  describe '#checkexe' do
+    it 'skips checking the exe' do
       expect(provider.checkexe(command)).to be_nil
     end
   end
 
-  describe "#validatecmd" do
-    it "should always successfully validate the command to execute" do
-      expect(provider.validatecmd(command)).to eq(true)
+  describe '#validatecmd' do
+    it 'alwayses successfully validate the command to execute' do
+      expect(provider.validatecmd(command)).to be(true)
     end
   end
 end

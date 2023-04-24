@@ -6,11 +6,12 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   # Due to https://github.com/PowerShell/PowerShell/issues/1794 the HOME directory must be passed in the environment explicitly
   # In this case, it just needs a HOME that has a valid directory, no files get stored there
   # HOME is not used on Windows so it is safe to apply hosts, no matter its platform
-  let (:ps_environment) { "environment => ['HOME=/tmp']," }
+  let(:ps_environment) { "environment => ['HOME=/tmp']," }
+
   ps_environment = "environment => ['HOME=/tmp'],"
 
   shared_examples 'should fail' do |manifest, error_check|
-    it 'should throw an error' do
+    it 'throws an error' do
       apply_manifest(manifest, expect_failures: true) do |result|
         expect(result.stderr).to match(error_check) unless error_check.nil?
       end
@@ -18,7 +19,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   shared_examples 'apply success' do |manifest|
-    it 'should succeed' do
+    it 'succeeds' do
       apply_manifest(manifest, catch_failures: true)
     end
   end
@@ -31,14 +32,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         provider => powershell,
       }
     MANIFEST
-    it 'should not fail' do
+    it 'does not fail' do
       apply_manifest(padmin, catch_failures: true)
     end
   end
 
-  describe "should run successfully" do
-    context "on machine" do
-      let(:manifest) {
+  describe 'should run successfully' do
+    context 'when on machine' do
+      let(:manifest) do
         <<-MANIFEST
           exec{'TestPowershell':
             command   => 'Get-Process > c:/process.txt',
@@ -46,7 +47,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
             provider  => powershell,
           }
         MANIFEST
-      }
+      end
 
       it 'is idempotent' do
         idempotent_apply(manifest)
@@ -55,8 +56,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should handle a try/catch successfully' do
-    context "on host with platform #{}" do
-
+    context 'when on host with platform' do
       let(:try_successfile) { 'C:\try_success.txt' }
       let(:try_failfile) { 'C:\try_shouldntexist.txt' }
       let(:catch_successfile) { 'C:\catch_success.txt' }
@@ -64,8 +64,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       let(:try_content) { 'try_executed' }
       let(:catch_content) { 'catch_executed' }
 
-      it 'should demonstrably execute PowerShell code inside a try block' do
-
+      it 'demonstrablies execute PowerShell code inside a try block' do
         powershell_cmd = <<-CMD
         try {
         $foo = @(1, 2, 3).count
@@ -94,7 +93,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         end
       end
 
-      it 'should demonstrably execute PowerShell code inside a catch block' do
+      it 'demonstrablies execute PowerShell code inside a catch block' do
         powershell_cmd = <<-CMD
         try {
         throw "execute catch!"
@@ -126,130 +125,132 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should run commands that exit session' do
-    let(:exit_pp) { <<-MANIFEST
+    let(:exit_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(exit_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(exit_pp, expect_changes: true)
     end
-
   end
 
   describe 'should run commands that break session' do
-    let(:break_pp) { <<-MANIFEST
+    let(:break_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'Break',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(break_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(break_pp, expect_changes: true)
     end
-
   end
 
   describe 'should run commands that return from session' do
-    let(:return_pp) { <<-MANIFEST
+    let(:return_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'return 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should not error on first run' do
+    it 'does not error on first run' do
       apply_manifest(return_pp, expect_changes: true)
     end
 
-    it 'should run a second time' do
+    it 'runs a second time' do
       apply_manifest(return_pp, expect_changes: true)
     end
-
   end
 
   describe 'should not leak variables across calls to single session' do
-
-    let(:var_leak_setup_pp) { <<-MANIFEST
+    let(:var_leak_setup_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => '$special=1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    let(:var_leak_test_pp) { <<-MANIFEST
+    let(:var_leak_test_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'if ( $special -eq 1 ) { exit 1 } else { exit 0 }',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should not see variable from previous run' do
+    it 'does not see variable from previous run' do
       # Setup the variable
       apply_manifest(var_leak_setup_pp, expect_changes: true)
 
       # Test to see if subsequent call sees the variable
       apply_manifest(var_leak_test_pp, expect_changes: true)
     end
-
   end
 
   describe 'should not leak environment variables across calls to single session' do
-
-    let(:envar_leak_setup_pp) { <<-MANIFEST
+    let(:envar_leak_setup_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "\\$env:superspecial='1'",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    let(:envar_leak_test_pp) { <<-MANIFEST
+    let(:envar_leak_test_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:superspecial -eq '1' ) { exit 1 } else { exit 0 }",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    let(:envar_ext_test_pp) { <<-MANIFEST
+    let(:envar_ext_test_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => "if ( \\$env:outside -eq '1' ) { exit 0 } else { exit 1 }",
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
-
-    after(:each) do
-      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0"))
-      run_shell(PuppetLitmus::Util.interpolate_powershell("Remove-Item Env:\\outside -ErrorAction Ignore;exit 0"))
+      MANIFEST
     end
 
-    it 'should not see environment variable from previous run' do
+    after do
+      run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\superspecial -ErrorAction Ignore;exit 0'))
+      run_shell(PuppetLitmus::Util.interpolate_powershell('Remove-Item Env:\\outside -ErrorAction Ignore;exit 0'))
+    end
+
+    it 'does not see environment variable from previous run' do
       # Setup the environment variable
       apply_manifest(envar_leak_setup_pp, expect_changes: true)
 
@@ -257,7 +258,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       apply_manifest(envar_leak_test_pp, expect_changes: true)
     end
 
-    it 'should see environment variables set outside of session' do
+    it 'sees environment variables set outside of session' do
       # Setup the environment variable outside of Puppet
 
       run_shell(PuppetLitmus::Util.interpolate_powershell("$env:outside='1'"))
@@ -271,88 +272,89 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   end
 
   describe 'should allow exit from unless' do
-
-    let(:unless_not_triggered_pp) { <<-MANIFEST
+    let(:unless_not_triggered_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         unless    => 'exit 1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    let(:unless_triggered_pp) { <<-MANIFEST
+    let(:unless_triggered_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         unless    => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should RUN command if unless is NOT triggered' do
+    it 'RUNS command if unless is NOT triggered' do
       apply_manifest(unless_not_triggered_pp, expect_changes: true)
     end
 
-    it 'should NOT run command if unless IS triggered' do
+    it 'does not run command if unless IS triggered' do
       apply_manifest(unless_triggered_pp, catch_changes: true)
     end
-
   end
 
   describe 'should allow exit from onlyif' do
-
-    let(:onlyif_not_triggered_pp) { <<-MANIFEST
+    let(:onlyif_not_triggered_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         onlyif    => 'exit 1',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    let(:onlyif_triggered_pp) { <<-MANIFEST
+    let(:onlyif_triggered_pp) do
+      <<-MANIFEST
       exec{'TestPowershell':
         command   => 'exit 0',
         onlyif    => 'exit 0',
         #{ps_environment}
         provider  => powershell,
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
-    it 'should NOT run command if onlyif is NOT triggered' do
+    it 'does not run command if onlyif is NOT triggered' do
       apply_manifest(onlyif_not_triggered_pp, catch_changes: true)
     end
 
-    it 'should RUN command if onlyif IS triggered' do
+    it 'RUNS command if onlyif IS triggered' do
       apply_manifest(onlyif_triggered_pp, expect_changes: true)
     end
-
   end
 
   describe 'should be able to access the files after execution' do
-    let(:p2) { <<-MANIFEST
+    let(:p2) do
+      <<-MANIFEST
       exec{"TestPowershell":
         command   => ' "puppet" | Out-File -FilePath #{file_path} -Encoding UTF8',
         #{ps_environment}
         provider  => powershell
       }
-    MANIFEST
-    }
+      MANIFEST
+    end
 
     describe file('c:/services.txt') do
       let(:file_path) { 'C:/services.txt' }
 
-      it 'should apply the manifest' do
+      it 'applies the manifest' do
         apply_manifest(p2, catch_failures: true)
       end
 
-      it { should be_file }
-      its(:content) { should match /puppet/ }
+      it { is_expected.to be_file }
+      its(:content) { is_expected.to match(/puppet/) }
     end
   end
 
@@ -364,7 +366,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         command   => 'throw "We are writing an error"',
       }
     MANIFEST
-    it_should_behave_like 'should fail', pexception, /We are writing an error/i
+    it_behaves_like 'should fail', pexception, /We are writing an error/i
   end
 
   describe 'should error if timeout is exceeded' do
@@ -376,14 +378,14 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         provider => powershell,
       }
     MANIFEST
-    it_should_behave_like 'should fail', ptimeoutexception
+    it_behaves_like 'should fail', ptimeoutexception
   end
 
   describe 'should be able to execute a ps1 file provided' do
-    context 'on Windows platforms' do
+    context 'when on Windows platforms' do
       p2 = <<-MANIFEST
       file{'c:/services.ps1':
-        content => '#{File.open(File.join(File.dirname(__FILE__), 'files/services.ps1')).read()}'
+        content => '#{File.read(File.join(File.dirname(__FILE__), 'files/services.ps1'))}'
       }
       exec{"TestPowershellPS1":
         command   => 'c:/services.ps1',
@@ -395,21 +397,22 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         it 'applies' do
           apply_manifest(p2, catch_failures: true)
         end
-        it { should be_file }
-        its(:content) { should match /WinRM/ }
+
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/WinRM/) }
       end
     end
   end
 
   describe 'passing parameters to the ps1 file' do
-    context 'on Windows platforms' do
+    context 'when on Windows platforms' do
       outfile = 'C:/temp/svchostprocess.txt'
-      processName = 'svchost'
+      process_name = 'svchost'
       pp = <<-MANIFEST
-        $process = '#{processName}'
+        $process = '#{process_name}'
         $outFile = '#{outfile}'
       file{'c:/param_script.ps1':
-        content => '#{File.open(File.join(File.dirname(__FILE__), 'files/param_script.ps1')).read()}'
+        content => '#{File.read(File.join(File.dirname(__FILE__), 'files/param_script.ps1'))}'
       }
       exec{'run this with param':
         provider => powershell,
@@ -421,8 +424,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         it 'applies' do
           apply_manifest(pp, catch_failures: true)
         end
-        it { should be_file }
-        its(:content) { should match /svchost/ }
+
+        it { is_expected.to be_file }
+        its(:content) { is_expected.to match(/svchost/) }
       end
     end
   end
@@ -430,7 +434,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
   describe 'should execute using 64 bit powershell' do
     # Only applicable to Windows platforms
     p3 = <<-MANIFEST
-     $maxArchNumber = $::architecture? {
+     $maxArchNumber = $facts['os']['architecture']? {
       /(?i)(i386|i686|x86)$/	=> 4,
       /(?i)(x64|x86_64)/=> 8,
       default => 0
@@ -441,7 +445,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       provider => powershell
     }
     MANIFEST
-    it_should_behave_like 'apply success', p3
+    it_behaves_like 'apply success', p3
   end
 
   describe 'test admin rights' do
@@ -451,7 +455,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
       $pr = New-Object Security.Principal.WindowsPrincipal $id
       if(!($pr.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))){Write-Error "Not in admin"}
     PS1
-    it_should_behave_like 'standard exec', ps1
+    it_behaves_like 'standard exec', ps1
   end
 
   describe 'test import-module' do
@@ -465,7 +469,7 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
         Write-Error "Failed to import module ${mods[0].Name}"
       }
     PS1
-    it_should_behave_like 'standard exec', pimport
+    it_behaves_like 'standard exec', pimport
   end
 
   # TODO: For some reason, Puppet still sees the dependent module as available during
@@ -474,11 +478,12 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
     before(:all) do
       remove_pwshlib
     end
+
     after(:all) do
       install_pwshlib
     end
-  
-    let(:manifest) {
+
+    let(:manifest) do
       <<-MANIFEST
         exec{'TestPowershell':
           command   => 'Get-Process > c:/process.txt',
@@ -486,9 +491,9 @@ describe 'powershell provider:', if: (os[:family] == 'windows') do
           provider  => powershell,
         }
       MANIFEST
-    }
-  
-    it "Errors predictably" do
+    end
+
+    it 'Errors predictably' do
       apply_manifest(manifest, expect_failures: true) do |result|
         expect(result.stderr).to match(/Provider powershell is not functional on this host/)
       end
