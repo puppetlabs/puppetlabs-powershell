@@ -1,20 +1,15 @@
-<!--
-BEFORE YOU CREATE A PULL REQUEST:
+## Summary
+Provide a detailed description of all the changes present in this pull request.
 
-Ensure you have read over
+## Additional Context
+Add any additional context about the problem here. 
+- [ ] Root cause and the steps to reproduce. (If applicable)
+- [ ] Thought process behind the implementation.
 
-CONTRIBUTING - https://github.com/puppetlabs/puppetlabs-powershell/blob/main/CONTRIBUTING.md
+## Related Issues (if any)
+Mention any related issues or pull requests.
 
-We provide defined guidance (as such, we strongly adhere to it).
-
-A summary of our expectations:
- - A ticket was created at https://tickets.puppetlabs.com/secure/CreateIssueDetails!init.jspa?pid=10707&issuetype=1&components=12015&summary=%5BPOWERSHELL%5D%20, or you have an existing ticket #
- - You are not submitting a pull request from your MAIN branch.
- - The first line of your  git commit message has the ticket # and a short summary of the fix, followed by a detailed explanation of the fix in the git commit body.
- - Your git commit message format is important. We have a very defined expectation for this format and are keep to it. Really, READ the entire Contributing document. It will save you and us time.
- - Do not reformat code, it makes it hard to see what has changed. Leave the formatting to us.
-
-THANKS! We appreciate you reading the entire Contributing document and not just scanning through it.
-
-DELETE EVERYTHING IN THIS COMMENT BLOCK
--->
+## Checklist
+- [ ] 🟢 Spec tests.
+- [ ] 🟢 Acceptance tests.
+- [ ] Manually verified. (For example `puppet apply`)
