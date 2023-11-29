@@ -3,9 +3,9 @@
   delete: true
 ".rubocop.yml":
   selected_profile: false
+  include_todos: true
 appveyor.yml:
   delete: true
-
 Gemfile:
   optional:
     ":development":
