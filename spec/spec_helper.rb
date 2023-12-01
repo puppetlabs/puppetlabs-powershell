@@ -9,23 +9,23 @@ require 'rspec-puppet-facts'
 
 require 'spec_helper_local' if File.file?(File.join(File.dirname(__FILE__), 'spec_helper_local.rb'))
 
-include RspecPuppetFacts # rubocop:disable Style/MixinUsage
+include RspecPuppetFacts
 
 default_facts = {
   puppetversion: Puppet.version,
-  facterversion: Facter.version
+  facterversion: Facter.version,
 }
 
 default_fact_files = [
   File.expand_path(File.join(File.dirname(__FILE__), 'default_facts.yml')),
-  File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml'))
+  File.expand_path(File.join(File.dirname(__FILE__), 'default_module_facts.yml')),
 ]
 
 default_fact_files.each do |f|
   next unless File.exist?(f) && File.readable?(f) && File.size?(f)
 
   begin
-    default_facts.merge!(YAML.safe_load(File.read(f), [], [], true))
+    default_facts.merge!(YAML.safe_load(File.read(f), permitted_classes: [], permitted_symbols: [], aliases: true))
   rescue StandardError => e
     RSpec.configuration.reporter.message "WARNING: Unable to load #{f}: #{e}"
   end
@@ -38,7 +38,7 @@ end
 
 RSpec.configure do |c|
   c.default_facts = default_facts
-  c.before do
+  c.before :each do
     # set to strictest setting for testing
     # by default Puppet runs at warning level
     Puppet.settings[:strict] = :warning
@@ -51,8 +51,8 @@ RSpec.configure do |c|
 
   # Filter backtrace noise
   backtrace_exclusion_patterns = [
-    /spec_helper/,
-    /gems/
+    %r{spec_helper},
+    %r{gems},
   ]
 
   if c.respond_to?(:backtrace_exclusion_patterns)
