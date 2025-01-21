@@ -3,7 +3,7 @@
 require 'puppet/provider/exec'
 
 Puppet::Type.type(:exec).provide :powershell, parent: Puppet::Provider::Exec do
-  confine operatingsystem: :windows
+  confine 'os.name': :windows
   confine feature: :pwshlib
 
   desc <<-DESC
