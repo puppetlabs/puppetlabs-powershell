@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v6.0.2](https://github.com/puppetlabs/puppetlabs-powershell/tree/v6.0.2) - 2025-01-28
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v6.0.1...v6.0.2)
+
+### Fixed
+
+- (CAT-2205): Replaced legacy fact osfamily with os.family [#428](https://github.com/puppetlabs/puppetlabs-powershell/pull/428) ([span786](https://github.com/span786))
+
 ## [v6.0.1](https://github.com/puppetlabs/puppetlabs-powershell/tree/v6.0.1) - 2024-12-17
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v6.0.0...v6.0.1)
