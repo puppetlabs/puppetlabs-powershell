@@ -567,7 +567,9 @@ RSpec/ExpectInHook:
   Enabled: false
 RSpec/ExpectOutput:
   Enabled: false
-RSpec/FilePath:
+RSpec/SpecFilePathFormat:
+  Enabled: false
+RSpec/SpecFilePathSuffix:
   Enabled: false
 RSpec/Focus:
   Enabled: false
