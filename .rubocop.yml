@@ -1,7 +1,10 @@
 ---
-require:
+plugins:
 - rubocop-performance
 - rubocop-rspec
+- rubocop-rspec_rails
+- rubocop-factory_bot
+- rubocop-capybara
 AllCops:
   NewCops: enable
   DisplayCopNames: true
@@ -31,6 +34,12 @@ Bundler/OrderedGems:
 Capybara/CurrentPathExpectation:
   Enabled: false
 Capybara/VisibilityMatcher:
+  Enabled: false
+FactoryBot/AttributeDefinedStatically:
+  Enabled: false
+FactoryBot/CreateList:
+  Enabled: false
+FactoryBot/FactoryClassName:
   Enabled: false
 Gemspec/DuplicatedAssignment:
   Enabled: false
@@ -514,8 +523,6 @@ RSpec/BeEql:
   Enabled: false
 RSpec/BeforeAfterAll:
   Enabled: false
-RSpec/Capybara/FeatureMethods:
-  Enabled: false
 RSpec/ContainExactly:
   Enabled: false
 RSpec/ContextMethod:
@@ -529,6 +536,8 @@ RSpec/DescribeMethod:
 RSpec/DescribeSymbol:
   Enabled: false
 RSpec/DescribedClass:
+  Enabled: false
+RSpec/Dialect:
   Enabled: false
 RSpec/EmptyExampleGroup:
   Enabled: false
@@ -558,13 +567,9 @@ RSpec/ExpectInHook:
   Enabled: false
 RSpec/ExpectOutput:
   Enabled: false
-RSpec/FactoryBot/AttributeDefinedStatically:
+RSpec/SpecFilePathFormat:
   Enabled: false
-RSpec/FactoryBot/CreateList:
-  Enabled: false
-RSpec/FactoryBot/FactoryClassName:
-  Enabled: false
-RSpec/FilePath:
+RSpec/SpecFilePathSuffix:
   Enabled: false
 RSpec/Focus:
   Enabled: false
@@ -1028,6 +1033,12 @@ Capybara/SpecificFinders:
   Enabled: false
 Capybara/SpecificMatcher:
   Enabled: false
+FactoryBot/ConsistentParenthesesStyle:
+  Enabled: false
+FactoryBot/FactoryNameStyle:
+  Enabled: false
+FactoryBot/SyntaxMethods:
+  Enabled: false
 Gemspec/DeprecatedAttributeAssignment:
   Enabled: false
 Gemspec/DevelopmentDependencies:
@@ -1152,27 +1163,11 @@ RSpec/DuplicatedMetadata:
   Enabled: false
 RSpec/ExcessiveDocstringSpacing:
   Enabled: false
-RSpec/FactoryBot/ConsistentParenthesesStyle:
-  Enabled: false
-RSpec/FactoryBot/FactoryNameStyle:
-  Enabled: false
-RSpec/FactoryBot/SyntaxMethods:
-  Enabled: false
 RSpec/IdenticalEqualityAssertion:
   Enabled: false
 RSpec/NoExpectationExample:
   Enabled: false
 RSpec/PendingWithoutReason:
-  Enabled: false
-RSpec/Rails/AvoidSetupHook:
-  Enabled: false
-RSpec/Rails/HaveHttpStatus:
-  Enabled: false
-RSpec/Rails/InferredSpecType:
-  Enabled: false
-RSpec/Rails/MinitestAssertions:
-  Enabled: false
-RSpec/Rails/TravelAround:
   Enabled: false
 RSpec/RedundantAround:
   Enabled: false
@@ -1183,6 +1178,16 @@ RSpec/SortMetadata:
 RSpec/SubjectDeclaration:
   Enabled: false
 RSpec/VerifiedDoubleReference:
+  Enabled: false
+RSpecRails/AvoidSetupHook:
+  Enabled: false
+RSpecRails/HaveHttpStatus:
+  Enabled: false
+RSpecRails/InferredSpecType:
+  Enabled: false
+RSpecRails/MinitestAssertions:
+  Enabled: false
+RSpecRails/TravelAround:
   Enabled: false
 Security/CompoundHash:
   Enabled: false
