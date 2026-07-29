@@ -32,5 +32,5 @@ jobs:
        contains(github.event.pull_request.labels.*.name, 'allowed-for-ci'))
     uses: "puppetlabs/cat-github-actions/.github/workflows/module_acceptance.yml@main"
     with:
-      flags: "--nightly --arch-exclude arm"
+      flags: "--nightly --arch-exclude arm --collection-platform-exclude 9:ubuntu-20.04"
     secrets: "inherit"
