@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](http://semver.org).
 
+## [v6.2.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v6.2.0) - 2026-09-09
+
+[Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v6.1.0...v6.2.0)
+
+### Added
+
+- (MODULES-11706) Add support for Puppet 9 [#440](https://github.com/puppetlabs/puppetlabs-powershell/pull/440) ([shubhamshinde360](https://github.com/shubhamshinde360))
+
 ## [v6.1.0](https://github.com/puppetlabs/puppetlabs-powershell/tree/v6.1.0) - 2025-10-16
 
 [Full Changelog](https://github.com/puppetlabs/puppetlabs-powershell/compare/v6.0.2...v6.1.0)
