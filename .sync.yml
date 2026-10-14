@@ -34,6 +34,7 @@ spec/spec_helper.rb:
     - '--collection-platform-exclude 9:ubuntu-20.04'
 .github/workflows/nightly.yml:
   unmanaged: true
+  cron: '50 2 * * *'
   acceptance_flags:
     - '--nightly'
     - '--arch-exclude arm'
