@@ -4,6 +4,12 @@
 ".rubocop.yml":
   selected_profile: false
   include_todos: true
+  # cop settings the module set by hand (MODULES-11997 pdk update)
+  cop_overrides:
+    RSpec/SpecFilePathFormat:
+      Enabled: false
+    RSpec/SpecFilePathSuffix:
+      Enabled: false
 appveyor.yml:
   delete: true
 Gemfile:
@@ -11,8 +17,6 @@ Gemfile:
     ":development":
     - gem: ruby-pwsh
   overrides:
-    - gem: 'puppetlabs_spec_helper'
-      version: '~> 9.0'
     - gem: 'puppet_litmus'
       version: '~> 2.8'
 spec/spec_helper.rb:
@@ -46,3 +50,9 @@ spec/spec_helper.rb:
   unmanaged: false
 .travis.yml:
   delete: true
+Rakefile:
+  # puppet-lint checks the module disabled by hand (Rakefile/.puppet-lint.rc) (MODULES-11997 pdk update)
+  extra_disabled_lint_checks:
+  - strict_indent
+  - params_not_optional_with_undef
+  - exec_idempotency
